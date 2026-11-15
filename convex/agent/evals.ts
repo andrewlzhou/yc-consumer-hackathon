@@ -39,7 +39,7 @@ export const run = internalAction({
     const results: EvalResult[] = [];
     for (const c of cases) {
       const live: ScanResult = await ctx.runAction(internal.agent.analyze.analyzeScan, { ...c.extract, now, evaluation: true });
-      const productId = live.productId as Id<"products"> | undefined;
+      const productId = live.response.productId as Id<"products"> | undefined;
       const keys: Keys = productId ? await ctx.runQuery(internal.agent.evals.productKeys, { productId }) : null;
       const matched: Keys = keys && !keys.provisional ? keys : null;
       const matchOk: boolean =
@@ -47,7 +47,7 @@ export const run = internalAction({
       const latest: Latest | null = productId ? await ctx.runQuery(internal.agent.store.latestAnalyses, { productId }) : null;
       const liveTier: TierResult = latest?.live
         ? { verdict: latest.live.verdict, confidence: latest.live.confidence, reason: latest.live.reason, source: latest.live.source, latencyMs: live.latencyMs, groundingIssues: latest.live.groundingIssues }
-        : { verdict: live.verdict, confidence: live.confidence, reason: live.reason, source: live.path, latencyMs: live.latencyMs, groundingIssues: [] };
+        : { verdict: live.response.verdict, confidence: live.response.confidence, reason: live.response.reason, source: live.path, latencyMs: live.latencyMs, groundingIssues: [] };
       let fullTier: TierResult = null;
       if (full && matched && productId) {
         const r: FullRun = await ctx.runAction(internal.agent.analyze.runFullAnalysis, {

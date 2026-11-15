@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery } from "../_generated/server";
-import { verdictValidator } from "../lib/contract";
+import { reportResponseValidator, verdictValidator } from "../lib/contract";
 import { analysisSourceValidator, evidenceValidator, reportValidator, tierValidator } from "./tables";
 
 const JOB_TIMEOUT_MS = 10 * 60_000;
@@ -74,6 +74,7 @@ export const logScan = internalMutation({
 // The detailed report for a product: newest full analysis (or live if no full run yet) and whether a run is pending.
 export const report = internalQuery({
   args: { productId: v.id("products") },
+  returns: v.union(v.null(), reportResponseValidator),
   handler: async (ctx, { productId }) => {
     const product = await ctx.db.get(productId);
     if (!product) return null;

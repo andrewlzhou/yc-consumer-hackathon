@@ -18,6 +18,8 @@ export type Snapshot = {
   reason: string;
   saleStartDetected?: boolean;
   alternative?: { title: string; price: number; savingsPct: number };
+  // Set from the agent's analysis: true when its verdict or alternative rests on seeded evidence.
+  isSampleData?: boolean;
 };
 
 export type WatchState = {

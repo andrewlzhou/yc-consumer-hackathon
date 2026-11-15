@@ -31,3 +31,5 @@
 - Added `deviceId`, `url`, `ocrLines`, `capturedAt` to the extract and `matchedTitle`, `isSampleData` to the
   response (2026-11-15), because spec 01 already sends a device id and spec 00 requires sample data to be labeled.
 - The HTTP endpoint, API key header, and error shape are owned by the shopping-agent thread; see [agent](agent.md).
+- `deviceId` is now required on `POST /analyze` (rate limiting). Errors: 400 invalid input, 401 bad key, 429 rate limited.
+- `GET /report?productId=` and the inbox notification shape are in `contract.ts` (`reportResponseValidator`, `notificationValidator`).

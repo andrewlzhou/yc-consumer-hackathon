@@ -2,21 +2,21 @@ import type { HttpRouter } from "convex/server";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { httpAction } from "../_generated/server";
+import { isAuthorized } from "../lib/httpAuth";
+import type { ProductExtract } from "../lib/contract";
+import { rateLimiter } from "./limits";
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json", ...headers } });
 
-// Same shared key as the watchlist routes: when APP_API_KEY is set, requests must send it as x-api-key.
-const authorized = (req: Request) => !process.env.APP_API_KEY || req.headers.get("x-api-key") === process.env.APP_API_KEY;
-
-type Extract = { title?: string; retailer?: string; currentPrice?: number; originalPrice?: number; url?: string; ocrLines?: string[]; capturedAt?: number };
+type Extract = ProductExtract & { deviceId: string };
 
 // Hand validation of the phone's extract: short strings, plausible prices, a few OCR lines, nothing else.
 export function parseExtract(body: unknown): { ok: true; value: Extract } | { ok: false; error: string } {
   if (typeof body !== "object" || body === null || Array.isArray(body)) return { ok: false, error: "body must be a JSON object" };
   const b = body as Record<string, unknown>;
-  const value: Extract = {};
-  for (const key of ["title", "retailer", "url"] as const) {
+  const value: Partial<Extract> = {};
+  for (const key of ["deviceId", "title", "retailer", "url"] as const) {
     const x = b[key];
     if (x === undefined || x === null) continue;
     if (typeof x !== "string" || x.length > 500) return { ok: false, error: `${key} must be a string of at most 500 characters` };
@@ -34,8 +34,9 @@ export function parseExtract(body: unknown): { ok: true; value: Extract } | { ok
       return { ok: false, error: "ocrLines must be at most 20 strings of at most 200 characters" };
     value.ocrLines = b.ocrLines as string[];
   }
+  if (!value.deviceId || value.deviceId.length > 100) return { ok: false, error: "deviceId is required" };
   if (!value.title && !value.ocrLines?.length) return { ok: false, error: "title or ocrLines is required" };
-  return { ok: true, value };
+  return { ok: true, value: value as Extract };
 }
 
 // Routes: POST /analyze (live verdict card) and GET /report?productId= (detailed stored analysis, on demand).
@@ -44,13 +45,17 @@ export function registerAgentRoutes(http: HttpRouter) {
     path: "/analyze",
     method: "POST",
     handler: httpAction(async (ctx, req) => {
-      if (!authorized(req)) return json({ error: "unauthorized" }, 401);
+      if (!isAuthorized(req)) return json({ error: "unauthorized" }, 401);
       const parsed = parseExtract(await req.json().catch(() => null));
       if (!parsed.ok) return json({ error: parsed.error }, 400);
+      for (const limit of [rateLimiter.limit(ctx, "analyzeGlobal"), rateLimiter.limit(ctx, "analyzePerDevice", { key: parsed.value.deviceId })]) {
+        const status = await limit;
+        if (!status.ok) return json({ error: "rate limited", retryAfterMs: Math.ceil(status.retryAfter) }, 429);
+      }
       try {
         const r = await ctx.runAction(internal.agent.analyze.analyzeScan, parsed.value);
         return json(
-          { productId: r.productId, matchedTitle: r.matchedTitle, verdict: r.verdict, reason: r.reason, confidence: r.confidence, isSampleData: r.isSampleData, reportStatus: r.reportStatus },
+          r.response,
           200,
           { "server-timing": [`agent;dur=${r.latencyMs};desc="${r.path}"`, ...Object.entries(r.timings).map(([k, ms]) => `${k};dur=${ms}`)].join(", ") },
         );
@@ -63,7 +68,7 @@ export function registerAgentRoutes(http: HttpRouter) {
     path: "/report",
     method: "GET",
     handler: httpAction(async (ctx, req) => {
-      if (!authorized(req)) return json({ error: "unauthorized" }, 401);
+      if (!isAuthorized(req)) return json({ error: "unauthorized" }, 401);
       const productId = new URL(req.url).searchParams.get("productId");
       if (!productId || productId.length > 64) return json({ error: "productId is required" }, 400);
       try {

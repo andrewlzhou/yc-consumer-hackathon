@@ -2,8 +2,9 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, type ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
-import type { Verdict } from "../lib/contract";
-import { normalizeRetailer } from "../data/retailers";
+import { analyzeResponseValidator, productExtractValidator, type AnalyzeResponse, type Verdict } from "../lib/contract";
+import { KNOWN_RETAILERS, normalizeRetailer } from "../data/retailers";
+import { rateLimiter } from "./limits";
 import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
 import { heuristicAnalysis, isThin } from "./heuristic";
@@ -157,33 +158,16 @@ async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Sca
   return jobId !== null;
 }
 
-export type ScanResult = {
-  productId?: string;
-  matchedTitle?: string;
-  verdict: Verdict;
-  reason: string;
-  confidence: number;
-  isSampleData: boolean;
-  reportStatus: "ready" | "pending" | "none";
-  path: "cache" | "live" | "heuristic" | "unknown";
-  latencyMs: number;
-  timings: Record<string, number>;
-};
+const pathValidator = v.union(v.literal("cache"), v.literal("live"), v.literal("heuristic"), v.literal("unknown"));
+export const scanResultValidator = v.object({ response: analyzeResponseValidator, path: pathValidator, latencyMs: v.number(), timings: v.record(v.string(), v.number()) });
+export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number> };
+type Card = AnalyzeResponse & { path: ScanResult["path"] };
 
 // The live path: identify, record the price, then return a fresh stored analysis or run one fast model pass.
 // now is overridable so tests and evals are deterministic against the seed's clock.
 export const analyzeScan = internalAction({
-  args: {
-    title: v.optional(v.string()),
-    retailer: v.optional(v.string()),
-    currentPrice: v.optional(v.number()),
-    originalPrice: v.optional(v.number()),
-    url: v.optional(v.string()),
-    ocrLines: v.optional(v.array(v.string())),
-    capturedAt: v.optional(v.number()),
-    now: v.optional(v.number()),
-    evaluation: v.optional(v.boolean()),
-  },
+  args: { ...productExtractValidator.fields, now: v.optional(v.number()), evaluation: v.optional(v.boolean()) },
+  returns: scanResultValidator,
   handler: async (ctx, args): Promise<ScanResult> => {
     // An evaluation run neither records prices, creates products, uses the cache, nor queues background runs.
     const evaluation = args.evaluation === true;
@@ -201,10 +185,10 @@ export const analyzeScan = internalAction({
       timings[name] = t - mark;
       mark = t;
     };
-    const finish = async (result: Omit<ScanResult, "latencyMs" | "timings">): Promise<ScanResult> => {
+    const finish = async ({ path, ...response }: Card): Promise<ScanResult> => {
       const latencyMs = Date.now() - started;
-      await ctx.runMutation(internal.agent.store.logScan, { productId: result.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: result.verdict, path: result.path, latencyMs, at: started });
-      return { ...result, latencyMs, timings };
+      await ctx.runMutation(internal.agent.store.logScan, { productId: response.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: response.verdict, path, latencyMs, at: started });
+      return { response, path, latencyMs, timings };
     };
 
     let match: MatchCandidate | null = null;
@@ -222,6 +206,8 @@ export const analyzeScan = internalAction({
     if (!match) {
       if (!title) return finish({ verdict: "INVESTIGATE", reason: "We couldn't read a product name from the screen.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
       if (evaluation) return finish({ verdict: "INVESTIGATE", reason: "We don't have price history for this product yet, so we can't judge this price.", confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
+      const allowed = !args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok;
+      if (!allowed) return finish({ verdict: "INVESTIGATE", reason: "We don't have price history for this product yet, so we can't judge this price.", confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
       const productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title });
       await recordPrice(ctx, productId, scan, args.url, now, args.capturedAt);
       const queued = await queueFullRun(ctx, productId, scan, now);
@@ -256,7 +242,7 @@ export const analyzeScan = internalAction({
 
 // Every scan is a real observation, recorded through the data thread's validator (bad points are dropped there).
 async function recordPrice(ctx: ActionCtx, productId: Id<"products">, scan: Scan, url: string | undefined, now: number, capturedAt: number | undefined) {
-  if (scan.currentPrice === null || scan.retailer === "unknown") return null;
+  if (scan.currentPrice === null || !KNOWN_RETAILERS.some((r) => r.slug === scan.retailer)) return null;
   const observedAt = capturedAt && Math.abs(capturedAt - now) < 86_400_000 ? Math.min(capturedAt, now) : now;
   return ctx.runMutation(internal.data.prices.recordObservation, { productId, retailer: scan.retailer, price: scan.currentPrice, originalPrice: orUndefined(scan.originalPrice), observedAt, source: "scan", url });
 }

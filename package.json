@@ -10,6 +10,7 @@
     "seed": "convex run seed/run:all"
   },
   "dependencies": {
+    "@convex-dev/rate-limiter": "^0.4.3",
     "convex": "^1.48.0"
   },
   "devDependencies": {

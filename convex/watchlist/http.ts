@@ -1,4 +1,5 @@
 import { httpAction } from "../_generated/server";
+import { isAuthorized } from "../lib/httpAuth";
 import { api } from "../_generated/api";
 import type { HttpRouter } from "convex/server";
 import { ConvexError } from "convex/values";
@@ -6,11 +7,10 @@ import type { Id } from "../_generated/dataModel";
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-// Anonymous deviceId is the only identity. If APP_API_KEY is set, requests must send it as x-api-key.
+// Anonymous deviceId is the only identity. Requests must send APP_API_KEY as x-api-key (see lib/httpAuth.ts).
 function wrap(handler: (ctx: Parameters<Parameters<typeof httpAction>[0]>[0], input: Record<string, unknown>) => Promise<unknown>) {
   return httpAction(async (ctx, req) => {
-    const key = process.env.APP_API_KEY;
-    if (key && req.headers.get("x-api-key") !== key) return json({ error: "unauthorized" }, 401);
+    if (!isAuthorized(req)) return json({ error: "unauthorized" }, 401);
     const url = new URL(req.url);
     let input: Record<string, unknown> = Object.fromEntries(url.searchParams);
     if (req.method !== "GET") {

@@ -1,36 +1,9 @@
 // Shopping-agent tables. schema.ts spreads this object so this thread's tables stay in one block.
 import { defineTable } from "convex/server";
 import { v } from "convex/values";
-import { verdictValidator } from "../lib/contract";
+import { reportValidator, verdictValidator } from "../lib/contract";
 
-const cited = { evidenceIds: v.array(v.string()) };
-
-// Mirrors AgentOutput in output.ts: the structured report a detail screen or chart can be built on.
-export const reportValidator = v.object({
-  match: v.object({ productId: v.union(v.string(), v.null()), confidence: v.number(), note: v.string() }),
-  verdict: verdictValidator,
-  confidence: v.number(),
-  reason: v.string(),
-  reasonEvidenceIds: v.array(v.string()),
-  priceAssessment: v.object({ summary: v.string(), ...cited }),
-  discount: v.object({
-    status: v.union(v.literal("genuine"), v.literal("misleading"), v.literal("no_discount_claimed"), v.literal("unclear")),
-    signals: v.array(v.union(v.literal("was_price_rarely_seen"), v.literal("price_raised_before_sale"), v.literal("sale_price_is_normal_price"), v.literal("small_real_savings"))),
-    explanation: v.string(),
-    ...cited,
-  }),
-  forecast: v.object({
-    low: v.union(v.number(), v.null()),
-    high: v.union(v.number(), v.null()),
-    byDate: v.union(v.string(), v.null()),
-    confidence: v.number(),
-    explanation: v.string(),
-    ...cited,
-  }),
-  retailers: v.object({ summary: v.string(), ...cited }),
-  competitors: v.array(v.object({ productId: v.string(), title: v.string(), valueReasoning: v.string(), ...cited })),
-  recommendation: v.object({ reasoning: v.string(), ...cited }),
-});
+export { reportValidator };
 
 // Tool results are stored as JSON text so arbitrary keys and shapes survive Convex's value rules.
 export const evidenceValidator = v.object({ id: v.string(), tool: v.string(), args: v.string(), result: v.string() });

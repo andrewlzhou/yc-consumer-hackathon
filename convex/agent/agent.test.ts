@@ -10,15 +10,16 @@ import { heuristicAnalysis } from "./heuristic";
 import { parseAgentOutput } from "./output";
 import { present } from "./port";
 import { COMPETITOR_TOOLS } from "./tools";
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 
 let t: ReturnType<typeof convexTest>;
 let ids: Record<string, Id<"products">>;
 
 beforeEach(async () => {
   vi.stubEnv("AGENT_PROVIDER", "fake");
-  vi.stubEnv("APP_API_KEY", "");
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
   ids = (await t.action(internal.seed.run.all, {})).products as Record<string, Id<"products">>;
 });
 afterEach(() => {
@@ -26,7 +27,11 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-const scan = (extract: Record<string, unknown>) => t.action(internal.agent.analyze.analyzeScan, { now: SEED_NOW, ...extract });
+const scan = async (extract: Record<string, unknown>) => {
+  const r = await t.action(internal.agent.analyze.analyzeScan, { now: SEED_NOW, ...extract });
+  return { ...r.response, path: r.path };
+};
+const post = (body: unknown, headers: Record<string, string> = {}) => t.fetch("/analyze", { method: "POST", body: JSON.stringify(body), headers });
 
 describe("grounding", () => {
   test("numbers match with display rounding and percents, not invented ones", () => {
@@ -132,24 +137,48 @@ describe("unknown products and the background run", () => {
 
 describe("HTTP", () => {
   test("POST /analyze validates input and returns the small contract card", async () => {
-    const bad = await t.fetch("/analyze", { method: "POST", body: JSON.stringify({ currentPrice: "cheap" }) });
+    const bad = await post({ deviceId: "d1", currentPrice: "cheap" });
     expect(bad.status).toBe(400);
     expect(await bad.json()).toHaveProperty("error");
-    const res = await t.fetch("/analyze", { method: "POST", body: JSON.stringify({ title: "Zorblax Hyperwidget 9000", retailer: "Target", currentPrice: 20 }) });
+    const res = await post({ deviceId: "d1", title: "Zorblax Hyperwidget 9000", retailer: "Target", currentPrice: 20 });
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(Object.keys(body).sort()).toEqual(["confidence", "isSampleData", "productId", "reason", "reportStatus", "verdict"]);
   });
 
-  test("API key is enforced when configured", async () => {
-    vi.stubEnv("APP_API_KEY", "k");
-    const res = await t.fetch("/analyze", { method: "POST", body: JSON.stringify({ title: "x" }) });
-    expect(res.status).toBe(401);
+  test("regression H2: routes fail closed without APP_API_KEY unless explicitly opened", async () => {
+    vi.stubEnv("APP_ALLOW_UNAUTHENTICATED", "");
+    expect((await post({ deviceId: "d1", title: "x" })).status).toBe(401);
+    expect((await t.fetch("/watchlist?deviceId=d1")).status).toBe(401);
+    vi.stubEnv("APP_API_KEY", "secret-key");
+    expect((await post({ deviceId: "d1", title: "x" }, { "x-api-key": "wrong-key!" })).status).toBe(401);
+    expect((await post({ deviceId: "d1", title: "Zorblax" }, { "x-api-key": "secret-key" })).status).toBe(200);
   });
 
-  test("GET /report rejects a bad id with JSON", async () => {
+  test("regression H2: /analyze requires a deviceId and rate-limits each device", async () => {
+    expect((await post({ title: "Zorblax" })).status).toBe(400);
+    const statuses: number[] = [];
+    for (let i = 0; i < 12; i++) statuses.push((await post({ deviceId: "spammer", title: "Zorblax Hyperwidget" })).status);
+    expect(statuses.slice(0, 10).every((s) => s === 200)).toBe(true);
+    expect(statuses.at(-1)).toBe(429);
+    expect((await post({ deviceId: "someone-else", title: "Zorblax Hyperwidget" })).status).toBe(200);
+  });
+
+  test("GET /report rejects a bad id with JSON and returns the contract shape", async () => {
     const res = await t.fetch("/report?productId=nope");
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "productId is not valid" });
+    const r = await scan({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99 });
+    const ok = await t.fetch(`/report?productId=${r.productId}`);
+    expect(ok.status).toBe(200);
+    expect((await ok.json()).analysis.report.verdict).toBe(r.verdict);
+  });
+});
+
+describe("monitoring hook", () => {
+  test("regression H1: the analysis handed to monitoring carries isSampleData", async () => {
+    await scan({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99 });
+    const snap = await t.action(internal.monitoring.ports.getSnapshot, { productId: ids["airpods-pro-3"] });
+    expect(snap.snapshot.isSampleData).toBe(true);
   });
 });

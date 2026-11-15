@@ -5,4 +5,5 @@
 - Changed: `convex/agent/` (provider interface, OpenAI Responses client, fake provider, tool loop, grounding checks, heuristic fallback, live and full tiers, stored analyses), `POST /analyze` and `GET /report`.
 - Changed: contract gains optional `reportStatus`; monitoring's `getSnapshot` now takes verdict, reason and alternative from the agent.
 - Checks: `npm run typecheck` passed; `npm test` 85 passed, 2 skipped (fake provider, including the eval set); check_docs passed.
-- Next: run the eval set on the real model, measure live latency on the deployment.
+- Changed: review fixes: /analyze fails closed, needs deviceId, rate limited (rate-limiter component); contract validators drive the HTTP layer; `/report` and notification shapes in contract.ts; `isSampleData` flows into monitoring snapshots.
+- Next: unknown-product lookup in the background run; see docs/backend/status.md.

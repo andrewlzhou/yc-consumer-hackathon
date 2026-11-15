@@ -6,13 +6,14 @@
 ## How a scan flows
 
 - `POST /analyze` validates the extract by hand, then calls `agent/analyze:analyzeScan` (internal action).
-- Identify: the data thread's `matchProduct` re-ranks full-text hits. Code takes clear matches (score >= 0.75, a
-  0.15 lead, no size conflict); close calls go to the fast model, which picks one candidate or none.
+- Identify: `matchProduct` re-ranks full-text hits; clear matches (score >= 0.75, 0.15 lead, no size conflict) are
+  taken in code. Otherwise `hybridSearch` (text + vector, text-only without a key) feeds the fast model, which picks one or none.
+  Measured: vector search only runs on unclear titles (an OCR-mangled title adds ~1.4s once); clear titles stay at ~2ms.
 - Record: every priced scan goes through `data/prices:recordObservation` as `source: "scan"`.
 - No match: a provisional product is created, the phone gets INVESTIGATE at once, and a full run is queued.
 - Cached: a full analysis under 12 hours old (or a live one under 30 minutes) made within 2% of today's price is returned as is.
-- Otherwise the live pass: stats, promo patterns and competitors are fetched in code, then one structured call to
-  the fast model (default `gpt-5.4-mini`, reasoning none) with that evidence in the prompt and no tools.
+- Otherwise the live pass: stats, promo patterns, competitors and exact `key_facts` are fetched in code, then one small
+  structured call (verdict, confidence, reason, evidence ids) to the fast model (default `gpt-5.4-mini`, reasoning none), no tools.
 - After a live pass, a background full run is queued (one per product at a time, `analysisJobs`).
 
 ## The full run
@@ -43,9 +44,13 @@
 
 - `OPENAI_API_KEY` (missing => fake provider), `AGENT_PROVIDER=fake` to force the fake,
   `AGENT_FAST_MODEL`, `AGENT_FAST_REASONING`, `AGENT_FULL_MODEL`, `AGENT_FULL_REASONING`.
-- `APP_API_KEY`: when set, every route requires it in the `x-api-key` header (shared with the watchlist routes).
+- `APP_API_KEY`: every route (agent and watchlist) requires it as `x-api-key`; without it routes answer 401. Set
+  `APP_ALLOW_UNAUTHENTICATED=1` only for local dev (tests do).
+- `/analyze` requires `deviceId` and is rate limited (`limits.ts`): 20/min per device (burst 10), 600/h overall,
+  10 new provisional products/h per device. Over the limit: 429.
 
 ## Monitoring hook
 
 - `agent/monitor.ts` gives monitoring's `getSnapshot` the newest analysis (verdict, confidence, reason,
-  alternative) and queues a full run when the analysis is missing, stale, or made at a different price.
+  alternative, `isSampleData`) and queues a full run when the analysis is missing, stale, or made at a different price.
+  Monitoring must not push on `isSampleData` snapshots (guardrail owned by the monitoring thread).

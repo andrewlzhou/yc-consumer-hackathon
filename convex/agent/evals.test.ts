@@ -4,6 +4,7 @@ import { expect, test, vi } from "vitest";
 import { internal } from "../_generated/api";
 import schema from "../schema";
 import { modules } from "../test.setup";
+import rateLimiterTest from "@convex-dev/rate-limiter/test";
 
 type CaseFile = { now: string; cases: { id: string; extract: Record<string, unknown>; expect: { match: { familyKey: string; variant?: Record<string, string> } | null; acceptableVerdicts: string[]; maxConfidence?: number } }[] };
 const file = Object.values(import.meta.glob("../../eval/cases.json", { eager: true, import: "default" }))[0] as CaseFile;
@@ -14,6 +15,7 @@ const pick = (x: Record<string, unknown>) => Object.fromEntries(Object.entries(x
 test("eval set passes on the deterministic fake provider", { timeout: 60_000 }, async () => {
   vi.stubEnv("AGENT_PROVIDER", "fake");
   const t = convexTest(schema, modules);
+  rateLimiterTest.register(t);
   await t.action(internal.seed.run.all, {});
   const cases = file.cases.map((c) => ({
     id: c.id,
@@ -24,7 +26,7 @@ test("eval set passes on the deterministic fake provider", { timeout: 60_000 }, 
     ...(c.expect.maxConfidence !== undefined ? { maxConfidence: c.expect.maxConfidence } : {}),
   }));
   const results = await t.action(internal.agent.evals.run, { cases, now: Date.parse(file.now), full: true });
-  const failures = results.flatMap((r) => [
+  const failures = results.flatMap((r: (typeof results)[number]) => [
     ...(r.matchOk ? [] : [`${r.id}: matched ${r.matchedFamily}`]),
     ...(r.liveScore && !(r.liveScore.verdictOk && r.liveScore.confidenceOk && r.liveScore.grounded) ? [`${r.id}: live ${r.live?.verdict} ${JSON.stringify(r.liveScore)} ${r.live?.groundingIssues}`] : []),
     ...(r.fullScore && !(r.fullScore.verdictOk && r.fullScore.confidenceOk && r.fullScore.grounded) ? [`${r.id}: full ${r.full?.verdict} ${JSON.stringify(r.fullScore)} ${r.full?.groundingIssues}`] : []),

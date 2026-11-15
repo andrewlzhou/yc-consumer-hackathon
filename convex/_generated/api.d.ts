@@ -16,6 +16,7 @@ import type * as agent_fake from "../agent/fake.js";
 import type * as agent_heuristic from "../agent/heuristic.js";
 import type * as agent_http from "../agent/http.js";
 import type * as agent_identify from "../agent/identify.js";
+import type * as agent_limits from "../agent/limits.js";
 import type * as agent_llm from "../agent/llm.js";
 import type * as agent_loop from "../agent/loop.js";
 import type * as agent_monitor from "../agent/monitor.js";
@@ -40,6 +41,7 @@ import type * as data_stats from "../data/stats.js";
 import type * as data_text from "../data/text.js";
 import type * as http from "../http.js";
 import type * as lib_contract from "../lib/contract.js";
+import type * as lib_httpAuth from "../lib/httpAuth.js";
 import type * as monitoring_apns from "../monitoring/apns.js";
 import type * as monitoring_apnsClient from "../monitoring/apnsClient.js";
 import type * as monitoring_check from "../monitoring/check.js";
@@ -74,6 +76,7 @@ declare const fullApi: ApiFromModules<{
   "agent/heuristic": typeof agent_heuristic;
   "agent/http": typeof agent_http;
   "agent/identify": typeof agent_identify;
+  "agent/limits": typeof agent_limits;
   "agent/llm": typeof agent_llm;
   "agent/loop": typeof agent_loop;
   "agent/monitor": typeof agent_monitor;
@@ -98,6 +101,7 @@ declare const fullApi: ApiFromModules<{
   "data/text": typeof data_text;
   http: typeof http;
   "lib/contract": typeof lib_contract;
+  "lib/httpAuth": typeof lib_httpAuth;
   "monitoring/apns": typeof monitoring_apns;
   "monitoring/apnsClient": typeof monitoring_apnsClient;
   "monitoring/check": typeof monitoring_check;
@@ -144,4 +148,6 @@ export declare const internal: FilterApi<
   FunctionReference<any, "internal">
 >;
 
-export declare const components: {};
+export declare const components: {
+  rateLimiter: import("@convex-dev/rate-limiter/_generated/component.js").ComponentApi<"rateLimiter">;
+};
