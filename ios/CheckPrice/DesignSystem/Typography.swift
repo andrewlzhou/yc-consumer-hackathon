@@ -1,64 +1,38 @@
 // Copied from notyet/ios/Views/DesignSystem/Typography.swift (Not Yet).
-// Hiragino Sans in named roles (worldscape DS/Typography.swift). Weight follows importance:
-// W6 titles, W5 button labels, W4 everything else. Large type tightens, small type opens.
+// Hiragino Sans in named roles (worldscape DS/Typography.swift). Weight follows importance.
 //
 // iOS differences from the Mac source:
 // - Sizes are larger by 1-2pt (the Mac sizes were chosen for a screen at arm's length).
 // - Text scales with Dynamic Type through `relativeTo`.
-// - iOS has historically shipped only some Hiragino Sans weights (W3, W6, W7). Each weight is
-//   checked on the device: W4 falls back to W3, W5 to W6, and if neither exists, the system font
-//   at a matching weight.
+// - iOS ships Hiragino Sans only as W3, W6 and W7 (W4 and W5 are macOS only). Each weight
+//   names one of those three PostScript names directly: regular and medium → W3,
+//   semibold → W6, bold and heavy → W7. (A runtime lookup by family name used to fall back to
+//   the system font on device.)
 // - Hiragino sets at 1.0 line height. Give multi-line text an explicit `.lineSpacing` (2-8pt).
 import SwiftUI
-import UIKit
 
 enum HiraginoWeight: Int, CaseIterable {
+    // w3/w4 regular, w5 medium, w6 semibold, w7 bold. Kept as the Mac weight names so roles
+    // read the same as the source; `fontName` is what iOS actually has.
     case w3 = 3, w4, w5, w6, w7
 
-    var fontName: String { "HiraginoSans-W\(rawValue)" }
-
-    // Names to try, in order, before falling back to the system font.
-    fileprivate var candidates: [HiraginoWeight] {
+    var fontName: String {
         switch self {
-        case .w3: [.w3, .w4]
-        case .w4: [.w4, .w3]
-        case .w5: [.w5, .w6]
-        case .w6: [.w6, .w7]
-        case .w7: [.w7, .w6]
+        case .w3, .w4, .w5: "HiraginoSans-W3"
+        case .w6: "HiraginoSans-W6"
+        case .w7: "HiraginoSans-W7"
         }
-    }
-
-    fileprivate var systemWeight: Font.Weight {
-        switch self {
-        case .w3: .regular
-        case .w4: .regular
-        case .w5: .medium
-        case .w6: .semibold
-        case .w7: .bold
-        }
-    }
-}
-
-private enum HiraginoInstalled {
-    // Font names the device has, read once.
-    static let names: Set<String> = Set(UIFont.fontNames(forFamilyName: "Hiragino Sans"))
-
-    static func name(for weight: HiraginoWeight) -> String? {
-        weight.candidates.first { names.contains($0.fontName) }?.fontName
     }
 }
 
 extension Font {
-    // Hiragino Sans at a weight, scaled with Dynamic Type. Falls back as described above.
+    // Hiragino Sans at a weight, scaled with Dynamic Type.
     static func hiragino(
         _ weight: HiraginoWeight,
         size: CGFloat,
         relativeTo textStyle: Font.TextStyle = .body
     ) -> Font {
-        if let name = HiraginoInstalled.name(for: weight) {
-            return .custom(name, size: size, relativeTo: textStyle)
-        }
-        return .system(size: size, weight: weight.systemWeight)
+        .custom(weight.fontName, size: size, relativeTo: textStyle)
     }
 }
 
