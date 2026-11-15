@@ -8,9 +8,15 @@
 - Work is split into three workstreams that each get improved over time: backend, surfacing, and UI/UX.
 - 2026-11-15 (Ruhaan): the client is an iOS 26 app in SwiftUI. Back Tap running a Shortcut is the first trigger;
   Control Center, Action Button, or share menu can replace it later. See [iOS capture](../backend/ios-capture.md).
-- 2026-11-15 (Ruhaan): the screenshot never leaves the phone and is never stored; only extracted fields are sent.
-- 2026-11-15 (Ruhaan): the backend is an LLM agent that reasons over retrieved evidence, not a rules engine.
-  Exact math, storage, scheduling, and caching stay in code. See [product context](../backend/product.md).
+- Andrew, 2026-11-15: Ruhaan's backend (root `convex/`) is the team's base and is merged into `main`. adi's
+  `notyet/convex/` is reference only, not deployed as a second backend. Branch `ruhaan_backend-wip-agent` is stale.
+- Andrew, 2026-11-15: paid price APIs are allowed. We pay for SerpApi (Google Shopping prices and per-store history)
+  and Keepa (Amazon history). Keep SerpApi swappable: the Google v. SerpApi lawsuit may be refiled by 2026-11-30.
+  Keys pending from Andrew. See [data providers](../backend/data-providers.md).
+- Andrew, 2026-11-15: the model picks the final verdict. Code computes the numbers and checks the model's verdict
+  against them; a rule-based verdict is the fallback. See [agent](../backend/agent.md).
+- 2026-11-15 (Ruhaan, confirmed by Andrew the same day): the backend is an LLM agent that reasons over retrieved
+  evidence, not a rules engine. Exact math, storage, scheduling, and caching stay in code. See [product context](../backend/product.md).
 - 2026-11-15 (Ruhaan): seeded or simulated data is always labeled as sample data and never fires real notifications.
 - 2026-11-15 (Ruhaan): backend work lands on branch `ruhaan_backend`. See [orchestration](../backend/orchestration.md).
 
@@ -31,7 +37,9 @@
 
 ## Open questions
 
-- Which price data sources we can use this weekend, and which retailers work live versus seeded.
+- Which retailers work live versus seeded, now that paid sources are allowed.
+- Screenshot handling (Andrew has not decided): Ruhaan's rule is that the screenshot never leaves the phone and only
+  extracted fields are sent ([contract](../backend/contract.md)); adi's iOS app in `notyet/` uploads screenshots.
 - How competing products are found and matched for comparison.
 - Push delivery: APNs from Convex, a relay, or local notifications as the demo fallback.
 - What role Revyl (required by the hackathon) should play; it likely can't test Back Tap. Ask the organizers.

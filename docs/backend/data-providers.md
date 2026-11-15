@@ -1,6 +1,17 @@
 # Data providers
 
-- Real data first, but no paid APIs (Ruhaan, 2026-11-15). History and current prices come from SerpApi; Wayback snapshots add a second source.
+- Real data first. Paid APIs are allowed (Andrew, 2026-11-15, replacing the earlier "no paid APIs" rule): SerpApi for
+  Google Shopping prices and per-store history, Keepa for Amazon history. Keep SerpApi swappable: the Google v. SerpApi
+  lawsuit may be refiled by 2026-11-30, so other code should not depend on SerpApi's response shapes.
+- Keys pending: Andrew will set `SERPAPI_API_KEY` (paid plan) and `KEEPA_API_KEY` on the shared dev deployment.
+
+## Layered plan (Andrew, 2026-11-15; not all built yet)
+
+- Identify the product: page JSON-LD read on the phone, IDs in the product URL, then a UPC lookup.
+- Current prices: SerpApi `google_product`, plus the Best Buy API.
+- History: Google's per-store history via SerpApi, Keepa for Amazon ASINs, our own stored observations; Wayback only
+  as background.
+- Stores with no history anywhere (Costco, eBay, small brand stores) return INVESTIGATE.
 - Without its env var each function returns `{ status: "no_key" }`. The shared deployment has `SERPAPI_API_KEY` and `OPENAI_API_KEY`.
 - "Fixture-tested" means the parser runs against a saved response. The demo set is in [data-demo.md](data-demo.md).
 
@@ -39,9 +50,10 @@
 - Verified from the docs (https://bestbuyapis.github.io/api-documentation/): endpoint shapes, `show=` field filter, collection and single-product response shapes, the caching rule.
 - Not verified: any live response, exact rate limits. Fixture-tested only.
 
-## Keepa: not used (paid, no key)
+## Keepa: planned, key pending
 
-- Code exists in `convex/data/sources/keepa.ts` (`ingestHistory`, `searchAsins`) and is fixture-tested, but it is not used: paid, no key. Env var would be `KEEPA_API_KEY`.
+- Code exists in `convex/data/sources/keepa.ts` (`ingestHistory`, `searchAsins`) and is fixture-tested. Not used until
+  Andrew sets `KEEPA_API_KEY`.
 - It would store one sample per UTC day (price at 17:00 UTC) for Amazon, falling back to the buy box series.
 - Cost if ever enabled: 1 token per ASIN, at least 5 with the `offers` parameter the buy box needs, 10 per search.
 - Doc facts checked 2026-11-15 at https://keepa.com/api-docs/product-object.html: csv index 0 Amazon, 18 buy box with shipping, time offset 21564000 minutes, prices in cents, `-1` = no offer.
