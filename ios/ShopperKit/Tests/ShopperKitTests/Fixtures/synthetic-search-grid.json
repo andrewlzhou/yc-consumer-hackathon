@@ -1,0 +1,70 @@
+{
+ "name": "synthetic-search-grid",
+ "expected": {
+  "note": "Two-column search results",
+  "titleContains": null,
+  "retailer": null,
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": false,
+  "source": "synthetic, hand-written lines modelled on the store layout"
+ },
+ "lines": [
+  {
+   "text": "Sony WH-1000XM5 Headphones",
+   "x": 0.03,
+   "y": 0.4,
+   "w": 0.42,
+   "h": 0.014
+  },
+  {
+   "text": "Bose QuietComfort Ultra",
+   "x": 0.52,
+   "y": 0.4,
+   "w": 0.42,
+   "h": 0.014
+  },
+  {
+   "text": "$279.99",
+   "x": 0.03,
+   "y": 0.43,
+   "w": 0.2,
+   "h": 0.02
+  },
+  {
+   "text": "$299.00",
+   "x": 0.52,
+   "y": 0.43,
+   "w": 0.2,
+   "h": 0.02
+  },
+  {
+   "text": "Sony WH-1000XM6 Headphones",
+   "x": 0.03,
+   "y": 0.7,
+   "w": 0.42,
+   "h": 0.014
+  },
+  {
+   "text": "Apple AirPods Max",
+   "x": 0.52,
+   "y": 0.7,
+   "w": 0.42,
+   "h": 0.014
+  },
+  {
+   "text": "$449.99",
+   "x": 0.03,
+   "y": 0.73,
+   "w": 0.2,
+   "h": 0.02
+  },
+  {
+   "text": "$549.00",
+   "x": 0.52,
+   "y": 0.73,
+   "w": 0.2,
+   "h": 0.02
+  }
+ ]
+}

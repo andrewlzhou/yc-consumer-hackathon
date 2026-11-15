@@ -7,5 +7,6 @@
   - [Product context](backend/product.md) and [phone contract](backend/contract.md).
   - [Data and retrieval](backend/data.md), [shopping agent](backend/agent.md), [monitoring](backend/monitoring.md).
   - [iOS capture](backend/ios-capture.md) and [how the backend crew works](backend/orchestration.md).
+- [iPhone client](ios/status.md) — status, [plan](ios/plan.md) and [on-device extraction](ios/extraction.md).
 - [Change history](changes/README.md) — how to write or find a short session note.
 - Keep each file short, use bullets, and put new topics under the module they belong to.

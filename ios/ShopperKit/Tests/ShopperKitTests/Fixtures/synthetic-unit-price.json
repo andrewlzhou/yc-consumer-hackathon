@@ -1,0 +1,37 @@
+{
+ "name": "synthetic-unit-price",
+ "expected": {
+  "note": "Grocery item with a per-ounce price",
+  "titleContains": [
+   "Cold Brew"
+  ],
+  "retailer": null,
+  "currentPrice": 4.99,
+  "originalPrice": null,
+  "product": true,
+  "source": "synthetic, hand-written lines modelled on the store layout"
+ },
+ "lines": [
+  {
+   "text": "Stumptown Cold Brew Coffee Original 10.5 fl oz",
+   "x": 0.05,
+   "y": 0.45,
+   "w": 0.85,
+   "h": 0.02
+  },
+  {
+   "text": "$4.99",
+   "x": 0.05,
+   "y": 0.5,
+   "w": 0.15,
+   "h": 0.03
+  },
+  {
+   "text": "$0.48/fl oz",
+   "x": 0.25,
+   "y": 0.51,
+   "w": 0.2,
+   "h": 0.013
+  }
+ ]
+}

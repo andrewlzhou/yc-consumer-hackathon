@@ -1,0 +1,37 @@
+{
+ "name": "synthetic-variant-range",
+ "expected": {
+  "note": "Only a price range across sizes",
+  "titleContains": [
+   "Baggy Jean"
+  ],
+  "retailer": "American Eagle",
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": true,
+  "source": "synthetic, hand-written lines modelled on the store layout"
+ },
+ "lines": [
+  {
+   "text": "ae.com",
+   "x": 0.45,
+   "y": 0.06,
+   "w": 0.1,
+   "h": 0.013
+  },
+  {
+   "text": "AE Dreamy Drape Baggy Jean",
+   "x": 0.05,
+   "y": 0.5,
+   "w": 0.7,
+   "h": 0.026
+  },
+  {
+   "text": "$39.95 - $59.95",
+   "x": 0.05,
+   "y": 0.55,
+   "w": 0.4,
+   "h": 0.022
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+.build/
+.swiftpm/
+build/
+DerivedData/
+*.xcodeproj/
+Config/Secrets.xcconfig
+xcuserdata/
+*.ipa
+*.mobileprovision
+*.png
+*.jpg
+*.heic

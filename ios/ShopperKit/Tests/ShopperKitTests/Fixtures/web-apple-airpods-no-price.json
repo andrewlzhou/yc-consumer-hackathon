@@ -1,0 +1,72 @@
+{
+ "name": "web-apple-airpods-no-price",
+ "expected": {
+  "note": "Apple product page top, price not on screen",
+  "titleContains": [
+   "AirPods Pro 3"
+  ],
+  "retailer": null,
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": true,
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0156,
+   "text": "AirPods Pro 3",
+   "w": 0.2737,
+   "x": 0.0424,
+   "y": 0.0763
+  },
+  {
+   "h": 0.0133,
+   "text": "Pay for your new Apple products over time, interest-free' with Ap",
+   "w": 0.9119,
+   "x": 0.0831,
+   "y": 0.142
+  },
+  {
+   "h": 0.0133,
+   "text": "choose Apple Card Monthly Installments when you check out",
+   "w": 0.8568,
+   "x": 0.1407,
+   "y": 0.1655
+  },
+  {
+   "h": 0.0102,
+   "text": "Learn more >",
+   "w": 0.1763,
+   "x": 0.5483,
+   "y": 0.1894
+  },
+  {
+   "h": 0.0192,
+   "text": "Free engraving",
+   "w": 0.2975,
+   "x": 0.4881,
+   "y": 0.2934
+  },
+  {
+   "h": 0.0297,
+   "text": "Buy AirPods Pro 3",
+   "w": 0.561,
+   "x": 0.3559,
+   "y": 0.3282
+  },
+  {
+   "h": 0.0125,
+   "text": "Now with the world's best in-ear Active Noise Canc",
+   "w": 0.8246,
+   "x": 0.1568,
+   "y": 0.4034
+  },
+  {
+   "h": 0.0156,
+   "text": "all-new heart rate sensing,' and up to 8 hours of batt",
+   "w": 0.8542,
+   "x": 0.139,
+   "y": 0.4264
+  }
+ ]
+}

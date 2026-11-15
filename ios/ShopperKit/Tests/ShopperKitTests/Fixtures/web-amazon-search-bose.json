@@ -1,0 +1,178 @@
+{
+ "name": "web-amazon-search-bose",
+ "expected": {
+  "note": "Amazon mobile web search, one sponsored product visible; List price cut off at the edge",
+  "titleContains": [
+   "Bose",
+   "QuietComfort"
+  ],
+  "retailer": "Amazon",
+  "currentPrice": 279.0,
+  "originalPrice": null,
+  "product": true,
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0168,
+   "text": "amazon",
+   "w": 0.1992,
+   "x": 0.1229,
+   "y": 0.0156
+  },
+  {
+   "h": 0.0145,
+   "text": "Sign in",
+   "w": 0.0983,
+   "x": 0.8949,
+   "y": 0.0219
+  },
+  {
+   "h": 0.0168,
+   "text": "sony wh-1 OOOxm6",
+   "w": 0.3076,
+   "x": 0.0517,
+   "y": 0.0775
+  },
+  {
+   "h": 0.0211,
+   "text": "Q Deliver to 00000 - Update -",
+   "w": 0.4602,
+   "x": 0.0339,
+   "y": 0.1307
+  },
+  {
+   "h": 0.0188,
+   "text": "**** & Up",
+   "w": 0.2593,
+   "x": 0.2814,
+   "y": 0.1851
+  },
+  {
+   "h": 0.016,
+   "text": "Today",
+   "w": 0.0961,
+   "x": 0.9003,
+   "y": 0.1878
+  },
+  {
+   "h": 0.0125,
+   "text": "All Discounts",
+   "w": 0.2051,
+   "x": 0.6178,
+   "y": 0.1882
+  },
+  {
+   "h": 0.0137,
+   "text": "prime",
+   "w": 0.0805,
+   "x": 0.0466,
+   "y": 0.2324
+  },
+  {
+   "h": 0.0125,
+   "text": "Condition v",
+   "w": 0.1797,
+   "x": 0.2915,
+   "y": 0.2351
+  },
+  {
+   "h": 0.0125,
+   "text": "Noise Control v",
+   "w": 0.2449,
+   "x": 0.539,
+   "y": 0.2351
+  },
+  {
+   "h": 0.0125,
+   "text": "Connecti",
+   "w": 0.1373,
+   "x": 0.8508,
+   "y": 0.2351
+  },
+  {
+   "h": 0.018,
+   "text": "Gift Bose. Give Magic.",
+   "w": 0.4008,
+   "x": 0.3271,
+   "y": 0.3079
+  },
+  {
+   "h": 0.0098,
+   "text": "0:04",
+   "w": 0.0525,
+   "x": 0.05,
+   "y": 0.3627
+  },
+  {
+   "h": 0.0156,
+   "text": "Bose QuietComfort Headphones (2nd",
+   "w": 0.5915,
+   "x": 0.3517,
+   "y": 0.6894
+  },
+  {
+   "h": 0.0156,
+   "text": "Gen) - Wireless Headphones, Active",
+   "w": 0.572,
+   "x": 0.3508,
+   "y": 0.7128
+  },
+  {
+   "h": 0.0137,
+   "text": "(388)",
+   "w": 0.0695,
+   "x": 0.5593,
+   "y": 0.7394
+  },
+  {
+   "h": 0.0133,
+   "text": "2K+ bought in past month",
+   "w": 0.3466,
+   "x": 0.35,
+   "y": 0.7586
+  },
+  {
+   "h": 0.0207,
+   "text": "$27900 List: $35",
+   "w": 0.2754,
+   "x": 0.35,
+   "y": 0.7829
+  },
+  {
+   "h": 0.0133,
+   "text": "FREE delivery Tue, Nov 17",
+   "w": 0.3695,
+   "x": 0.3517,
+   "y": 0.8224
+  },
+  {
+   "h": 0.0203,
+   "text": "LF",
+   "w": 0.0898,
+   "x": 0.1627,
+   "y": 0.8259
+  },
+  {
+   "h": 0.0125,
+   "text": "Add to cart",
+   "w": 0.1737,
+   "x": 0.5686,
+   "y": 0.8682
+  },
+  {
+   "h": 0.0145,
+   "text": "Shop Bose >",
+   "w": 0.1822,
+   "x": 0.0314,
+   "y": 0.9151
+  },
+  {
+   "h": 0.0137,
+   "text": "Check each product page for other buying options.",
+   "w": 0.6814,
+   "x": 0.0212,
+   "y": 0.9754
+  }
+ ]
+}

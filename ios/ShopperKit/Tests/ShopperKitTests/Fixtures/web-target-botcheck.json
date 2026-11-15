@@ -1,0 +1,42 @@
+{
+ "name": "web-target-botcheck",
+ "expected": {
+  "note": "Target bot check page",
+  "titleContains": null,
+  "retailer": null,
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": false,
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0282,
+   "text": "Quick verification",
+   "w": 0.6119,
+   "x": 0.3288,
+   "y": 0.4182
+  },
+  {
+   "h": 0.018,
+   "text": "Press & hold to confirm you're a human (and no",
+   "w": 0.8576,
+   "x": 0.139,
+   "y": 0.48
+  },
+  {
+   "h": 0.0176,
+   "text": "Press & hold",
+   "w": 0.3051,
+   "x": 0.5449,
+   "y": 0.5579
+  },
+  {
+   "h": 0.009,
+   "text": "Reference ID 176a1880-e148-11 f1-b716-89d1 bc699c3a",
+   "w": 0.6237,
+   "x": 0.3246,
+   "y": 0.6659
+  }
+ ]
+}
