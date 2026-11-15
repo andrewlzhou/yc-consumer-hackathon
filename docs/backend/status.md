@@ -21,15 +21,17 @@
 
 ## Shopping agent (convex/agent, convex/http.ts routes)
 
-- Works: POST /analyze (live card), GET /report, full tool-loop analysis, grounding checks, rate limit, fail-closed key.
-  Verified on the shared deployment with the real model (gpt-5.4-mini live, gpt-6.1-sol full); see eval numbers in the report.
-- Eval: `node eval/run.mjs [--full]` against the deployment (needs the deploy key); CI runs the same cases on the fake provider.
-- Config (Convex env): OPENAI_API_KEY, APP_API_KEY, optional AGENT_FAST_MODEL / AGENT_FULL_MODEL / AGENT_*_REASONING.
-- In progress: nothing. Open: M3 provisional-product junk (matchProduct still returns provisional rows), real-product
-  lookup via SerpApi for unknown products (background run currently only analyzes what is already stored).
-- Next steps: wire an unknown-product lookup (data thread's SerpApi adapter, cached per normalized title) into runFullAnalysis.
-- Gotchas: deploy only from a clean origin/ruhaan_backend tip. Seed data makes the reason end with "(sample data)".
-  The convex-test rate limiter needs `rateLimiterTest.register(t)` in any test that calls /analyze or analyzeScan.
+- Works (2b7e6c9): POST /analyze (live card), GET /report, background full tool-loop analysis, grounding checks,
+  per-device rate limits, fail-closed API key. Verified live on the dev deployment at 230c0bf (gpt-5.4-mini live,
+  gpt-6.1-sol full): live p50 1.44 s / p95 1.78 s, cached 0.14 s; see docs/backend/agent-evals.md.
+- Eval: `node eval/run.mjs [--full]` against the deployment (deploy key); CI runs the same cases on the fake provider.
+- Config (Convex env): OPENAI_API_KEY, APP_API_KEY (set on the dev deployment), optional AGENT_FAST_MODEL,
+  AGENT_FULL_MODEL, AGENT_*_REASONING.
+- Blocked: tip deploys fail because deployed products still carry `embedding` (data thread's migration, asked 2026-11-15).
+- Next: after a tip deploy, run `npx convex run agent/store:deleteTestArtifacts '{"since": <ms>}'` to drop probe scans,
+  then `node eval/run.mjs --full`; then wire an unknown-product lookup (data thread's SerpApi, cached per title) into runFullAnalysis.
+- Gotchas: deploy only from a clean origin/ruhaan_backend tip. HTTP probes on the shared deployment record real scan
+  rows; clean them up. Tests that hit /analyze need `rateLimiterTest.register(t)`.
 
 ## Watchlist and monitoring (convex/watchlist, convex/monitoring, convex/crons.ts)
 
