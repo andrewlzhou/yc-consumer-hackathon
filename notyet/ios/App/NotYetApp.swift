@@ -53,6 +53,8 @@ struct NotYetApp: App {
                         await Reminders.requestPermission()
                     }
                 }
+                // -demoLiveActivity YES: the scan pop-up with no Shortcut (mock mode only).
+                .task { await DemoLiveActivity.runIfRequested() }
                 .onOpenURL { url in
                     router.handle(url)
                     // The pop-up has done its job once they're in the app.

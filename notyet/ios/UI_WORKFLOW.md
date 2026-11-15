@@ -26,6 +26,8 @@ xcrun simctl openurl booted notyet://scan/c   # Buy report
 xcrun simctl openurl booted notyet://scan/d   # Look around report (CONSIDER_ALTERNATIVE, with alternatives)
 xcrun simctl openurl booted notyet://scan/e   # Check first report (INVESTIGATE, low confidence, match note)
 xcrun simctl openurl booted notyet://scan/digging   # loading state that never finishes
+xcrun simctl launch --terminate-running-process booted $BUNDLE -demoLiveActivity YES                  # Live Activity: "Digging…" steps, Wait verdict after 6 s; swipe home to see the Dynamic Island
+xcrun simctl launch --terminate-running-process booted $BUNDLE -demoLiveActivity YES -demoVerdict b   # same, ending on sample key b (Fake deal); also c, d, e
 xcrun simctl io booted screenshot shots/history.png
 ```
 

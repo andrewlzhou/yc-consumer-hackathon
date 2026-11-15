@@ -120,7 +120,8 @@ Widget and Live Activity
   and its `Screenshot` parameter are what the user's shortcut is wired to.
 - The widget cannot see `Theme`, so `ScanLiveActivity.swift` has its own copies of the five colors. A palette change
   has to be made in both places.
-- `project.yml` builds the app only (`App`, `Views`, `Shared`). `Widget/` is not built or screenshotted in CI.
+- `project.yml` builds the app (`App`, `Views`, `Shared`) and embeds the widget extension `NotYetWidgets` (`Widget`, `Shared`,
+  bundle id `com.notyet.ui.widgets`). `-demoLiveActivity YES` starts the pop-up without a Shortcut. CI does not screenshot it.
 
 CI screenshots (`.github/workflows/ios-screenshots.yml`)
 - Runs on pushes touching `notyet/ios/**`. XcodeGen project `NotYetUI`, scheme `NotYetUI`, bundle id `com.notyet.ui`,

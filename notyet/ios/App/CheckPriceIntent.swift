@@ -13,39 +13,18 @@ struct CheckPriceIntent: LiveActivityIntent {
     var screenshot: IntentFile
 
     func perform() async throws -> some IntentResult {
-        // One pop-up at a time. Starting a second one while another is live can fail.
-        for old in Activity<ScanAttributes>.activities {
-            await old.end(nil, dismissalPolicy: .immediate)
-        }
-
         let scanKey = UUID().uuidString
-        let start = Date()
         // The bar fills over the longest the quick check may take, so it never reads "done" while
         // the phone is still waiting. An answer that comes sooner simply replaces it.
         let quickTimeout: TimeInterval = 25
-        let working = ScanAttributes.ContentState(
-            stage: "working", headline: "Finding the product…", productName: nil,
-            verdict: nil, scanKey: scanKey, etaEnd: start.addingTimeInterval(quickTimeout))
-        let activity = try? Activity<ScanAttributes>.request(
-            attributes: ScanAttributes(startedAt: start),
-            content: ActivityContent(state: working, staleDate: nil),
-            pushType: nil)
+        let activity = await ScanActivity.start(scanKey: scanKey, duration: quickTimeout)
 
         let jpeg = UIImage(data: screenshot.data)?.jpegData(compressionQuality: 0.7) ?? screenshot.data
 
         do {
             // The quick pass. The deep report keeps running on Convex after this returns.
             let quick = try await ScanAPI.submit(imageData: jpeg, scanKey: scanKey, timeout: quickTimeout)
-            let ready = ScanAttributes.ContentState(
-                stage: "ready", headline: quick.oneLiner, productName: quick.productName,
-                verdict: quick.verdict, scanKey: scanKey, etaEnd: Date(), retailer: quick.retailer)
-            // The alert is the "glitter": the Dynamic Island expands with sound and haptics.
-            await activity?.update(
-                ActivityContent(state: ready, staleDate: nil),
-                alertConfiguration: AlertConfiguration(
-                    title: LocalizedStringResource(stringLiteral: quick.productName),
-                    body: LocalizedStringResource(stringLiteral: quick.oneLiner),
-                    sound: .default))
+            await ScanActivity.showReady(activity, quick: quick, scanKey: scanKey)
         } catch {
             // A timeout means the server may still finish; anything else means it probably won't.
             let timedOut = (error as? URLError)?.code == .timedOut
@@ -56,5 +35,39 @@ struct CheckPriceIntent: LiveActivityIntent {
             await activity?.update(ActivityContent(state: failed, staleDate: nil))
         }
         return .result()
+    }
+}
+
+// Starting and finishing the pop-up. Shared by the intent and `DemoLiveActivity`.
+enum ScanActivity {
+    /// Ends any old pop-up, then starts one in stage `working` whose bar fills over `duration` seconds.
+    static func start(scanKey: String, duration: TimeInterval,
+                      headline: String = "Finding the product…") async -> Activity<ScanAttributes>? {
+        // One pop-up at a time. Starting a second one while another is live can fail.
+        for old in Activity<ScanAttributes>.activities {
+            await old.end(nil, dismissalPolicy: .immediate)
+        }
+        let start = Date()
+        let working = ScanAttributes.ContentState(
+            stage: "working", headline: headline, productName: nil,
+            verdict: nil, scanKey: scanKey, etaEnd: start.addingTimeInterval(duration))
+        return try? Activity<ScanAttributes>.request(
+            attributes: ScanAttributes(startedAt: start),
+            content: ActivityContent(state: working, staleDate: nil),
+            pushType: nil)
+    }
+
+    /// Stage `ready` with the quick verdict.
+    static func showReady(_ activity: Activity<ScanAttributes>?, quick: ScanAPI.Quick, scanKey: String) async {
+        let ready = ScanAttributes.ContentState(
+            stage: "ready", headline: quick.oneLiner, productName: quick.productName,
+            verdict: quick.verdict, scanKey: scanKey, etaEnd: Date(), retailer: quick.retailer)
+        // The alert is the "glitter": the Dynamic Island expands with sound and haptics.
+        await activity?.update(
+            ActivityContent(state: ready, staleDate: nil),
+            alertConfiguration: AlertConfiguration(
+                title: LocalizedStringResource(stringLiteral: quick.productName),
+                body: LocalizedStringResource(stringLiteral: quick.oneLiner),
+                sound: .default))
     }
 }
