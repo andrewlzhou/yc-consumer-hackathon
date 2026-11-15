@@ -1,9 +1,7 @@
-/// <reference types="vite/client" />
 import { convexTest } from "convex-test";
 import { expect, test } from "vitest";
 import schema from "./schema";
-
-const modules = import.meta.glob("./**/*.ts");
+import { modules } from "./test.setup";
 
 test("schema accepts a product with an observation and a missing out-of-stock price", async () => {
   const t = convexTest(schema, modules);

@@ -65,15 +65,19 @@ export default defineSchema({
     ]),
 
   // Sale calendar: national events (retailerSlug absent) and retailer-specific sales.
+  // series links the same event across years ("black-friday") so recurrence can be checked.
   saleEvents: defineTable({
     name: v.string(),
+    series: v.string(),
     retailerSlug: v.optional(v.string()),
     startsAt: v.number(),
     endsAt: v.number(),
     kind: v.union(v.literal("national"), v.literal("retailer"), v.literal("brand")),
     dateConfidence: v.union(v.literal("confirmed"), v.literal("estimated")),
     notes: v.optional(v.string()),
-  }).index("by_startsAt", ["startsAt"]),
+  })
+    .index("by_startsAt", ["startsAt"])
+    .index("by_series_and_startsAt", ["series", "startsAt"]),
 
   // Compact text + numbers the agent can read instead of raw points. Recomputed on demand.
   priceDigests: defineTable({

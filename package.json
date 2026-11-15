@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "convex dev",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit -p convex"
+    "typecheck": "tsc --noEmit -p convex",
+    "seed": "convex run seed/run:all"
   },
   "dependencies": {
     "convex": "^1.48.0"

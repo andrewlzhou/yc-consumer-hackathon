@@ -7,4 +7,6 @@
 - Changed: first `convex/schema.ts` (retailers, products, priceObservations, saleEvents, priceDigests).
 - Changed: vitest + convex-test setup, `npm test` and `npm run typecheck`, a CI backend job, `!convex/data/` in .gitignore.
 - Checks: `npm run typecheck` passed; `npm test` 1 passed; schema deployed to a local anonymous Convex backend; check_docs passed.
-- Next: retrieval functions, seed data, source research, eval set.
+- Changed: retrieval functions in `convex/data/` (catalog match, bounded history, exact stats, promo patterns, calendar, digests, recordObservation) and a reproducible seed (`npm run seed`).
+- Checks: `npm test` 22 passed, including per-scenario numbers for every seeded product; seed loaded on the local backend (2728 points).
+- Next: source recommendation doc, seed notes, eval set, vector search.
