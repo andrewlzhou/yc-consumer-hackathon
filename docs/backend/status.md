@@ -27,8 +27,9 @@
 - Eval: `node eval/run.mjs [--cases eval/run-cases-demo.json] [--full]`; see [try it now](try-now.md).
 - Config (Convex env): OPENAI_API_KEY, APP_API_KEY (set on the dev deployment), optional AGENT_FAST_MODEL,
   AGENT_FULL_MODEL, AGENT_*_REASONING.
-- Verified: the documented no-write real demo leaves the latest analysis and scan-log rows unchanged. Next: wire
-  YCCO-8's no-fetch parseUrl when it lands and prove URL-only resolution; missing resolver falls back to extract.
+- Verified (4cecf5f): no-write real demo leaves app rows unchanged; URL-only /analyze on Apple and Walmart links
+  identifies from the slug in 0.17-0.33 s with no page fetch; resolver runs in the background.
+- Next: decide Bose expectation vs alternative-first rule; add YCCO-8 store products to run-cases-demo.json.
 - Gotchas: deploy only from a clean origin/ruhaan_backend tip. HTTP probes on the shared deployment record real scan
   rows; clean them up. Tests that hit /analyze need `rateLimiterTest.register(t)`.
 
