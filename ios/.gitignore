@@ -4,6 +4,7 @@ build/
 DerivedData/
 *.xcodeproj/
 Config/Secrets.xcconfig
+Shopper/Info.plist
 xcuserdata/
 *.ipa
 *.mobileprovision

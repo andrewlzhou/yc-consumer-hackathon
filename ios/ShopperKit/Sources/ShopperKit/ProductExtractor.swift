@@ -10,6 +10,8 @@ public struct ExtractionResult: Equatable, Sendable {
     // A few pruned lines for the backend, only when the title could not be read.
     public var fallbackLines: [String] = []
 
+    public init() {}
+
     public var hasProduct: Bool { !isListing && (title != nil || (currentPrice != nil && !fallbackLines.isEmpty)) }
 }
 

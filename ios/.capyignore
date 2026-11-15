@@ -1,0 +1,4 @@
+ShopperKit/.build
+build
+DerivedData
+*.xcodeproj

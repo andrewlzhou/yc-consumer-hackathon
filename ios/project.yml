@@ -1,0 +1,37 @@
+name: Shopper
+options:
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+packages:
+  ShopperKit:
+    path: ShopperKit
+targets:
+  Shopper:
+    type: application
+    platform: iOS
+    sources: [Shopper]
+    configFiles:
+      Debug: Config/Debug.xcconfig
+      Release: Config/Release.xcconfig
+    dependencies:
+      - package: ShopperKit
+        product: ShopperKit
+    info:
+      path: Shopper/Info.plist
+      properties:
+        CFBundleDisplayName: Worth It
+        CFBundleShortVersionString: "0.1"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        ShopperBackendHost: $(SHOPPER_BACKEND_HOST)
+        ShopperAPIKey: $(SHOPPER_API_KEY)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(SHOPPER_BUNDLE_ID)
+        DEVELOPMENT_TEAM: $(SHOPPER_TEAM)
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        ENABLE_PREVIEWS: NO

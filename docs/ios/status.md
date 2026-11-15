@@ -8,10 +8,14 @@
   one bounded retry, anonymous device id. `cd ios/ShopperKit && swift test` passes on macOS with only Command
   Line Tools (Swift 6.1). Fixture accuracy and `swift run ocrdump <png>`: see [extraction](extraction.md).
 
+- SwiftUI app "Worth It" (`ios/Shopper`): Check (link or picked screenshot), result card, report with chart,
+  watchlist edit/remove, inbox, setup with timings; App Intents for screenshot and link. Builds for the simulator
+  on Revyl's runner (Xcode 27). How to build and use: [app](app.md).
+
 ## In progress
 
-- SwiftUI app + App Intents (screenshot and link) built with XcodeGen on Revyl's cloud runner.
-- Xcode 26.3 install on Ruhaan's MacBook Air (macOS 15.7.9 can't run Xcode 26.4+ or 27).
+- Xcode 26.3 install on Ruhaan's MacBook Air (macOS 15.7.9 can't run Xcode 26.4+ or 27); needs his Apple ID.
+- Physical iPhone (A15, no Apple Intelligence) is connected by USB; install once Xcode is ready.
 
 ## Not verified yet
 

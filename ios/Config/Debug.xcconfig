@@ -1,0 +1,6 @@
+// Debug builds talk to the shared Convex dev deployment. The app key comes only from the ignored Secrets.xcconfig.
+SHOPPER_BACKEND_HOST = scintillating-caterpillar-190.convex.site
+SHOPPER_BUNDLE_ID = dev.yccohack.worthit
+SHOPPER_TEAM =
+SHOPPER_API_KEY =
+#include? "Secrets.xcconfig"
