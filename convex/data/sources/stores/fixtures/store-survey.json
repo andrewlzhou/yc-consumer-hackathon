@@ -1,0 +1,861 @@
+{
+  "measuredAt": "2026-11-15",
+  "window": {
+    "from": "20251115",
+    "to": "20261115"
+  },
+  "stores": [
+    {
+      "name": "Nike",
+      "retailer": "nike",
+      "url": "https://www.nike.com/t/air-force-1-07-mens-shoes-jBrhbr/CW2288-111",
+      "tracking": false,
+      "snapshots": 25,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251119082416",
+          "read": {
+            "title": "Nike Air Force 1 '07 Men's Shoes",
+            "brand": "Nike",
+            "price": 115,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260129095113",
+          "read": {
+            "title": "Nike Air Force 1 '07 Men's Shoes",
+            "brand": "Nike",
+            "price": 115,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260708093802",
+          "read": {
+            "title": "Nike Air Force 1 '07 Men's Shoes",
+            "brand": "Nike",
+            "price": 115,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260807124810",
+          "read": {
+            "title": "Nike Air Force 1 '07 Men's Shoes",
+            "brand": "Nike",
+            "price": 115,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Adidas",
+      "retailer": "adidas",
+      "url": "https://www.adidas.com/us/samba-og-shoes/B75806.html",
+      "tracking": false,
+      "snapshots": 10,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251123184610",
+          "read": {
+            "title": null,
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": true
+          }
+        },
+        {
+          "timestamp": "20260225092633",
+          "read": {
+            "title": "Samba OG Shoes",
+            "brand": "adidas",
+            "price": 100,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260416145716",
+          "read": {
+            "title": "Samba OG Shoes",
+            "brand": "adidas",
+            "price": 100,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260611162850",
+          "read": {
+            "title": null,
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": true
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lululemon",
+      "retailer": "lululemon",
+      "url": "https://shop.lululemon.com/p/womens-leggings/Align-Pant-2/_/prod2020012",
+      "tracking": false,
+      "snapshots": 38,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251115185040",
+          "read": {
+            "title": "lululemon Align High-Rise Pant 25\"",
+            "brand": "lululemon",
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260416104139",
+          "read": {
+            "title": "lululemon Align High-Rise Pant 25\"",
+            "brand": "lululemon",
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260811075955",
+          "read": {
+            "title": "lululemon Align High-Rise Pant 25\"",
+            "brand": "lululemon",
+            "price": 98,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "H&M",
+      "retailer": "hm",
+      "url": "https://www2.hm.com/en_us/productpage.1206055002.html",
+      "tracking": false,
+      "snapshots": 3,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251211054403",
+          "read": {
+            "title": "Muslin Bathrobe",
+            "brand": "H&M",
+            "price": 34.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson.variant",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260608121557",
+          "read": {
+            "title": "Muslin Bathrobe",
+            "brand": "H&M",
+            "price": 15.99,
+            "originalPrice": 39.99,
+            "inStock": true,
+            "pattern": "ldjson.variant",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "American Eagle",
+      "retailer": "ae",
+      "url": "https://www.ae.com/us/en/p/men/jeans/baggy-loose-jeans/ae-baggy-jean/1114_7364_914",
+      "tracking": true,
+      "snapshots": 11,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251126000952",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20251202051244",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 29.97,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20251230121139",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260103105651",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260104031312",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260129173102",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260130044349",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260131152650",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 34.96,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260211205804",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 29.97,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260612053542",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 24.99,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260716004800",
+          "read": {
+            "title": "AE Baggy Jean",
+            "brand": "AE",
+            "price": 24.99,
+            "originalPrice": 49.95,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ],
+      "countEvidence": "Cached exact-path CDX prefix response in ae-list.txt: 11 distinct UTC days; canonical URL alone has 2 days"
+    },
+    {
+      "name": "Uniqlo",
+      "retailer": "uniqlo",
+      "url": "https://www.uniqlo.com/us/en/products/E424873-000/00",
+      "tracking": false,
+      "snapshots": 12,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251126111505",
+          "read": {
+            "title": "Crew Neck T-Shirt | UNIQLO US",
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261029053620",
+          "read": {
+            "title": "Womens Crew Neck T-Shirt | UNIQLO US",
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gap",
+      "retailer": "gap",
+      "url": "https://www.gap.com/browse/product.do?pid=11802390320001",
+      "tracking": false,
+      "snapshots": 35,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20260805193658",
+          "read": {
+            "title": "Heaven Eau de Parfum - 1.7 fl oz | Gap",
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261008032048",
+          "read": {
+            "title": "Heaven Eau de Parfum - 1.7 fl oz",
+            "brand": "Gap",
+            "price": 52,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261016014423",
+          "read": {
+            "title": "Heaven Eau de Parfum - 1.7 fl oz",
+            "brand": "Gap",
+            "price": 52,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261026220710",
+          "read": {
+            "title": "Heaven Eau de Parfum - 1.7 fl oz",
+            "brand": "Gap",
+            "price": 52,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261105021224",
+          "read": {
+            "title": "Heaven Eau de Parfum - 1.7 fl oz",
+            "brand": "Gap",
+            "price": 52,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Old Navy",
+      "retailer": "oldnavy",
+      "url": "https://oldnavy.gap.com/browse/product.do?pid=402201002",
+      "tracking": false,
+      "snapshots": 2,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20260213141157",
+          "read": {
+            "title": "Ribbed 2-Way-Zip Sleep & Play Footed One-Piece for Baby | Old Navy",
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260316205309",
+          "read": {
+            "title": "Ribbed 2-Way-Zip Sleep & Play Footed One-Piece for Baby",
+            "brand": "Old Navy",
+            "price": 7.49,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Zara",
+      "retailer": "zara",
+      "url": "https://www.zara.com/us/en/ankle-strap-heeled-sandals-p12310710.html",
+      "tracking": false,
+      "snapshots": 3,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20260213081705",
+          "read": {
+            "title": "",
+            "brand": null,
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": true
+          }
+        },
+        {
+          "timestamp": "20260306111339",
+          "read": {
+            "title": "ANKLE STRAP HEELED SANDALS",
+            "brand": "ZARA",
+            "price": 79.9,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sephora",
+      "retailer": "sephora",
+      "url": "https://www.sephora.com/product/24-7-glide-on-eye-pencil-P133707",
+      "tracking": false,
+      "snapshots": 7,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251209090850",
+          "read": {
+            "title": "24/7 Glide-On Waterproof Eyeliner Pencil",
+            "brand": "Urban Decay",
+            "price": 23,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260812122108",
+          "read": {
+            "title": "24/7 Glide-On Waterproof Eyeliner Pencil",
+            "brand": "Urban Decay",
+            "price": 23,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ulta",
+      "retailer": "ulta",
+      "url": "https://www.ulta.com/p/4-in-1-radiant-renewal-skincare-wand-pimprod2037834",
+      "tracking": false,
+      "snapshots": 93,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251116030309",
+          "read": {
+            "title": "4-in-1 Radiant Renewal Skincare Wand - Rose Gold",
+            "brand": "Solawave",
+            "price": 169,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260425113446",
+          "read": {
+            "title": "4-in-1 Radiant Renewal Skincare Wand - Rose Gold",
+            "brand": "Solawave",
+            "price": 169,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260720164529",
+          "read": {
+            "title": "4-in-1 Radiant Renewal Skincare Wand - Rose Gold",
+            "brand": "Solawave",
+            "price": 169,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261111223205",
+          "read": {
+            "title": "4-in-1 Radiant Renewal Skincare Wand",
+            "brand": "Solawave",
+            "price": 169,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Costco",
+      "retailer": "costco",
+      "url": "https://www.costco.com/apple-airpods-max-1st-generation.product.100779186.html",
+      "tracking": false,
+      "snapshots": 1,
+      "error": null,
+      "samples": []
+    },
+    {
+      "name": "Home Depot",
+      "retailer": "homedepot",
+      "url": "https://www.homedepot.com/p/DEWALT-20V-MAX-Cordless-Drill-Impact-2-Tool-Combo-Kit-with-2-20V-1-3Ah-Batteries-Charger-and-Bag-DCK240C2/204373168",
+      "tracking": false,
+      "snapshots": 1,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20260515082113",
+          "read": {
+            "title": "DEWALT 20V MAX Cordless Drill/Impact 2 Tool Combo Kit with (2) 20V 1.3Ah Batteries, Charger, and Bag DCK240C2",
+            "brand": "DEWALT",
+            "price": 159,
+            "originalPrice": 239,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "IKEA",
+      "retailer": "ikea",
+      "url": "https://www.ikea.com/us/en/p/aerende-rug-high-pile-off-white-10605075/",
+      "tracking": false,
+      "snapshots": 30,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251119053028",
+          "read": {
+            "title": "ÄRENDE Rug, high pile - off-white 3 ' 11 \"x5 ' 11 \"",
+            "brand": "IKEA",
+            "price": 49.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261110234310",
+          "read": {
+            "title": "ÄRENDE Rug, high pile - off-white 3 ' 11 \"x5 ' 11 \"",
+            "brand": "IKEA",
+            "price": 49.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Apple",
+      "retailer": "apple",
+      "url": "https://www.apple.com/shop/buy-airpods/airpods-pro-3",
+      "tracking": false,
+      "snapshots": 336,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251115215032",
+          "read": {
+            "title": "AirPods Pro 3",
+            "brand": null,
+            "price": 249,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260515150725",
+          "read": {
+            "title": "AirPods Pro 3",
+            "brand": null,
+            "price": 249,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261113021945",
+          "read": {
+            "title": "AirPods Pro 3",
+            "brand": null,
+            "price": 249,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Samsung",
+      "retailer": "samsung",
+      "url": "https://www.samsung.com/us/mobile-audio/galaxy-buds3-pro/buy/galaxy-buds3-pro-silver-sku-sm-r630nzaaxar/",
+      "tracking": false,
+      "snapshots": 22,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20260226083020",
+          "read": {
+            "title": "Galaxy Buds3 Pro",
+            "brand": "Samsung",
+            "price": 249.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260314082044",
+          "read": {
+            "title": "Galaxy Buds3 Pro",
+            "brand": "Samsung",
+            "price": 249.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260417171327",
+          "read": {
+            "title": "Galaxy Buds3 Pro",
+            "brand": "Samsung",
+            "price": 249.99,
+            "originalPrice": null,
+            "inStock": false,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260502210401",
+          "read": {
+            "title": "Galaxy Buds3 Pro",
+            "brand": "Samsung",
+            "price": 249.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260722090608",
+          "read": {
+            "title": "Galaxy Buds3 Pro",
+            "brand": "Samsung",
+            "price": 249.99,
+            "originalPrice": null,
+            "inStock": false,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "New Balance",
+      "retailer": "newbalance",
+      "url": "https://www.newbalance.com/pd/9060/U9060V1-49464-PMG-NA.html",
+      "tracking": false,
+      "snapshots": 4,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20260124175746",
+          "read": {
+            "title": "9060",
+            "brand": "New Balance",
+            "price": 159.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20260807151013",
+          "read": {
+            "title": "9060",
+            "brand": "New Balance",
+            "price": null,
+            "originalPrice": null,
+            "inStock": null,
+            "pattern": null,
+            "blocked": false
+          }
+        }
+      ]
+    },
+    {
+      "name": "Lowe's",
+      "retailer": "lowes",
+      "url": "https://www.lowes.com/pd/--/5013988281",
+      "tracking": false,
+      "snapshots": 33,
+      "error": null,
+      "samples": [
+        {
+          "timestamp": "20251117164159",
+          "read": {
+            "title": "Shark Stratos DuoClean PowerFin HairPro Odor Neutralizer Bagless Pet Upright Vacuum Cleaner with HEPA Filter",
+            "brand": "Shark",
+            "price": 529.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        },
+        {
+          "timestamp": "20261111191139",
+          "read": {
+            "title": "Shark Stratos DuoClean PowerFin HairPro Odor Neutralizer Bagless Pet Upright Vacuum Cleaner with HEPA Filter",
+            "brand": "Shark",
+            "price": 529.99,
+            "originalPrice": null,
+            "inStock": true,
+            "pattern": "ldjson",
+            "blocked": false
+          }
+        }
+      ]
+    }
+  ]
+}

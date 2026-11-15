@@ -2,6 +2,6 @@
 
 - Author: Capy (YCCO-8), requested by Ruhaan Singh through Captain Ruhaan.
 - Instructions: survey big consumer stores broadly, then support only a few with real history; free sources only, shared SerpApi budget, no store-page fetch on the live analysis path. Nike and Adidas were examples, not required stores.
-- Changed: registered Nike, American Eagle, lululemon and Apple as known retailers, including Google's merchant aliases. This small shared-file change is separate from the stores parser and demo changes.
-- Checks: local anonymous Convex codegen, typecheck and full suite passed before this commit (160 tests, two live tests skipped). New store parsing work is still being finalized separately.
-- Next: ship the generic page reader and background URL resolver, then ingest and verify the real-data demo from a clean branch tip.
+- Changed: registered four stores separately (7ab91ff); added the generic JSON-LD/meta reader, Nike/AE list-price extras, strict product URLs, background resolver and tracking-query archive ingestion. Measured [18 stores](../../../backend/data-stores-survey.md); support and limits are in [store data](../../../backend/data-stores.md).
+- Checks: local anonymous Convex codegen; typecheck; focused real-excerpt parser/resolver tests. Full suite verification is repeated before pushing.
+- Next: connect the three demo additions in a separate commit, deploy a clean branch tip, ingest and verify real data. Claude quota exhausted; continued on OpenAI as requested.

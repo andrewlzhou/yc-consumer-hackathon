@@ -21,6 +21,7 @@
 ## Providers
 
 - Real-data sources (SerpApi, Wayback, Best Buy; Keepa unused), their env vars, costs, and what is verified: [data providers](data-providers.md).
+- Generic store parsing, URL resolution and the consumer-store survey: [more stores](data-stores.md).
 
 ## Rules
 

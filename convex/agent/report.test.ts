@@ -16,6 +16,8 @@ let ids: Record<string, Id<"products">>;
 beforeEach(async () => {
   vi.stubEnv("AGENT_PROVIDER", "fake");
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  // The stores resolver fetches product pages; tests never touch the network.
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
   t = convexTest(schema, modules);
   rateLimiterTest.register(t);
   ids = (await t.action(internal.seed.run.all, {})).products as Record<string, Id<"products">>;
@@ -23,6 +25,7 @@ beforeEach(async () => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 const scan = async (extract: Record<string, unknown>) => (await t.action(internal.agent.analyze.analyzeScan, { now: SEED_NOW, ...extract })).response;

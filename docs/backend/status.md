@@ -51,6 +51,6 @@
 
 ## More stores
 
-- Registered Nike, American Eagle, lululemon and Apple; the generic parser and background URL resolver are in progress.
-- Survey: 18 product URLs across major consumer stores; exact archive counts and parse yields are being checked.
-- Next: push the reader/resolver and three real-data products, then deploy only from a clean origin/ruhaan_backend tip.
+- Registered stores: 7ab91ff. Generic reader, background URL resolver, 18-store survey: see data-stores.md.
+- Local: reader/resolver tests and typecheck pass; no fetch is added to the live analysis path. Mixed variant prices are refused.
+- Next: add three real-data demo products, deploy a clean origin/ruhaan_backend tip, then verify the shared deployment.

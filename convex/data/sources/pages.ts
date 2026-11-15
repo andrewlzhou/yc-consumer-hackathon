@@ -1,3 +1,5 @@
+import { readStorePage } from "./stores/read";
+
 // Price extraction from retailer product-page HTML (live pages or Wayback Machine snapshots).
 // Retailers change markup often, so each parser tries several known patterns and returns null rather than guess.
 
@@ -96,7 +98,12 @@ const PARSERS: Record<string, (html: string) => { price: { value: number; patter
   bestbuy,
 };
 
-export function readProductPage(retailerSlug: string, html: string): PageRead {
+// Stores without a parser here (brand stores) go to the generic JSON-LD reader in stores/read.ts.
+export function readProductPage(retailerSlug: string, html: string, url?: string): PageRead {
+  if (!PARSERS[retailerSlug]) {
+    const r = readStorePage(retailerSlug, html, url);
+    return { price: r.price, originalPrice: r.originalPrice, inStock: r.inStock, blocked: r.blocked, pattern: r.pattern };
+  }
   const head = html.slice(0, 30000);
   const blocked = BLOCKED.test(head) && html.length < 200000;
   const parser = PARSERS[retailerSlug];

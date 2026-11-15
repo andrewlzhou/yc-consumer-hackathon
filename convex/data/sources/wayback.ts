@@ -79,16 +79,18 @@ const ingestArgs = {
   to: v.optional(v.string()),
   maxSnapshots: v.optional(v.number()),
   pauseMs: v.optional(v.number()),
+  prefix: v.optional(v.boolean()),
 };
 
-type IngestArgs = { productId: Id<"products">; retailer: string; url: string; from?: string; to?: string; maxSnapshots?: number; pauseMs?: number };
+type IngestArgs = { productId: Id<"products">; retailer: string; url: string; from?: string; to?: string; maxSnapshots?: number; pauseMs?: number; prefix?: boolean };
 
 // Backfill one product's history at one retailer from archived copies of its product page.
 export async function ingestWayback(ctx: ActionCtx, args: IngestArgs): Promise<IngestResult> {
   const cdx = new URL(CDX);
   const params: Record<string, string> = {
     url: args.url.replace(/^https?:\/\//, ""),
-    matchType: "exact",
+    // prefix also catches copies saved with tracking query strings (?menu=..., ?utm_source=...).
+    matchType: args.prefix ? "prefix" : "exact",
     output: "json",
     from: args.from ?? "20251101",
     filter: "statuscode:200",
@@ -99,7 +101,8 @@ export async function ingestWayback(ctx: ActionCtx, args: IngestArgs): Promise<I
   for (const [k, val] of Object.entries(params)) cdx.searchParams.set(k, val);
   const list = await get(cdx.toString());
   if (!list.ok) return { snapshots: 0, fetched: 0, parsed: 0, blocked: 0, recorded: 0, skippedAlreadyIngested: 0, failures: [`cdx HTTP ${list.status}`] };
-  const all = parseCdx(JSON.parse(list.text || "[]"));
+  const expectedPath = new URL(args.url).pathname;
+  const all = parseCdx(JSON.parse(list.text || "[]")).filter((s) => new URL(s.original).pathname === expectedPath);
   const done = new Set<string>(await ctx.runQuery(internal.data.sources.wayback.ingestedDays, { productId: args.productId, retailerSlug: args.retailer }));
   const todo = spread(all.filter((s) => !done.has(s.timestamp.slice(0, 8))), Math.min(args.maxSnapshots ?? 40, 60));
   const points: { price?: number; originalPrice?: number; inStock: boolean; observedAt: number; url: string }[] = [];
@@ -113,9 +116,9 @@ export async function ingestWayback(ctx: ActionCtx, args: IngestArgs): Promise<I
         failures.push(`${s.timestamp} HTTP ${page.status}`);
         continue;
       }
-      const read = readProductPage(args.retailer, page.text);
+      const read = readProductPage(args.retailer, page.text, args.url);
       if (read.blocked) blocked++;
-      if (read.price !== null) {
+      if (read.price !== null && read.inStock !== false) {
         points.push({ price: read.price, originalPrice: read.originalPrice ?? undefined, inStock: true, observedAt: waybackTime(s.timestamp), url: snapshotUrl(s) });
       } else if (read.inStock === false) {
         points.push({ inStock: false, observedAt: waybackTime(s.timestamp), url: snapshotUrl(s) });
