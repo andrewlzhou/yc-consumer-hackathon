@@ -1,32 +1,44 @@
-# Watchlist and monitoring (plan)
+# Watchlist and monitoring
 
-- Condensed from Ruhaan's spec 04 (2026-11-15). Owned by the monitoring thread, which replaces this with what it builds.
-- Status: not built yet.
+- Owned by the monitoring thread. Push delivery research is in [monitoring-push](monitoring-push.md).
+- Identity is an anonymous client-made `deviceId` (8-128 chars). This is NOT authentication: anyone who knows an id can edit that list.
+- Optional `APP_API_KEY` env var: when set, the HTTP routes require it as an `x-api-key` header.
 
-## Goal
+## Tables (convex/watchlist/tables.ts)
 
-- Devices save products with an optional target price and preferences, and get a notification only when something
-  worth acting on happens, always with a real, explainable reason.
+- `devices`: deviceId, apnsToken, environment (sandbox for Xcode debug builds, production for TestFlight/App Store).
+- `watchItems`: deviceId, productId, targetPrice, per-trigger prefs, last price/verdict seen, last check time.
+- `notificationLog`: one row per decision, sent or suppressed (why), price, verdict, judge, simulated flag. Used for cooldowns, dedupe, debugging and the in-app inbox.
 
-## Suggested design
+## API (HTTP routes in convex/watchlist/http.ts; same functions are callable from the Convex client)
 
-- Watchlist data: device, product, target price, preferences, and a log of sent notifications for cooldowns and debugging.
-- Identity is an anonymous `deviceId` (no accounts). Not production-grade auth; describe it that way.
-- A recurring job finds watched products and fans out one short background task per product, so one failure
-  doesn't stop the rest.
-- Per product: refresh prices, re-run the agent's analysis, decide whether to notify.
-- The LLM judges whether a change is a meaningful opportunity. Code keeps hard guardrails: cooldown per product per
-  device, minimum meaningful change, dedupe, and never a real notification from seeded data.
-- Candidate triggers: target price hit, new historical low, verdict flips to BUY_NOW, a genuine sale starts,
-  a better alternative appears.
+- `GET /watchlist?deviceId=` list. `POST /watchlist/save` upsert/edit `{deviceId, productId, targetPrice?|null, prefs?}`.
+- `POST /watchlist/remove {deviceId, productId}`. `POST /watchlist/device {deviceId, apnsToken?, environment}`.
+- `GET /watchlist/notifications?deviceId=` unacknowledged sent notifications (the local-notification fallback). `POST /watchlist/notifications/ack {deviceId, ids}`.
+- Prefs are booleans: target_hit, new_low, buy_now_flip, sale_start, better_alternative (all on by default).
 
-## Push delivery (decide early)
+## How a check runs
 
-- Convex's push component targets Expo tokens, which don't fit a native Swift app.
-- Real iOS push goes through APNs: Apple Developer account, Push capability, an APNs auth key, a signed token, HTTP/2.
-  Check whether Convex's Node runtime can do HTTP/2; otherwise use a relay callable over plain HTTP.
-- Fallback: no remote push for the demo; the app watches live Convex queries and raises a local notification.
+- Cron `monitor watchlist` runs every 4 hours (convex/crons.ts) and schedules one `monitoring/check:checkProduct` per watched product, 1 second apart.
+- `checkProduct` asks `monitoring/ports:getSnapshot` (the only file that touches the data and agent threads) for a fresh price and analysis.
+- Per device watching it: code lists candidate events (target crossed, new low, flip to BUY_NOW, sale start, better alternative), applies the guardrails, then the judge picks.
+- First check for a watch is a baseline: it records price and verdict and never notifies.
+- Judge: OpenAI chat call when `OPENAI_API_KEY` is set (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini), else a deterministic rules judge. It can only pick a listed candidate. Notification body is the agent's reason line.
+- Guardrails (convex/monitoring/policy.ts), re-checked inside the commit mutation: no seed or unlabeled simulated price, per-trigger prefs, dedupe on device+product+trigger+price, 24h cooldown per device+product (a further 10% drop overrides), minimum drop max($0.50, 1%).
+
+## Delivery
+
+- APNs if the device has a token and the four `APNS_*` env vars exist; otherwise (or on APNs failure) the row stays in the inbox and the app raises a local notification from the live query.
 
 ## Demo helper
 
-- A command to simulate a price drop on a watched product and run the check at once, clearly labeled as simulated.
+- `npx convex run monitoring/simulate:dropPrice '{"deviceId":"...","productId":"...","price":79.99}'` judges a pretend price for that one device. Title starts with [Simulated]; nothing is written to price history.
+
+## Tests
+
+- `npm test` covers policy, judge (mocked OpenAI), APNs client (local HTTP/2 server) and the full flow with convex-test.
+
+## Status
+
+- `ports.getSnapshot` is not wired to the data and agent functions yet; see the latest change note.
+

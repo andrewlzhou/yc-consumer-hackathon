@@ -9,6 +9,7 @@
  */
 
 import type * as crons from "../crons.js";
+import type * as http from "../http.js";
 import type * as lib_contract from "../lib/contract.js";
 import type * as monitoring_apns from "../monitoring/apns.js";
 import type * as monitoring_apnsClient from "../monitoring/apnsClient.js";
@@ -17,8 +18,11 @@ import type * as monitoring_evaluate from "../monitoring/evaluate.js";
 import type * as monitoring_judge from "../monitoring/judge.js";
 import type * as monitoring_policy from "../monitoring/policy.js";
 import type * as monitoring_ports from "../monitoring/ports.js";
+import type * as monitoring_simulate from "../monitoring/simulate.js";
 import type * as monitoring_state from "../monitoring/state.js";
 import type * as watchlist_devices from "../watchlist/devices.js";
+import type * as watchlist_http from "../watchlist/http.js";
+import type * as watchlist_inbox from "../watchlist/inbox.js";
 import type * as watchlist_items from "../watchlist/items.js";
 import type * as watchlist_tables from "../watchlist/tables.js";
 
@@ -30,6 +34,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   crons: typeof crons;
+  http: typeof http;
   "lib/contract": typeof lib_contract;
   "monitoring/apns": typeof monitoring_apns;
   "monitoring/apnsClient": typeof monitoring_apnsClient;
@@ -38,8 +43,11 @@ declare const fullApi: ApiFromModules<{
   "monitoring/judge": typeof monitoring_judge;
   "monitoring/policy": typeof monitoring_policy;
   "monitoring/ports": typeof monitoring_ports;
+  "monitoring/simulate": typeof monitoring_simulate;
   "monitoring/state": typeof monitoring_state;
   "watchlist/devices": typeof watchlist_devices;
+  "watchlist/http": typeof watchlist_http;
+  "watchlist/inbox": typeof watchlist_inbox;
   "watchlist/items": typeof watchlist_items;
   "watchlist/tables": typeof watchlist_tables;
 }>;
