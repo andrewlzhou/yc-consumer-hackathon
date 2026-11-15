@@ -1,0 +1,138 @@
+# Builds the Not Yet iOS app on a GitHub Mac, runs it in the iPhone simulator with sample data,
+# and saves screenshots of every screen. Runs on every push that changes notyet/ios/.
+# If you move the app folder, change IOS_DIR and the paths filter below.
+name: iOS screenshots
+
+on:
+  push:
+    paths:
+      - "notyet/ios/**"
+      - ".github/workflows/ios-screenshots.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ios-screenshots
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  IOS_DIR: notyet/ios
+
+jobs:
+  shots:
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use the newest Xcode
+        run: |
+          XCODE=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Generate the Xcode project
+        working-directory: ${{ env.IOS_DIR }}
+        run: |
+          brew install xcodegen
+          xcodegen generate
+
+      - name: Pick an iPhone simulator
+        run: |
+          cat > "$RUNNER_TEMP/pick.py" <<'PY'
+          import json, re, sys
+          devs = json.load(sys.stdin)["devices"]
+          def ver(k):
+              m = re.search(r"iOS-(\d+)-(\d+)", k)
+              return (int(m.group(1)), int(m.group(2))) if m else (0, 0)
+          best = None
+          for runtime in sorted((k for k in devs if "iOS" in k), key=ver):
+              phones = [d for d in devs[runtime] if d["name"].startswith("iPhone")]
+              pros = [d for d in phones if "Pro" in d["name"] and "Max" not in d["name"]]
+              if pros or phones:
+                  best = (pros or phones)[-1]
+          print(best["udid"] if best else "")
+          PY
+          UDID=$(xcrun simctl list devices available -j | python3 "$RUNNER_TEMP/pick.py")
+          test -n "$UDID"
+          xcrun simctl list devices | grep "$UDID"
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Build
+        working-directory: ${{ env.IOS_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild -project NotYetUI.xcodeproj -scheme NotYetUI -configuration Debug \
+            -destination "id=$UDID" -derivedDataPath build CODE_SIGNING_ALLOWED=NO build \
+            > build.log 2>&1 || true
+          grep -E "error:|BUILD SUCCEEDED|BUILD FAILED" build.log | sort -u | head -80 || true
+          test -d build/Build/Products/Debug-iphonesimulator/NotYetUI.app
+
+      - name: Take screenshots
+        working-directory: ${{ env.IOS_DIR }}
+        run: |
+          APP=com.notyet.ui
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl ui "$UDID" appearance dark
+          xcrun simctl status_bar "$UDID" override --time "9:41" --batteryState charged --batteryLevel 100 || true
+          xcrun simctl install "$UDID" build/Build/Products/Debug-iphonesimulator/NotYetUI.app
+          mkdir -p shots
+
+          shot() {  # name, then launch arguments
+            name=$1; shift
+            xcrun simctl terminate "$UDID" $APP 2>/dev/null || true
+            xcrun simctl launch "$UDID" $APP -screenshots YES "$@" > /dev/null
+            sleep 6
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+          link() {  # name, url, then launch arguments
+            name=$1; url=$2; shift 2
+            xcrun simctl terminate "$UDID" $APP 2>/dev/null || true
+            xcrun simctl launch "$UDID" $APP -screenshots YES "$@" > /dev/null
+            sleep 5
+            xcrun simctl openurl "$UDID" "$url"
+            sleep 5
+            xcrun simctl io "$UDID" screenshot "shots/$name.png"
+          }
+
+          shot 01-home
+          shot 02-home-bottom -scrollBottom YES
+          shot 03-history -startTab history
+          shot 04-search -startTab search
+          shot 05-account -startTab account
+          link 06-report-fake-deal notyet://scan/b
+          link 07-report-fake-deal-bottom notyet://scan/b -scrollBottom YES
+          link 08-report-buy notyet://scan/c
+          link 09-digging notyet://scan/digging
+          ls -la shots
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: |
+            ${{ env.IOS_DIR }}/shots/*.png
+            ${{ env.IOS_DIR }}/build.log
+          if-no-files-found: ignore
+
+      - name: Publish to the screenshots branch
+        if: success()
+        run: |
+          cp -r "$IOS_DIR/shots" "$RUNNER_TEMP/shots"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git checkout --orphan screenshots
+          git rm -rf --quiet .
+          git clean -fdxq
+          mkdir shots && cp "$RUNNER_TEMP"/shots/*.png shots/
+          {
+            echo "# Latest screenshots (${GITHUB_SHA:0:7})"
+            for f in shots/*.png; do echo ""; echo "### $(basename "$f" .png)"; echo "<img src=\"$f\" width=\"300\">"; done
+          } > README.md
+          git add shots README.md
+          git commit -qm "Screenshots for ${GITHUB_SHA:0:7}"
+          git push -f origin screenshots

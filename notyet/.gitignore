@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+ios/build/
+ios/Generated/
+ios/NotYetUI.xcodeproj/
+ios/shots/
+ios/build.log
+shots-latest/

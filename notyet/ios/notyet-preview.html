@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>not yet. app preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&display=swap" rel="stylesheet">
+<!--
+  Browser preview of the SwiftUI app in notyet-starter-v5. Each block is labeled with the Swift file it mirrors,
+  so design changes made here can be ported back. Colors and sample data match Views/Theme.swift and App/SampleData.swift.
+-->
+<style>
+  :root {
+    color-scheme: light;
+    --page-bg: #e9ebef;
+    --page-ink: #14181f;
+    --page-muted: #5b6474;
+    --page-line: #cfd4dc;
+    --btn-bg: #ffffff;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page-bg: #0f1115;
+      --page-ink: #eef1f5;
+      --page-muted: #9aa3b2;
+      --page-line: #2a2f38;
+      --btn-bg: #1a1e25;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page-bg: #0f1115;
+    --page-ink: #eef1f5;
+    --page-muted: #9aa3b2;
+    --page-line: #2a2f38;
+    --btn-bg: #1a1e25;
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { height: 100%; scroll-padding-top: env(safe-area-inset-top, 0px); }
+  body {
+    margin: 0; height: 100%; background: var(--page-bg); color: var(--page-ink);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  .stage { min-height: 100%; display: flex; align-items: center; justify-content: center; gap: 28px; padding: 20px; flex-wrap: wrap; }
+  .controls { width: 220px; display: flex; flex-direction: column; gap: 8px; }
+  .controls h1 { font: 700 22px/1.1 "Bricolage Grotesque", system-ui, sans-serif; margin: 0 0 6px; }
+  .controls h1 span { color: #FFB547; }
+  .controls p { margin: 10px 0 2px; font-size: 12px; color: var(--page-muted); }
+  .controls button {
+    font: 500 14px/1 inherit; text-align: left; padding: 11px 12px; border: 1px solid var(--page-line);
+    background: var(--btn-bg); color: var(--page-ink); cursor: pointer;
+  }
+  .controls button:hover { border-color: var(--page-muted); }
+  .controls button:focus-visible, .phone button:focus-visible, .phone input:focus-visible { outline: 2px solid #4A86BD; outline-offset: 2px; }
+  .phone-wrap { position: relative; }
+  .phone-scale { transform-origin: top left; }
+
+  /* ===== Phone (fixed dark: the app is dark only) ===== */
+  .phone {
+    --paper: #000; --ink: #fff; --slate: rgba(255,255,255,.6); --hairline: rgba(255,255,255,.14);
+    --prussian: #003153; --prussian-light: #4A86BD; --buy: #3DDC97; --wait: #FFB547; --fake: #FF5C5C;
+    position: relative; width: 402px; height: 874px; background: var(--paper); color: var(--ink);
+    border-radius: 56px; overflow: hidden; box-shadow: 0 0 0 10px #1b1d21, 0 0 0 11px #3a3d43, 0 30px 60px rgba(0,0,0,.35);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+  .display { font-family: "Bricolage Grotesque", system-ui, sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  .status { position: absolute; top: 0; left: 0; right: 0; height: 54px; display: flex; justify-content: space-between;
+    align-items: center; padding: 0 34px 0 44px; font-weight: 600; font-size: 16px; z-index: 30; pointer-events: none; }
+  .status .icons { display: flex; gap: 6px; align-items: center; }
+  .screen { position: absolute; inset: 0; padding-top: 54px; display: flex; flex-direction: column; }
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 6px 20px 0; min-height: 44px; }
+  .nav .title-inline { position: absolute; left: 0; right: 0; text-align: center; font-weight: 600; font-size: 17px; pointer-events: none; }
+  .nav .icon-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; color: var(--ink); }
+  .large-title { font-size: 34px; font-weight: 700; padding: 2px 20px 10px; }
+  .scroll { flex: 1; overflow-y: auto; overflow-x: hidden; padding-bottom: 110px; }
+  .scroll::-webkit-scrollbar { width: 0; }
+  .pad { padding: 0 20px; }
+  .hairline { height: 1px; background: var(--hairline); }
+  .muted { color: var(--slate); }
+  .sharp-btn { display: flex; align-items: center; justify-content: center; width: 100%; min-height: 50px;
+    background: var(--prussian); color: var(--ink); font-weight: 600; font-size: 17px; }
+  .sharp-btn.outline { background: transparent; box-shadow: inset 0 0 0 1px var(--hairline); }
+  .sharp-btn[disabled] { opacity: .6; cursor: default; }
+  .chip { padding: 8px 14px; font-size: 15px; font-weight: 500; box-shadow: inset 0 0 0 1px var(--hairline); white-space: nowrap; }
+  .chip.on { background: var(--prussian); box-shadow: none; }
+
+  /* Tab bar (drawn by iOS 26, so it stays rounded) */
+  .tabbar { position: absolute; left: 16px; right: 16px; bottom: 26px; display: flex; gap: 10px; align-items: center; z-index: 20; }
+  .tabs { flex: 1; display: flex; justify-content: space-around; height: 62px; border-radius: 31px;
+    background: rgba(40,44,52,.72); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-size: 10px; font-weight: 600; color: rgba(255,255,255,.75); }
+  .tab.on { color: var(--prussian-light); }
+  .search-tab { width: 62px; height: 62px; border-radius: 31px; display: flex; align-items: center; justify-content: center;
+    background: rgba(40,44,52,.72); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+  .search-tab.on { color: var(--prussian-light); }
+  .home-indicator { position: absolute; bottom: 8px; left: 50%; width: 140px; height: 5px; margin-left: -70px; background: #fff; border-radius: 3px; z-index: 40; opacity: .9; }
+
+  /* Sheets */
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 60px; background: var(--paper); z-index: 25;
+    border-top-left-radius: 14px; border-top-right-radius: 14px; box-shadow: 0 -1px 0 var(--hairline);
+    display: flex; flex-direction: column; transform: translateY(100%); transition: transform .32s cubic-bezier(.2,.8,.2,1); }
+  .sheet.open { transform: translateY(0); }
+  .sheet .grabber { width: 36px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.3); margin: 6px auto 0; }
+  .sheet .sheet-nav { display: flex; justify-content: space-between; align-items: center; padding: 8px 20px; min-height: 44px; font-weight: 600; }
+  .sheet .sheet-nav .done { color: var(--prussian-light); font-weight: 600; }
+  .sheet .scroll { padding-bottom: 40px; }
+  .scrim { position: absolute; inset: 0; background: rgba(0,0,0,.5); z-index: 24; opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .scrim.on { opacity: 1; pointer-events: auto; }
+
+  /* ProductReportView */
+  .verdict-panel { display: flex; background: var(--prussian); }
+  .verdict-panel .bar { width: 6px; flex: none; }
+  .verdict-panel .body { padding: 16px; flex: 1; }
+  .verdict-row { display: flex; align-items: baseline; gap: 10px; }
+  .verdict-word { font-size: 46px; line-height: 1; animation: pop .5s cubic-bezier(.3,1.6,.5,1) both; transform-origin: left center; }
+  @keyframes pop { from { transform: scale(.85); opacity: .6; } to { transform: scale(1); opacity: 1; } }
+  .dollar { margin-left: auto; font: 800 30px/1 system-ui, sans-serif; animation: bounce .6s .15s both; }
+  @keyframes bounce { 0% { transform: translateY(0) } 35% { transform: translateY(-8px) } 70% { transform: translateY(2px) } 100% { transform: translateY(0) } }
+  .price-row { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .price { font-size: 30px; font-variant-numeric: tabular-nums; }
+  .stars { display: inline-flex; gap: 2px; vertical-align: middle; }
+  .section { display: flex; flex-direction: column; gap: 12px; }
+
+  /* History */
+  .row { display: flex; gap: 12px; align-items: center; padding: 12px 0; }
+  .tile { position: relative; width: 46px; height: 46px; flex: none; background: var(--prussian); display: flex; align-items: center; justify-content: center; }
+  .tile .vbar { position: absolute; left: 0; top: 0; bottom: 0; width: 3px; }
+  .badge { font-size: 12px; font-weight: 700; padding: 2px 6px; box-shadow: inset 0 0 0 1px var(--hairline); color: rgba(255,255,255,.85); }
+  .marker { width: 6px; height: 6px; background: var(--wait); display: inline-block; margin-right: 6px; }
+
+  /* DiggingView */
+  .digging { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; padding: 32px; text-align: center; }
+  .scanner { position: relative; width: 160px; height: 160px; box-shadow: inset 0 0 0 1px var(--hairline); overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  .scanner .beam { position: absolute; left: 0; right: 0; top: 0; height: 36px;
+    background: linear-gradient(to bottom, rgba(74,134,189,0), rgba(74,134,189,.7)); animation: scan 1.1s ease-in-out infinite alternate; }
+  @keyframes scan { from { transform: translateY(0) } to { transform: translateY(124px) } }
+  @media (prefers-reduced-motion: reduce) { .scanner .beam, .verdict-word, .dollar, .island { animation: none !important; transition: none !important; } }
+
+  /* Ask bar */
+  .askbar { position: absolute; left: 16px; right: 16px; bottom: 100px; display: flex; align-items: center; gap: 10px;
+    padding: 4px 4px 4px 14px; background: var(--paper); box-shadow: inset 0 0 0 1px var(--hairline); z-index: 15; }
+  .askbar input { flex: 1; background: transparent; border: 0; color: var(--ink); font: inherit; font-size: 17px; outline: none; min-width: 0; }
+  .askbar input::placeholder { color: rgba(255,255,255,.4); }
+  .mic { width: 40px; height: 40px; background: var(--prussian); display: flex; align-items: center; justify-content: center; }
+  .mic.on { background: var(--prussian-light); }
+
+  /* Store page outside the app (for the back-tap demo) */
+  .store { position: absolute; inset: 0; background: #f4f4f4; color: #111; padding-top: 54px; z-index: 22; display: none; flex-direction: column; }
+  .store.on { display: flex; }
+  .store .bar { height: 50px; background: #232f3e; display: flex; align-items: center; padding: 0 16px; gap: 10px; }
+  .store .bar .field { flex: 1; height: 34px; background: #fff; }
+  .store .img { height: 330px; background: linear-gradient(135deg, #d9dde3, #c3c9d1); display: flex; align-items: center; justify-content: center; }
+  .store .info { padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+  .store .info .strike { text-decoration: line-through; color: #6b6b6b; font-size: 14px; }
+  .store .buy { height: 46px; background: #ffd814; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .store .cart { height: 46px; background: #ffa41c; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+
+  /* Dynamic Island (hardware shape, so it stays rounded) */
+  .island { position: absolute; top: 11px; left: 50%; transform: translateX(-50%); width: 126px; height: 37px; background: #000;
+    border-radius: 19px; z-index: 50; color: #fff; overflow: hidden; transition: width .45s cubic-bezier(.3,1.3,.5,1), height .45s cubic-bezier(.3,1.3,.5,1), border-radius .45s; cursor: pointer; }
+  .island.compact { width: 230px; }
+  .island.expanded { width: 374px; height: 168px; border-radius: 44px; }
+  .island .compact-row { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font-size: 13px; font-weight: 700; }
+  .island .expanded-body { position: absolute; inset: 0; padding: 18px 22px; display: none; flex-direction: column; gap: 10px; }
+  .island.expanded .compact-row { display: none; }
+  .island.expanded .expanded-body { display: flex; }
+  .island .top { display: flex; align-items: center; gap: 12px; }
+  .island .pill { margin-left: auto; font-size: 12px; font-weight: 700; padding: 3px 6px; background: #003153; }
+  .island .x { margin-left: auto; width: 28px; height: 28px; background: #003153; display: flex; align-items: center; justify-content: center; }
+  .island .progress { height: 4px; background: rgba(255,255,255,.18); position: relative; overflow: hidden; }
+  .island .progress i { position: absolute; left: 0; top: 0; bottom: 0; background: #4A86BD; width: 0; }
+  .island .progress i.run { transition: width 4s linear; width: 100%; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="controls" aria-label="Preview controls">
+    <h1>not yet<span>.</span></h1>
+    <button id="btnTap">Simulate back tap</button>
+    <p>Open a report</p>
+    <button data-open="a">Wait: AirPods Pro 3</button>
+    <button data-open="b">Fake deal: Dyson V15</button>
+    <button data-open="c">Buy: Kindle Paperwhite</button>
+    <p>Screens</p>
+    <button data-tab="home">Home</button>
+    <button data-tab="history">History</button>
+    <button data-tab="account">Account</button>
+    <button data-tab="search">Search</button>
+    <button id="btnSettings">Settings</button>
+  </div>
+
+  <div class="phone-wrap" id="phoneWrap">
+    <div class="phone-scale" id="phoneScale">
+      <div class="phone" id="phone">
+        <div class="status"><span id="clock">1:41</span><span class="icons" id="statusIcons"></span></div>
+        <div class="island" id="island" role="button" aria-label="Live Activity" tabindex="0"></div>
+
+        <div class="screen" id="screen"></div>
+
+        <div class="tabbar" id="tabbar"></div>
+        <div class="scrim" id="scrim"></div>
+        <div class="sheet" id="sheet" role="dialog" aria-modal="true"></div>
+        <div class="store" id="store"></div>
+        <div class="home-indicator"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- Icons (stand-ins for SF Symbols) ---------- */
+const I = {
+  house: '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
+  clock: '<path d="M3.5 12a8.5 8.5 0 1 0 2.5-6"/><path d="M3 4v5h5"/><path d="M12 7.5V12l3 2"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/>',
+  search: '<circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-4.8-4.8"/>',
+  gear: '<circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  photo: '<rect x="3" y="5" width="15" height="13"/><path d="M3 15l4-4 4 4 3-3 4 4"/><path d="M20 3v6M17 6h6"/>',
+  mic: '<rect x="9" y="3" width="6" height="11"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+  wave: '<path d="M4 10v4M8 7v10M12 4v16M16 7v10M20 10v4"/>',
+  dots: '<circle cx="5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.3" fill="currentColor" stroke="none"/>',
+  chev: '<path d="M9 5l7 7-7 7"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  down: '<path d="M12 4v15M6 13l6 6 6-6"/>',
+  tag: '<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>',
+  downRight: '<path d="M6 6l12 12M8 18h10V8"/>',
+  upRight: '<path d="M6 18L18 6M8 6h10v10"/>',
+  x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  radar: '<circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8"/>',
+  headphones: '<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="7"/><rect x="17" y="14" width="4" height="7"/>',
+  fan: '<circle cx="12" cy="12" r="1.8"/><path d="M12 10c0-4 1.5-7 4-7 1.8 0 2 2.5 0 4M14 12c4 0 7 1.5 7 4 0 1.8-2.5 2-4 0M12 14c0 4-1.5 7-4 7-1.8 0-2-2.5 0-4M10 12c-4 0-7-1.5-7-4 0-1.8 2.5-2 4 0"/>',
+  book: '<path d="M4 4h7a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H4zM20 4h-7a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h7z"/>',
+  bag: '<path d="M5 8h14l-1 13H6z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/>',
+  tap: '<path d="M9 11V5a2 2 0 0 1 4 0v6"/><path d="M13 9.5a2 2 0 0 1 4 0V14"/><path d="M9 11l-1.5-1.5a2 2 0 0 0-3 2.6L9 19c1 1.3 2.3 2 4 2h1a5 5 0 0 0 5-5v-3"/>',
+};
+function icon(name, size = 22, extra = '') {
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" ${extra}>${I[name] || I.bag}</svg>`;
+}
+
+/* ---------- Theme (Views/Theme.swift) ---------- */
+const C = { buy: '#3DDC97', wait: '#FFB547', fake: '#FF5C5C', slate: 'rgba(255,255,255,.6)', prussianLight: '#4A86BD' };
+const STYLE = { BUY_NOW: { word: 'Buy', color: C.buy }, WAIT: { word: 'Wait', color: C.wait }, FAKE_DEAL: { word: 'Fake deal', color: C.fake } };
+const style = v => STYLE[v] || { word: 'Checking', color: C.slate };
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+const day = s => s ? new Date(s + 'T12:00:00Z') : null;
+const md = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function productIcon(name) {
+  const n = (name || '').toLowerCase();
+  if (/(airpod|headphone|earbud)/.test(n)) return 'headphones';
+  if (/(dyson|vacuum)/.test(n)) return 'fan';
+  if (/kindle/.test(n)) return 'book';
+  return 'bag';
+}
+
+/* ---------- Sample data (App/SampleData.swift) ---------- */
+function make(name, verdict, oneLiner, current, projected, waitUntil, retailer, tldr) {
+  const shape = [['2025-12-01', .82], ['2026-01-20', 1], ['2026-03-15', .95], ['2026-05-10', 1], ['2026-07-09', .88], ['2026-09-05', 1], ['2026-11-10', 1]];
+  return { product: { name }, verdict, oneLiner, confidence: .74, currentPrice: current, waitUntil,
+    whereToBuy: { retailer, totalCost: current, url: '#' }, history: shape.map(([d, f]) => ({ date: d, price: Math.floor(current * f) })),
+    tldr, projectedPrice: projected, sourcesChecked: 18, yearsOfData: 1.6, avgRating: 4.4 };
+}
+const REPORTS = {
+  a: { product: { name: 'AirPods Pro 3' }, verdict: 'WAIT', oneLiner: 'Wait. Likely ~$45 less on Cyber Monday.', confidence: .78,
+       currentPrice: 249, waitUntil: '2026-11-30', whereToBuy: { retailer: 'Best Buy', totalCost: 249, url: '#' },
+       history: [['2025-12-01', 199], ['2026-01-15', 249], ['2026-03-10', 239], ['2026-05-20', 249], ['2026-07-09', 219], ['2026-09-01', 249], ['2026-11-10', 249]].map(([date, price]) => ({ date, price })),
+       tldr: 'It dropped about 20% last Black Friday and Cyber Monday. Wait until Nov 30, then buy at Best Buy.',
+       projectedPrice: 202, sourcesChecked: 23, yearsOfData: 1.9, avgRating: 4.6 },
+  b: make('Dyson V15 Detect', 'FAKE_DEAL', 'Fake deal. It was $549 in May.', 649, 599, '2026-11-27', 'Best Buy', 'The crossed-out price was never real. Expect about $599 on Black Friday.'),
+  c: make('Kindle Paperwhite', 'BUY_NOW', 'Buy now. Lowest price this year.', 129, 159, null, 'Amazon', 'It has only been this low twice. It goes back to $159 after sales.'),
+};
+const now = Date.now();
+const HISTORY = [
+  { key: 'a', name: 'JBL Tour One M2 Headphones', verdict: 'WAIT', retailer: 'Amazon', created: now, saved: true, needBy: '2026-12-20' },
+  { key: 'b', name: 'Dyson V15 Detect', verdict: 'FAKE_DEAL', retailer: 'Best Buy', created: now - 7200e3, saved: false },
+  { key: 'c', name: 'Kindle Paperwhite', verdict: 'BUY_NOW', retailer: 'Amazon', created: now - 400000e3, saved: false },
+];
+const DISCOVER = [{ key: 'c', discount: 19 }, { key: 'a', discount: 12 }];
+
+/* ---------- State ---------- */
+const S = { tab: 'home', filter: 'All', newestFirst: true, needByDays: 30, tracked: {}, searchPage: null, listening: false };
+
+/* ---------- PriceChartView ---------- */
+function chart(r, accent) {
+  const W = 362, H = 220, L = 44, R = 8, T = 18, B = 22;
+  const today = new Date(); const start = new Date(today); start.setMonth(start.getMonth() - 12);
+  const past = r.history.map(p => ({ d: day(p.date), v: p.price })).filter(p => p.d >= start && p.d <= today).sort((a, b) => a.d - b.d);
+  past.push({ d: today, v: r.currentPrice });
+  let future = day(r.waitUntil); if (!future || future <= today) { future = new Date(today); future.setDate(future.getDate() + 30); }
+  const proj = r.projectedPrice;
+  const vals = past.map(p => p.v).concat([proj ?? r.currentPrice]);
+  const lo = Math.min(...vals) * .95, hi = Math.max(Math.max(...vals) * 1.05, lo + 1);
+  const x0 = past[0].d.getTime(), x1 = future.getTime();
+  const X = d => L + (d.getTime() - x0) / (x1 - x0) * (W - L - R);
+  const Y = v => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  let g = '';
+  const step = Math.pow(10, Math.floor(Math.log10((hi - lo) / 3))); const nice = [1, 2, 5, 10].map(m => m * step).find(s => (hi - lo) / s <= 5);
+  for (let v = Math.ceil(lo / nice) * nice; v <= hi; v += nice) {
+    g += `<line x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}" stroke="rgba(255,255,255,.14)"/>`;
+    g += `<text x="${L - 6}" y="${Y(v) + 4}" text-anchor="end" font-size="11" fill="${C.slate}">$${Math.round(v)}</text>`;
+  }
+  const m = new Date(past[0].d.getFullYear(), past[0].d.getMonth() + 1, 1);
+  for (let i = 0; m <= future; i++, m.setMonth(m.getMonth() + 1)) {
+    if (i % 2) continue;
+    g += `<line x1="${X(m)}" x2="${X(m)}" y1="${T}" y2="${H - B}" stroke="rgba(255,255,255,.14)"/>`;
+    g += `<text x="${X(m)}" y="${H - 6}" text-anchor="middle" font-size="11" fill="${C.slate}">${m.toLocaleDateString('en-US', { month: 'short' })}</text>`;
+  }
+  const line = past.map(p => `${X(p.d).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ');
+  g += `<line x1="${X(today)}" x2="${X(today)}" y1="${T}" y2="${H - B}" stroke="${C.slate}" stroke-dasharray="3 3"/>`;
+  g += `<text x="${X(today)}" y="${T - 6}" text-anchor="middle" font-size="10" fill="${C.slate}">Today</text>`;
+  g += `<polyline points="${line}" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="miter"/>`;
+  if (proj != null) {
+    g += `<line x1="${X(today)}" y1="${Y(r.currentPrice)}" x2="${X(future)}" y2="${Y(proj)}" stroke="${accent}" stroke-width="2" stroke-dasharray="5 4"/>`;
+    g += `<rect x="${X(future) - 3.5}" y="${Y(proj) - 3.5}" width="7" height="7" fill="${accent}"/>`;
+  }
+  g += `<rect x="${X(today) - 3.5}" y="${Y(r.currentPrice) - 3.5}" width="7" height="7" fill="#fff"/>`;
+  return `<svg width="100%" viewBox="0 0 ${W} ${H}" role="img" aria-label="Price over the last 12 months, now ${money(r.currentPrice)}">${g}</svg>`;
+}
+
+/* ---------- ProductReportView ---------- */
+function stars(r) {
+  let s = '';
+  for (let i = 0; i < 5; i++) {
+    const f = r - i, id = 'h' + Math.random().toString(36).slice(2, 7);
+    const fill = f >= .75 ? '#FFB547' : f >= .25 ? `url(#${id})` : 'none';
+    s += `<svg width="13" height="13" viewBox="0 0 24 24"><defs><linearGradient id="${id}"><stop offset="50%" stop-color="#FFB547"/><stop offset="50%" stop-color="transparent"/></linearGradient></defs><path d="M12 2.5l2.9 6.2 6.6.7-4.9 4.5 1.4 6.6L12 17.2 6 20.5l1.4-6.6L2.5 9.4l6.6-.7z" fill="${fill}" stroke="#FFB547" stroke-width="1.6" stroke-linejoin="miter"/></svg>`;
+  }
+  return `<span class="stars" aria-label="${r.toFixed(1)} out of 5 stars">${s}</span>`;
+}
+function summaryLine(r) {
+  const y = r.yearsOfData ?? 0;
+  const span = y < 1 ? `${Math.max(1, Math.round(y * 12))} months` : y < 1.5 ? 'a year' : `${Math.round(y)} years`;
+  return `Searched ${r.sourcesChecked} sources and ${span} of price trends.`;
+}
+function report(key, fromDiscover = false) {
+  const r = REPORTS[key]; const st = style(r.verdict); const proj = r.projectedPrice; const w = day(r.waitUntil);
+  const chips = [['1 week', 7], ['2 weeks', 14], ['1 month', 30], ['3 months', 90]]
+    .map(([l, d]) => `<button class="chip ${S.needByDays === d ? 'on' : ''}" data-needby="${d}">${l}</button>`).join('');
+  const tracked = S.tracked[key];
+  return `
+  <div class="pad" style="display:flex;flex-direction:column;gap:20px;padding-top:6px">
+    <div class="muted" style="font-size:15px;font-weight:600">${r.product.name}</div>
+    <!-- ProductReportView.verdictPanel -->
+    <div class="verdict-panel"><div class="bar" style="background:${st.color}"></div><div class="body">
+      <div class="verdict-row"><span class="muted" style="font-weight:600;font-size:17px">Verdict</span>
+        <span class="display verdict-word" style="color:${st.color}">${st.word}</span>
+        <span class="dollar" style="color:${st.color}">$</span></div>
+      <div style="font-weight:600;font-size:17px;margin-top:8px">${r.oneLiner}</div>
+    </div></div>
+    <!-- ProductReportView.priceRows -->
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div class="price-row"><span class="muted">Current</span><span class="display price">${money(r.currentPrice)}</span></div>
+      ${proj != null ? `<div class="price-row"><span class="muted">${w ? 'Projected by ' + md(w) : 'Projected'}</span>
+        <span style="display:flex;align-items:baseline;gap:6px"><span style="color:${st.color}">${icon(proj >= r.currentPrice ? 'upRight' : 'downRight', 18)}</span><span class="display price">${money(proj)}</span></span></div>` : ''}
+    </div>
+    <div class="hairline"></div>
+    <!-- ProductReportView.chart -->
+    <div class="section" style="gap:8px"><div style="font-weight:600;font-size:17px">Last 12 months</div>${chart(r, st.color)}</div>
+    <div class="hairline"></div>
+    <!-- ProductReportView.trackSection -->
+    <div class="section">
+      ${fromDiscover ? `<button class="sharp-btn" data-check="${key}">Check this for me</button>` : `
+      <div style="font-weight:600;font-size:17px">Need it by</div>
+      <div style="display:flex;gap:8px">${chips}</div>
+      <button class="sharp-btn" data-track="${key}" ${tracked ? 'disabled' : ''}>${tracked ? 'Tracking daily' : 'Track until I need it'}</button>`}
+    </div>
+    <div class="hairline"></div>
+    <!-- ProductReportView.summary -->
+    <div class="section" style="gap:8px"><div style="font-weight:500">${summaryLine(r)}</div><div class="muted">${r.tldr}</div></div>
+    <!-- ProductReportView.storeSection -->
+    <div class="section">
+      <div class="price-row" style="align-items:center"><span class="muted">Buy at</span><span><b>${r.whereToBuy.retailer}</b>&nbsp; ${money(r.whereToBuy.totalCost)}</span></div>
+      <div class="price-row" style="align-items:center"><span class="muted">Avg review</span><span style="display:flex;gap:6px;align-items:center">${stars(r.avgRating)} ${r.avgRating.toFixed(1)}</span></div>
+      <button class="sharp-btn outline">Open on ${r.whereToBuy.retailer}</button>
+    </div>
+    <div style="height:10px"></div>
+  </div>`;
+}
+
+/* ---------- DiggingView ---------- */
+function digging() {
+  return `<div class="digging">
+    <div class="scanner"><div class="beam"></div><span style="font:800 28px system-ui">$</span></div>
+    <div class="display" style="font-size:28px">Digging…</div>
+    <div class="muted">Reading the price history…</div>
+    <div style="font-weight:600">${REPORTS.a.oneLiner}</div>
+  </div>`;
+}
+
+/* ---------- Screens ---------- */
+function navBar({ inline, leading } = {}) {
+  return `<div class="nav">${inline ? `<div class="title-inline">${inline}</div>` : ''}
+    <span class="icon-btn" ${leading ? '' : 'style="visibility:hidden"'}>${leading ? icon(leading) : ''}</span>
+    <button class="icon-btn" data-settings aria-label="Settings">${icon('gear')}</button></div>`;
+}
+function homeScreen() {
+  return `${navBar({ inline: 'Home', leading: 'photo' })}<div class="scroll">${report('a')}</div>`;
+}
+function historyScreen() {
+  const filt = HISTORY.filter(h => S.filter === 'All' || (S.filter === 'Tracking' && h.saved)
+    || (S.filter === 'Buy' && h.verdict === 'BUY_NOW') || (S.filter === 'Wait' && h.verdict === 'WAIT') || (S.filter === 'Fake' && h.verdict === 'FAKE_DEAL'));
+  const items = S.newestFirst ? filt : filt.slice().reverse();
+  const isToday = t => new Date(t).toDateString() === new Date().toDateString();
+  const groups = [['Today', items.filter(h => isToday(h.created))], ['Last 7 days', items.filter(h => !isToday(h.created) && h.created >= now - 7 * 864e5)], ['Earlier', items.filter(h => h.created < now - 7 * 864e5)]]
+    .filter(([, l]) => l.length);
+  const rows = groups.map(([title, list]) => `<div class="muted" style="font-size:15px;font-weight:600;padding:16px 0 6px">${title}</div>` + list.map(h => {
+    const st = style(h.verdict);
+    const date = new Date(h.created).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    return `<div class="row">
+      <button style="display:flex;gap:12px;align-items:center;text-align:left;flex:1;min-width:0" data-open="${h.key}">
+        <span class="tile"><span class="vbar" style="background:${st.color}"></span>${icon(productIcon(h.name))}</span>
+        <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+          <b style="font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${h.name}</b>
+          <span class="muted" style="font-size:15px">${date}</span>
+          ${h.saved || S.tracked[h.key] ? `<span style="font-size:12px;color:${C.wait}"><span class="marker"></span>Daily until ${md(day(h.needBy || '2026-12-15'))}</span>` : ''}
+        </span></button>
+      <span style="display:flex;flex-direction:column;align-items:flex-end;gap:14px"><span class="muted">${icon('dots', 20)}</span><span class="badge">${h.retailer.toLowerCase()}</span></span>
+    </div><div class="hairline"></div>`;
+  }).join('')).join('');
+  const chips = ['All', 'Tracking', 'Buy', 'Wait', 'Fake'].map(f => `<button class="chip ${S.filter === f ? 'on' : ''}" data-filter="${f}">${f}</button>`).join('');
+  return `${navBar()}<div class="large-title">History</div><div class="scroll"><div class="pad">
+    <div style="display:flex;gap:8px;align-items:center;padding-bottom:16px">
+      <button style="width:36px;height:36px;flex:none;box-shadow:inset 0 0 0 1px var(--hairline);display:flex;align-items:center;justify-content:center" data-sort aria-label="Sort">${icon('clock', 18)}</button>
+      <div style="display:flex;gap:8px;overflow-x:auto">${chips}</div></div>
+    ${rows || '<div class="muted" style="padding-top:24px">Nothing here yet.</div>'}</div></div>`;
+}
+function searchScreen() {
+  if (S.searchPage === 'list') {
+    return `<div class="nav"><button style="display:flex;align-items:center;gap:2px;color:${C.prussianLight};font-size:17px" data-back>${icon('back', 22)}Search</button><span></span></div>
+      <div class="large-title">${S.listTitle}</div><div class="scroll"><div class="pad">${DISCOVER.map(d => {
+        const r = REPORTS[d.key];
+        return `<button class="row" style="width:100%;text-align:left" data-discover="${d.key}">
+          <span class="tile" style="width:36px;height:36px">${icon(productIcon(r.product.name), 18)}</span>
+          <b style="flex:1;font-size:17px">${r.product.name}</b>
+          <span style="display:flex;flex-direction:column;align-items:flex-end"><span>${money(r.currentPrice)}</span><span style="font-size:12px;color:${C.buy}">${d.discount}% off usual</span></span>
+        </button><div class="hairline"></div>`;
+      }).join('')}</div></div>`;
+  }
+  if (S.searchPage === 'report') {
+    return `<div class="nav"><button style="display:flex;align-items:center;gap:2px;color:${C.prussianLight};font-size:17px" data-back-list>${icon('back', 22)}${S.listTitle}</button><span></span></div>
+      <div class="scroll">${report(S.discoverKey, true)}</div>`;
+  }
+  const row = (t, ic, tint, kind) => `<button class="row" style="width:100%;text-align:left;padding:14px 0" data-list="${kind}" data-title="${t}">
+      <span class="tile" style="width:40px;height:40px;color:${tint}">${icon(ic, 20)}</span>
+      <span class="display" style="font-size:22px;flex:1">${t}</span><span class="muted">${icon('chev', 18)}</span></button><div class="hairline"></div>`;
+  return `${navBar()}<div class="large-title">Search</div><div class="scroll"><div class="pad">
+      <div class="muted" style="font-size:15px;font-weight:600;padding-bottom:6px">Discover</div>
+      ${row('Lowest prices', 'down', C.buy, 'lowest')}${row('Best deals', 'tag', C.wait, 'deals')}</div></div>
+    <div class="askbar"><input id="ask" placeholder="Ask about any product" aria-label="Ask about any product">
+      <button class="mic ${S.listening ? 'on' : ''}" data-mic aria-label="Ask by voice">${icon(S.listening ? 'wave' : 'mic', 20)}</button></div>`;
+}
+function accountScreen() {
+  const stat = (l, v) => `<div class="price-row" style="padding:14px 0;align-items:center"><span class="muted">${l}</span><span class="display" style="font-size:24px">${v}</span></div><div class="hairline"></div>`;
+  return `${navBar()}<div class="large-title">Account</div><div class="scroll"><div class="pad">
+    <input class="display" placeholder="Your name" aria-label="Your name" style="width:100%;background:transparent;border:0;color:#fff;font-size:28px;padding:16px 0;outline:none">
+    <div class="hairline"></div>${stat('Checked', HISTORY.length)}${stat('Tracking', HISTORY.filter(h => h.saved || S.tracked[h.key]).length)}
+    <div style="padding-top:24px"><button class="sharp-btn">Upgrade to Pro</button></div></div></div>`;
+}
+function tabbar() {
+  const t = (id, label, ic) => `<button class="tab ${S.tab === id ? 'on' : ''}" data-tab="${id}">${icon(ic, 24)}<span>${label}</span></button>`;
+  return `<div class="tabs">${t('home', 'Home', 'house')}${t('history', 'History', 'clock')}${t('account', 'Account', 'person')}</div>
+    <button class="search-tab ${S.tab === 'search' ? 'on' : ''}" data-tab="search" aria-label="Search">${icon('search', 24)}</button>`;
+}
+
+/* ---------- Render ---------- */
+const $ = id => document.getElementById(id);
+function render() {
+  const screens = { home: homeScreen, history: historyScreen, search: searchScreen, account: accountScreen };
+  $('screen').innerHTML = screens[S.tab]();
+  $('tabbar').innerHTML = tabbar();
+}
+function openSheet(html, title = '') {
+  $('sheet').innerHTML = `<div class="grabber"></div><div class="sheet-nav"><span>${title}</span><button class="done" data-close>Done</button></div><div class="scroll" id="sheetBody">${html}</div>`;
+  $('sheet').classList.add('open'); $('scrim').classList.add('on');
+}
+function closeSheet() { $('sheet').classList.remove('open'); $('scrim').classList.remove('on'); }
+function openReport(key, dig = false) {
+  closeStore();
+  if (dig) { openSheet(digging()); setTimeout(() => { if ($('sheet').classList.contains('open')) $('sheetBody').innerHTML = report(key); }, 4000); }
+  else openSheet(report(key));
+  S.sheetKey = key;
+}
+function settings() {
+  const item = t => `<div style="padding:14px 0">${t}</div><div class="hairline"></div>`;
+  openSheet(`<div class="pad"><div class="muted" style="font-size:13px;padding-top:8px">Set up once</div>
+    ${item(`<span style="color:${C.prussianLight}">Add the shortcut</span>`)}${item('Back Tap: Accessibility, Touch, Back Tap')}${item('Action Button: Settings, Action Button')}
+    <div class="muted" style="font-size:13px;padding-top:18px">Notifications</div>${item(`<span style="color:${C.prussianLight}">Test reminder</span>`)}${item(`<span style="color:${C.prussianLight}">iPhone Settings</span>`)}</div>`, 'Settings');
+}
+
+/* ---------- Back tap and Live Activity (Widget/ScanLiveActivity.swift) ---------- */
+let laTimer = null, laState = 'off';
+function storePage() {
+  $('store').innerHTML = `<div class="bar"><span style="color:#fff;font-weight:700">store</span><div class="field"></div></div>
+    <div class="img">${icon('headphones', 120, 'style="color:#8a929e"')}</div>
+    <div class="info"><div style="font-size:18px;font-weight:600">Wireless noise-cancelling earbuds</div>
+      <div><span style="font-size:26px;font-weight:600">$249</span> <span class="strike">$299</span></div>
+      <div class="buy">Buy now</div><div class="cart">Add to cart</div></div>`;
+  $('store').classList.add('on');
+}
+function closeStore() { $('store').classList.remove('on'); }
+function island(state) {
+  laState = state; const el = $('island'); const r = REPORTS.a; const st = style(r.verdict);
+  el.className = 'island'; el.innerHTML = '';
+  if (state === 'off') return;
+  if (state === 'working' || state === 'working-expanded') {
+    el.classList.add(state === 'working' ? 'compact' : 'expanded');
+    el.innerHTML = `<div class="compact-row" style="color:${C.prussianLight}">${icon('radar', 18)}<span>Digging…</span></div>
+      <div class="expanded-body"><div class="top"><span style="color:${C.prussianLight}">${icon('radar', 28)}</span>
+        <span style="display:flex;flex-direction:column"><b style="color:${C.prussianLight}">Digging…</b><span style="font-size:12px;opacity:.6">${r.product.name}</span></span>
+        <button class="x" data-cancel aria-label="Cancel">${icon('x', 14)}</button></div>
+        <div style="font-size:15px">Reading the price history…</div><div class="progress"><i id="prog"></i></div></div>`;
+    if (state === 'working-expanded') requestAnimationFrame(() => { const p = $('prog'); if (p) { p.style.width = (S.progressPct || 0) + '%'; requestAnimationFrame(() => p.classList.add('run')); } });
+    return;
+  }
+  el.classList.add(state === 'verdict-expanded' ? 'expanded' : 'compact');
+  el.innerHTML = `<div class="compact-row"><span style="color:${st.color};font:800 18px system-ui">$</span><span style="color:${st.color}">${st.word}</span></div>
+    <div class="expanded-body"><div class="top"><span style="color:${st.color};font:800 34px/1 system-ui">$</span>
+      <span style="display:flex;flex-direction:column"><b style="color:${st.color};font-size:17px">${st.word}</b><span style="font-size:12px;opacity:.6">${r.product.name}</span></span>
+      <span class="pill">${r.whereToBuy.retailer}</span></div>
+      <div style="font-size:15px">${r.oneLiner}</div></div>`;
+}
+function backTap() {
+  clearTimeout(laTimer); closeSheet(); storePage(); island('working'); S.tapStart = Date.now();
+  laTimer = setTimeout(() => { island('verdict-expanded'); laTimer = setTimeout(() => island('verdict'), 3000); }, 4000);
+}
+
+/* ---------- Events ---------- */
+document.addEventListener('click', e => {
+  const t = e.target.closest('button, [data-open], #island, #scrim'); if (!t) return;
+  if (t.id === 'btnTap') return backTap();
+  if (t.id === 'btnSettings' || t.hasAttribute('data-settings')) return settings();
+  if (t.id === 'scrim' || t.hasAttribute('data-close')) return closeSheet();
+  if (t.dataset.cancel !== undefined) { e.stopPropagation(); clearTimeout(laTimer); island('off'); return; }
+  if (t.id === 'island') {
+    if (laState === 'working') { S.progressPct = Math.min(100, (Date.now() - S.tapStart) / 40); island('working-expanded'); return; }
+    if (laState === 'working-expanded') { island('working'); return; }
+    if (laState.startsWith('verdict')) { clearTimeout(laTimer); island('off'); S.tab = 'home'; render(); openReport('a'); }
+    return;
+  }
+  if (t.dataset.open) { closeStore(); return openReport(t.dataset.open); }
+  if (t.dataset.tab) { closeSheet(); closeStore(); S.tab = t.dataset.tab; S.searchPage = null; return render(); }
+  if (t.dataset.filter) { S.filter = t.dataset.filter; return render(); }
+  if (t.hasAttribute('data-sort')) { S.newestFirst = !S.newestFirst; return render(); }
+  if (t.dataset.needby) { S.needByDays = +t.dataset.needby; rerenderReports(); return; }
+  if (t.dataset.track) { S.tracked[t.dataset.track] = true; rerenderReports(); return; }
+  if (t.dataset.check) { openReport('a', true); return; }
+  if (t.dataset.list) { S.searchPage = 'list'; S.listTitle = t.dataset.title; return render(); }
+  if (t.dataset.discover) { S.searchPage = 'report'; S.discoverKey = t.dataset.discover; return render(); }
+  if (t.hasAttribute('data-back')) { S.searchPage = null; return render(); }
+  if (t.hasAttribute('data-back-list')) { S.searchPage = 'list'; return render(); }
+  if (t.hasAttribute('data-mic')) { S.listening = !S.listening; const q = $('ask')?.value || ''; render(); if (S.listening) setTimeout(() => { const a = $('ask'); if (a && S.listening) a.value = 'Is the Dyson V15 a good deal?'; }, 900); else if ($('ask')) $('ask').value = q; return; }
+});
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.id === 'ask' && e.target.value.trim()) { e.target.value = ''; S.listening = false; openReport('a', true); }
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'island') { e.preventDefault(); e.target.click(); }
+  if (e.key === 'Escape') closeSheet();
+});
+function rerenderReports() {
+  if ($('sheet').classList.contains('open') && S.sheetKey) { const top = $('sheetBody').scrollTop; $('sheetBody').innerHTML = report(S.sheetKey); $('sheetBody').scrollTop = top; }
+  if (S.tab === 'home') { const sc = $('screen').querySelector('.scroll'); const top = sc ? sc.scrollTop : 0; render(); const n = $('screen').querySelector('.scroll'); if (n) n.scrollTop = top; }
+}
+
+/* ---------- Fit the phone to the window ---------- */
+function fit() {
+  const s = Math.min(1, (window.innerHeight - 40) / 894, (window.innerWidth - 40) / 422);
+  $('phoneScale').style.transform = `scale(${s})`;
+  $('phoneWrap').style.width = 402 * s + 'px'; $('phoneWrap').style.height = 874 * s + 'px';
+}
+window.addEventListener('resize', fit);
+$('statusIcons').innerHTML = `<svg width="18" height="12" viewBox="0 0 18 12" fill="#fff" aria-hidden="true"><rect x="0" y="8" width="3" height="4"/><rect x="5" y="5" width="3" height="7"/><rect x="10" y="2" width="3" height="10"/><rect x="15" y="0" width="3" height="12"/></svg>
+  <svg width="27" height="13" viewBox="0 0 27 13" aria-hidden="true"><rect x="0.5" y="0.5" width="23" height="12" rx="3" fill="none" stroke="rgba(255,255,255,.5)"/><rect x="2" y="2" width="18" height="9" rx="1.5" fill="#fff"/><rect x="24.5" y="4" width="2" height="5" rx="1" fill="rgba(255,255,255,.5)"/></svg>`;
+const tick = () => { $('clock').textContent = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).replace(/\s?[AP]M/, ''); };
+tick(); setInterval(tick, 30000);
+render(); fit();
+</script>
+</body>
+</html>

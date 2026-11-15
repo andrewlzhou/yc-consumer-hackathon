@@ -1,0 +1,39 @@
+# XcodeGen spec: builds the app (no widget) so GitHub's Macs can screenshot it.
+# On a Mac you can also run `brew install xcodegen && xcodegen` in ios/ to get a ready project.
+name: NotYetUI
+options:
+  bundleIdPrefix: com.notyet
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    CODE_SIGN_IDENTITY: ""
+targets:
+  NotYetUI:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+      - path: Views
+      - path: Shared
+    info:
+      path: Generated/Info.plist
+      properties:
+        CFBundleDisplayName: not yet.
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        NSSupportsLiveActivities: true
+        NSMicrophoneUsageDescription: Ask about products with your voice.
+        NSSpeechRecognitionUsageDescription: Turn your voice into a product search.
+        CFBundleURLTypes:
+          - CFBundleURLName: notyet
+            CFBundleURLSchemes: [notyet]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notyet.ui
+        TARGETED_DEVICE_FAMILY: "1"
+    scheme: {}
