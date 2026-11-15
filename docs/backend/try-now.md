@@ -49,7 +49,7 @@ unset APP_API_KEY
 
 - `/analyze` writes an observation, scan log and analysis; use a separate test device as above. A test device does
   not isolate the shared product history. Avoid fake prices; operators can remove their probe rows with
-  `agent/store:deleteTestArtifacts` and the exact probe start time (it removes other scans after that time too).
+  `agent/store:deleteTestArtifacts` with exact `since`/`until` times (it also removes other scans in that window).
 - `/report` initially contains a chart and preliminary sections; fetch it again after roughly 10 seconds for the
   full model report. Watchlist save/target/preferences and the inbox API are in [monitoring](monitoring.md).
 - Without either Convex access or the app API key there is no public demo endpoint; authentication stays closed.

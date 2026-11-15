@@ -8,7 +8,7 @@
 - `POST /analyze` validates the extract by hand, then calls `agent/analyze:analyzeScan` (internal action).
 - Identify: `matchProduct` re-ranks full-text hits; clear matches (score >= 0.75, 0.15 lead, no size conflict) are
   taken in code. Otherwise `hybridSearch` (text + vector, text-only without a key) feeds the fast model, which picks one or none.
-  Measured: vector search only runs on unclear titles (an OCR-mangled title adds ~1.4s once); clear titles stay at ~2ms.
+  Vector-only suggestions need 0.6 similarity and a brand match; model/size conflicts are rejected. Failed model picks return no match.
 - Record: every priced scan goes through `data/prices:recordObservation` as `source: "scan"`.
 - No match: a provisional product is created, the phone gets INVESTIGATE at once, and a full run is queued.
 - Links: a `url` resolved earlier identifies the product exactly; a new one is resolved off the live path (see [report](agent-report.md)).

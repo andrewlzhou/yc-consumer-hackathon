@@ -95,8 +95,8 @@ export function dataPort(ctx: ActionCtx, now: number) {
             similarity,
             last90Days: {
               observationCount: s.overall.observationCount,
-              latestPrice: cheapest?.prices?.latest.price ?? prices?.latest.price ?? null,
-              latestRetailer: cheapest?.retailerSlug ?? prices?.latest.retailerSlug ?? null,
+              latestPrice: cheapest?.prices?.latest.price ?? null,
+              latestRetailer: cheapest?.retailerSlug ?? null,
               median: prices?.median ?? null,
               min: prices?.min ?? null,
             },

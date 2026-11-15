@@ -7,4 +7,4 @@
 - Changed: `/analyze` accepts `url` (alone or with a title), resolved in the background and remembered in `resolvedUrls`.
 - Instructions: add copy-paste instructions to try the backend without an iOS app or app API key; [try it now](../../../backend/try-now.md) uses Convex-authorized internal evals.
 - Changed: internal evals return results without saving analyses, scan logs, observations, jobs or running SerpApi. Background lookups are capped at one product/day (up to two searches), leaving room for the five-product daily refresh within 250/month.
-- Checks: typecheck, `npx vitest run` with keys unset, check_docs; live numbers to follow in this note.
+- Checks: typecheck, 155 tests passed (2 live push tests skipped), check_docs; fresh checkout `npm ci`; documented no-write live demo kept analysis and scan-log rows unchanged. Full generation p50 12.19→8.78 s; scan→full ready p50 14.22→11.01 s (small samples, changing shared data).

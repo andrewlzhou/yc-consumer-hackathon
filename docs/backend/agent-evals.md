@@ -1,32 +1,50 @@
 # Shopping agent: evals and latency
 
-- Cases: `eval/cases.json` (data thread): 5 seeded scenarios plus 5 adversarial ones (inflated was-price,
-  256GB vs 128GB, OCR-mangled title, unknown product, missing price). All seeded history is sample data.
-- CI: `convex/agent/evals.test.ts` runs every case on the deterministic fake provider (live and full tiers).
-- Real model: `node eval/run.mjs [--full] [--out file]` on the deployment; it never records prices or uses the cache.
-- Scoring in code: product match (family and variant), verdict in the acceptable set, confidence ceiling, grounding.
-  Wording and "mustNot" rules are read by a person from the printed reasons.
+## Run it
 
-## Results, 2026-11-15 (real OpenAI models on the dev deployment)
+- [Try it now](try-now.md): fresh checkout, no-write real-model demo, optional authenticated HTTP smoke test.
+- `node eval/run.mjs --full`: original 10 scenarios (sample/adversarial); `--cases eval/run-cases-demo.json`:
+  five real-history products, a buy-elsewhere scan, two look-alikes and an OCR-mangled title.
+- `--full-model gpt-6.1-terra:none` or `gpt-5.4-mini:none` compares models without changing deployment settings.
+- Evals skip cache and all app writes, including analysis rows and scan logs; no SerpApi lookup or jobs.
+  OpenAI calls still cost tokens. CI uses the fake provider; scores cover match, verdict, confidence and citations.
 
-- Live tier (gpt-5.4-mini, card-only output, key facts in the prompt): 10/10 acceptable verdicts, 10/10 correct
-  matches, 10/10 grounded, all on the model path (no heuristic fallback).
-- Full tier (gpt-6.1-sol, reasoning low, tool loop): see the latest run in the session note; 8-15 s per product.
-- What changed the score: the first prompt made every product WAIT for Black Friday (6/10 generic reasons, no numbers,
-  confidence 0.93). Adding exact `key_facts` (savings vs past event lows, cheaper comparables, flags such as
-  `pastEditionsBeatTodayBy5Percent`) and verdict rules fixed AirPods (BUY_NOW) and Bose (CONSIDER_ALTERNATIVE).
-- Thin history: the model said BUY_NOW on Ember's 3 observations once; the code guardrail forced INVESTIGATE.
+## Real-model results (shared dev, 2026-11-15)
 
-## Latency (live path over HTTP, 18 scans of seeded products)
+- Original cases after the changes: 10/10 matches, 10/10 acceptable live verdicts, 9/9 full verdicts and grounded
+  reports (`full-4`). The unknown product correctly gets no full run in this no-write eval.
+- Real demo (`demo-2`): 9/9 matches; 8/9 live and 6/7 full verdicts match the expected set. All full reports are
+  grounded. The miss is Bose: the fixture expects BUY_NOW at $339.99, but the agent prefers the comparable Sony
+  XM5 at $198 (41.8% less). This follows the prompt's alternative-first rule; the mismatch remains visible.
+- The real demo caught a bug: competitor price used the last retailer observed (XM5 at Target, $399.99) instead
+  of the cheapest current retailer (Best Buy, $198). Fixed in b1d9b44; XM6 now recommends the XM5 as intended.
+- Inflated-was full-tier miss (INVESTIGATE on a scan above stored prices) is fixed: the prompt treats a higher
+  scan as today's store price, not contradictory data. Thin history still forces INVESTIGATE.
+- Hybrid candidate proxy improved 31/34 to 32/34 after requiring vector score 0.6 and a brand match for vector-only
+  rescues. Text remains the first decision; actual real-model picks reject XM4 and AirPods Pro 2, with OCR XM5 rescued.
 
-- Fresh live pass: p50 1.44 s, p95 1.78 s. Cached analysis: p50 0.14 s, p95 0.17 s. Response 296-367 bytes.
-- Model time dominates (1.0-1.6 s). Card-only output cut it from 2.4-3.2 s (full report, ~380 output tokens).
-- Unclear titles add one hybrid search (embedding call) plus a model pick: about 1.4 s more (OCR case).
-- Unknown product: INVESTIGATE in 0.2-0.9 s; the full run is queued in the background.
+## Before / after
 
-## Still wrong or unverified
+| Measurement | Before | After |
+|---|---|---|
+| Full generation, original cases (9 products), p50 / max | 12.19 / 13.85 s | 8.78 / 10.45 s |
+| Scan → full ready, HTTP (3 cold products), p50 / max | 14.22 / 16.96 s | 11.01 / 12.09 s |
+| First current report sections + chart, HTTP | 12–17 s (older full masked live) | 1.70–1.85 s |
+| Fresh card, HTTP (18 scans), p50 / p95 | 1.44 / 1.78 s | 1.46 / 2.13 s |
+| Cached card, HTTP, p50 / p95 | 0.14 / 0.17 s | 0.18 / 0.26 s |
 
-- The full tier once called the inflated was-price case INVESTIGATE while its text said "buy at Target": the model
-  noticed a cheaper retailer but mapped it to the wrong verdict. Data was polluted by a latency probe at the time.
-- Seeded history only: no real-history product has been evaluated yet (real ingestion is the data thread's).
-- Forecast ranges come from past event lows; their calibration is untested.
+- Prefetching removes model tool turns; full generation remains on gpt-6.1-sol/low for quality. It starts alongside
+  the card. `/report` returns a newer live analysis instead of hiding it behind an older full report.
+- Original card-only change cut the fresh path from 2.4–3.2 s to about 1.4 s; these report changes do not make
+  cards faster. OCR adds roughly 1 s for embedding + model identification. Unknown titles return in 0.2–0.5 s.
+- Timings are small-sample wall-clock measurements, not an SLA or a controlled A/B: the shared catalog gained real
+  history between runs. One after-probe request hit 429; its error payload is excluded from card-size claims.
+- Full-model comparisons on the same original cases: sol p50 9.05 s, terra 6.72 s, mini 2.93 s, all 9/9 acceptable.
+  Mini needed a thin-history fallback and made weaker prose claims; the production full default stays sol.
+- Cards are roughly 300–400 bytes; the detailed report with evidence and chart is roughly 23–31 KB.
+
+## Limits
+
+- Numeric citation checks do not prove semantic entailment; spec/value reasoning and source identity still need review.
+- Forecast confidence is heuristic, not statistically calibrated. Seed-only WAIT/pre-sale-hike stories stay labeled.
+- No model streaming: chart and deterministic sections arrive first, then the full narrative replaces them.
