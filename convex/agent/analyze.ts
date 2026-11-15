@@ -52,7 +52,7 @@ async function pickCandidate(provider: LlmProvider, model: string, title: string
     const result = await provider.turn({
       model,
       reasoning: "none",
-      system: "Match a scanned product title to one catalog product. Storage, size, and pack count must match; color does not matter. Answer null if none is the same product.",
+      system: "Match a scanned product title to one catalog product. Brand, model number, and generation must match exactly (AirPods Pro 2 is not AirPods Pro 3; WH-1000XM4 is not WH-1000XM5), and so must storage, size, and pack count; color does not matter. Answer null if none is the same product.",
       items: [{ kind: "user", text: JSON.stringify({ scannedTitle: title, candidates: candidates.map((c) => ({ productId: c.product._id, title: c.product.title, brand: c.product.brand, variant: c.product.variant ?? null })) }) }],
       tools: [],
       output: { name: "match", schema: { type: "object", properties: { productId: { type: ["string", "null"] } }, required: ["productId"], additionalProperties: false } },
@@ -174,7 +174,7 @@ async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, 
   const decision = decideMatch(await data.matchProduct(title));
   if (decision.kind === "match") return decision.candidate;
   const hybrid = await data.hybridMatch(title);
-  const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates) : decision.kind === "ambiguous" ? decision.candidates : [];
+  const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates, title) : decision.kind === "ambiguous" ? decision.candidates : [];
   return viable.length ? pickCandidate(config.provider, config.fast.model, title, viable) : null;
 }
 

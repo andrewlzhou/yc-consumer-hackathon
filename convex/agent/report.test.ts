@@ -7,6 +7,7 @@ import schema from "../schema";
 import { SEED_NOW } from "../seed/generate";
 import { modules } from "../test.setup";
 import { forecastPrice, type Promo } from "./insights";
+import { hybridViable, mentionsBrand, type HybridCandidate } from "./identify";
 
 let t: ReturnType<typeof convexTest>;
 let ids: Record<string, Id<"products">>;
@@ -108,5 +109,19 @@ describe("forecast", () => {
     const f = forecastPrice(promo({ episodes: [ep("2026-08-01", 80), ep("2026-09-01", 82), ep("2026-10-01", 79)], recurrence: { episodeCount: 3, medianGapDays: 30 } }), 100, "2026-11-15");
     expect(f).toMatchObject({ basedOn: "sale_cycle", low: 79, high: 82, byDate: "2026-11-30", outlook: "better_price_possible" });
     expect(f.confidence).toBeLessThanOrEqual(0.55);
+  });
+});
+
+describe("hybrid suggestions", () => {
+  const cand = (brand: string, score: number, vectorScore: number) => ({ product: { brand }, score, vectorScore, sizeConflict: false, matchedTokens: [] }) as unknown as HybridCandidate;
+  test("OCR spellings still name the brand", () => {
+    expect(mentionsBrand("B0SE QuietC0mfort Ultra", "Bose")).toBe(true);
+    expect(mentionsBrand("S0NY WH-1OOOXM5", "Sony")).toBe(true);
+    expect(mentionsBrand("Sony WH-1000XM4", "Bose")).toBe(false);
+  });
+  test("vector-only look-alikes need a high score and the same brand", () => {
+    expect(hybridViable([cand("Bose", 0.25, 0.521)], "Sony WH-1000XM4 Headphones")).toEqual([]);
+    expect(hybridViable([cand("Bose", 0.1, 0.7)], "Sony WH-1000XM4 Headphones")).toEqual([]);
+    expect(hybridViable([cand("Sony", 0.39, 0.644)], "S0NY WH-1OOOXM5 Headphones")).toHaveLength(1);
   });
 });

@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Runs eval/cases.json against a Convex deployment: `node eval/run.mjs [--full [--full-model model:reasoning]] [--out file]`.
+// Runs eval cases against a Convex deployment:
+// `node eval/run.mjs [--cases file] [--full [--full-model model:reasoning]] [--out file]` (default eval/cases.json).
 // Uses whatever deployment `npx convex run` targets (CONVEX_DEPLOY_KEY or .env.local). Never records prices.
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
@@ -16,7 +17,8 @@ export function toEvalCases(file) {
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
-  const file = JSON.parse(readFileSync(new URL("./cases.json", import.meta.url)));
+  const casesAt = process.argv.indexOf("--cases");
+  const file = JSON.parse(readFileSync(casesAt > 0 ? process.argv[casesAt + 1] : new URL("./cases.json", import.meta.url)));
   const args = { cases: toEvalCases(file), now: Date.parse(file.now), full: process.argv.includes("--full") };
   const modelAt = process.argv.indexOf("--full-model");
   if (modelAt > 0) {

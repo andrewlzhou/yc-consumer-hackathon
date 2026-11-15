@@ -1,0 +1,168 @@
+{
+  "note": "Real-data demo set (docs/backend/data-demo.md), scored by the agent eval: node eval/run.mjs --cases eval/run-cases-demo.json --full",
+  "now": "2026-11-15T22:30:00Z",
+  "cases": [
+    {
+      "id": "real-xm5-low",
+      "kind": "real",
+      "situation": "Ties its 12-month low at Best Buy",
+      "extract": {
+        "retailer": "Best Buy",
+        "title": "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones",
+        "currentPrice": 198,
+        "originalPrice": 398
+      },
+      "expect": {
+        "match": {
+          "familyKey": "sony-wh-1000xm5"
+        },
+        "acceptableVerdicts": [
+          "BUY_NOW"
+        ]
+      }
+    },
+    {
+      "id": "real-xm5-buy-elsewhere",
+      "kind": "real",
+      "situation": "Full price at Target while Best Buy has the low",
+      "extract": {
+        "retailer": "Target",
+        "title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones",
+        "currentPrice": 399.99
+      },
+      "expect": {
+        "match": {
+          "familyKey": "sony-wh-1000xm5"
+        },
+        "acceptableVerdicts": [
+          "WAIT",
+          "BUY_NOW",
+          "CONSIDER_ALTERNATIVE"
+        ]
+      }
+    },
+    {
+      "id": "real-xm6-vs-xm5",
+      "kind": "real",
+      "situation": "XM6 near typical while the XM5 is half the price",
+      "extract": {
+        "retailer": "Best Buy",
+        "title": "Sony WH-1000XM6 Wireless Noise Canceling Headphones",
+        "currentPrice": 378,
+        "originalPrice": 458
+      },
+      "expect": {
+        "match": {
+          "familyKey": "sony-wh-1000xm6"
+        },
+        "acceptableVerdicts": [
+          "CONSIDER_ALTERNATIVE"
+        ]
+      }
+    },
+    {
+      "id": "real-bose-low",
+      "kind": "real",
+      "situation": "Lowest price of the year",
+      "extract": {
+        "retailer": "Best Buy",
+        "title": "Bose QuietComfort Ultra Headphones (2nd Gen)",
+        "currentPrice": 339.99,
+        "originalPrice": 449
+      },
+      "expect": {
+        "match": {
+          "familyKey": "bose-qc-ultra-headphones-2"
+        },
+        "acceptableVerdicts": [
+          "BUY_NOW"
+        ]
+      }
+    },
+    {
+      "id": "real-airpods-low",
+      "kind": "real",
+      "situation": "A dollar above the low at Target",
+      "extract": {
+        "retailer": "Target",
+        "title": "Apple AirPods Pro 3 Wireless Earbuds",
+        "currentPrice": 179.99,
+        "originalPrice": 249.99
+      },
+      "expect": {
+        "match": {
+          "familyKey": "apple-airpods-pro-3"
+        },
+        "acceptableVerdicts": [
+          "BUY_NOW"
+        ]
+      }
+    },
+    {
+      "id": "real-ps5-one-offer",
+      "kind": "real",
+      "situation": "One offer, no history",
+      "extract": {
+        "retailer": "Walmart",
+        "title": "PlayStation 5 Slim Console Disc Edition",
+        "currentPrice": 649
+      },
+      "expect": {
+        "match": {
+          "familyKey": "sony-ps5-slim-disc"
+        },
+        "acceptableVerdicts": [
+          "INVESTIGATE"
+        ]
+      }
+    },
+    {
+      "id": "real-lookalike-xm4",
+      "kind": "real",
+      "situation": "Not in the catalog; must not match Bose or XM5",
+      "extract": {
+        "retailer": "Amazon",
+        "title": "Sony WH-1000XM4 Wireless Noise Canceling Headphones",
+        "currentPrice": 248
+      },
+      "expect": {
+        "acceptableVerdicts": [
+          "INVESTIGATE"
+        ]
+      }
+    },
+    {
+      "id": "real-lookalike-airpods-2",
+      "kind": "real",
+      "situation": "Not in the catalog; must not match AirPods Pro 3",
+      "extract": {
+        "retailer": "Target",
+        "title": "Apple AirPods Pro 2 with MagSafe Case USB-C",
+        "currentPrice": 169.99
+      },
+      "expect": {
+        "acceptableVerdicts": [
+          "INVESTIGATE"
+        ]
+      }
+    },
+    {
+      "id": "real-ocr-xm5",
+      "kind": "real",
+      "situation": "OCR-mangled title of a real product",
+      "extract": {
+        "retailer": "Best Buy",
+        "title": "S0NY WH-1OOOXM5 Headphones",
+        "currentPrice": 198
+      },
+      "expect": {
+        "match": {
+          "familyKey": "sony-wh-1000xm5"
+        },
+        "acceptableVerdicts": [
+          "BUY_NOW"
+        ]
+      }
+    }
+  ]
+}

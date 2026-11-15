@@ -24,7 +24,7 @@ export const run = internalAction({
       const decision = decideMatch(text);
       const textPick = decision.kind === "match" ? decision.candidate : decision.kind === "ambiguous" ? decision.candidates[0] : null;
       const hybrid = await hybridSearch(ctx, c.title, { limit: 10 });
-      const hybridPick = hybridViable(hybrid.candidates as HybridCandidate[])[0] ?? null;
+      const hybridPick = hybridViable(hybrid.candidates as HybridCandidate[], c.title)[0] ?? null;
       const combinedPick = decision.kind === "match" ? decision.candidate : hybridPick;
       const pick = (x: MatchCandidate | null): Picked => (x ? { familyKey: x.product.familyKey, variant: x.product.variant } : null);
       rows.push({
