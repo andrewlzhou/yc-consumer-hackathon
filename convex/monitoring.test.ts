@@ -168,7 +168,7 @@ test("demo helper: a simulated drop sends one labeled push, leaves the baseline 
   expect(rows).toHaveLength(1);
   expect(rows[0]).toMatchObject({ simulated: true, trigger: "target_hit" });
   expect(rows[0].title.startsWith("[Simulated]")).toBe(true);
-  expect(rows[0].body.startsWith("Simulated price drop for demo.")).toBe(true);
+  expect(rows[0].body.startsWith("Simulated price drop for demo to $")).toBe(true);
   expect((await t.run((ctx) => ctx.db.get(itemId)))!.lastPrice).toBeUndefined();
   expect((await t.run((ctx) => ctx.db.query("priceObservations").collect())).every((h) => h.source === "seed")).toBe(true);
   expect((await log()).length).toBe(2);

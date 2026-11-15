@@ -41,9 +41,11 @@
 - Config (Convex env): APP_API_KEY, OPENAI_API_KEY, SERPAPI_API_KEY; optional MONITOR_REFRESH_CAP (10),
   MONITOR_JUDGE_MODEL; for real push APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID, APNS_PRIVATE_KEY (see monitoring-push.md).
 - Open: real push to an iPhone (needs Apple key + device); per-watcher fan-out (one action runs all watchers).
-- Verified 904888a on a local backend with real OpenAI and SerpApi: 401 without key, 429 after 60/min, SerpApi refresh on save,
-  sample BUY_NOW flip blocked, OpenAI judge sent new_low, cooldown held, simulated drop left lastPrice alone.
-- Next steps: shared deploy of the tip fails until products.embedding is migrated (data thread); then rerun
-  the check: save a watch over HTTP, `monitoring/check:sweep`, read notificationLog.
+- Verified live on the shared deployment (tip 022b41c): 401 without or with a wrong key, CRUD + prefs, bad environment 400,
+  save schedules refresh+check, simulated drop below target sent (inbox), repeat held by cooldown, baseline unchanged,
+  ack empties the inbox, sweep scheduled checks. Local run with real keys: OpenAI judge sent new_low, sample flip blocked.
+- Open: SerpApi refresh on the deployment records 0 offers for Sony XM6 and Ninja AF101 (data thread), so every
+  deployed product is still seed-only and real-price pushes cannot happen there yet.
+- Next steps: once real api rows exist, save a watch with a target under the real price and wait for a sweep.
 - Gotchas: seed rows anywhere in the window block verdict pushes; lone scans are ignored (trustedPoints);
   previous lows are real-only, so demo drops on seeded products need a target price.

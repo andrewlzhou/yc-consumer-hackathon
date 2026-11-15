@@ -21,7 +21,7 @@ export const dropPrice = internalAction({
       ...real.snapshot,
       currentPrice: args.price,
       priceSource: "simulated" as const,
-      reason: "Simulated price drop for demo. " + real.snapshot.reason,
+      reason: `Simulated price drop for demo to $${args.price.toFixed(2)}. At the real price $${real.snapshot.currentPrice.toFixed(2)} the agent said: ${real.snapshot.reason}`,
     };
     return await evaluate(ctx, {
       productId: args.productId,
