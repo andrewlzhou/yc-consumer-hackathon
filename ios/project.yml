@@ -1,0 +1,26 @@
+# XcodeGen spec. Run `xcodegen generate` here to get CheckPrice.xcodeproj. Unsigned, so simulators
+# and cloud devices can build it without a team.
+name: CheckPrice
+options:
+  bundleIdPrefix: com.ycconsumerhackathon
+  deploymentTarget:
+    iOS: "18.0"
+settings:
+  base:
+    IPHONEOS_DEPLOYMENT_TARGET: "18.0"
+    SWIFT_VERSION: "5.0"
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  CheckPrice:
+    type: application
+    platform: iOS
+    # Everything under CheckPrice/ compiles: Models, Screens, Components, DesignSystem.
+    sources: [CheckPrice]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ycconsumerhackathon.checkprice
+        PRODUCT_NAME: Check Price
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Check Price
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+    scheme: {}

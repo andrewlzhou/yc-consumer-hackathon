@@ -6,6 +6,7 @@
 
 - 2026-11-15: the product is an AI shopping assistant that says whether to buy now or wait; see the [README](../../README.md).
 - Work is split into three workstreams that each get improved over time: backend, surfacing, and UI/UX.
+- 2026-11-15: the teammate's Check Price SwiftUI prototype is the main iPhone app, at `ios/`. Its screens, flow and content stay; it gets Not Yet's look and interaction design (Worldscape language). `notyet/ios/` stays for reference until the owner decides. See [ios/AGENTS.md](../../ios/AGENTS.md).
 
 ## Initial setup choices
 

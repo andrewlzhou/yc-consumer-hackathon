@@ -1,0 +1,9 @@
+# 2026-11-15 Check Price becomes the main iPhone app
+
+- Author: Claude agent (Opus), for Andrew.
+- Instructions: owner direction "integrate this version as the main one and apply the prior one's UI/UX to it, keeping this version's elements" is recorded in `docs/project/decisions.md` and `ios/AGENTS.md`. Task rules: foundation only, no new features or screens, keep choices reversible, branch `checkprice-ios`, never touch main.
+- Changed: the teammate's prototype is now `ios/`. Its single UI file is split into one file per screen (`Screens/`), shared pieces (`Components/`), demo data (`Models/Demo.swift`) and the root (`ContentView.swift`), as a pure move; Home's private `State` enum is now `Phase`, which removes the `@SwiftUI.State` workaround.
+- Changed: `ios/CheckPrice/DesignSystem/` holds Not Yet's design system, copied unchanged, plus `VerdictStyle` (word, symbol and colour for the four verdicts, matching Not Yet's table), `Hairline`, `AppColor` (the prototype's colour names now pointing at the Worldscape palette, so the accent is blue instead of mint until screens are restyled) and `PriceChartView`, freed from Not Yet's report models with its own small input types.
+- Changed: iOS 18 target, unsigned builds, a shared scheme; launch arguments `-startTab`, `-autoReveal YES` and `-openReport YES` reach every state for screenshots. `ios/AGENTS.md` explains the app, design rules, file ownership and build.
+- Checks: `xcodegen generate` (2.46) made the project with all 27 Swift files. All Swift type-checked as Mac Catalyst iOS 18 in Swift 5 and 6 modes, plus a usage file calling the chart, verdict style and several components: no errors or warnings; planted errors were caught. Not built for iOS or run; nothing seen on screen.
+- Next: three agents restyle the screens. Black text on the blue `AppColor.electric` fills is hard to read until then.
