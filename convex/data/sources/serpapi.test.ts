@@ -39,7 +39,7 @@ const PRODUCT = {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete process.env.SERPAPI_API_KEY;
+  vi.unstubAllEnvs();
 });
 
 async function seeded() {
@@ -64,6 +64,7 @@ test("insight dates become 17:00 UTC on that day", () => {
 });
 
 test("without a key the refresh does nothing", async () => {
+  vi.stubEnv("SERPAPI_API_KEY", "");
   const { t, airpods } = await seeded();
   expect(await t.action(internal.data.sources.serpapi.refreshCurrentPrices, { productId: airpods })).toEqual({ status: "no_key", recorded: 0 });
 });
@@ -71,7 +72,7 @@ test("without a key the refresh does nothing", async () => {
 describe("refresh with a key", () => {
   test("finds the Google product once, records first-party offers and Google's price history", async () => {
     const { t, airpods } = await seeded();
-    process.env.SERPAPI_API_KEY = "test-key";
+    vi.stubEnv("SERPAPI_API_KEY", "test-key");
     const calls = stubSerpApi();
     vi.useFakeTimers({ now: SEED_NOW + 60 * 60 * 1000, toFake: ["Date"] });
     const r = await t.action(internal.data.sources.serpapi.refreshCurrentPrices, { productId: airpods });
@@ -98,7 +99,7 @@ describe("refresh with a key", () => {
 
   test("a second refresh skips the search and writes no duplicate history", async () => {
     const { t, airpods } = await seeded();
-    process.env.SERPAPI_API_KEY = "test-key";
+    vi.stubEnv("SERPAPI_API_KEY", "test-key");
     const calls = stubSerpApi();
     await t.action(internal.data.sources.serpapi.refreshCurrentPrices, { productId: airpods });
     const again = await t.action(internal.data.sources.serpapi.refreshCurrentPrices, { productId: airpods });

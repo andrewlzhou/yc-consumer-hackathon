@@ -27,9 +27,12 @@
 - `convex/schema.ts` is shared after the first version: each thread adds only its own tables in its own block.
 - Changing the [contract](contract.md) is allowed but must be reported to the Captain.
 
-## Credentials
+## Credentials and deploys
 
-- Until `CONVEX_DEPLOY_KEY` and `OPENAI_API_KEY` exist, use a local Convex backend and convex-test.
+- Deploy to the shared dev deployment only from a clean clone of the `ruhaan_backend` tip, right after pushing.
+  A deploy replaces all functions and drops indexes missing from the deployed schema.
+- Local checks: `env -u CONVEX_DEPLOY_KEY -u CONVEX_DEPLOYMENT CONVEX_AGENT_MODE=anonymous npx convex dev`; with the
+  deploy key set, anonymous mode is ignored and the push goes to the cloud.
 - LLM calls sit behind a small provider interface (OpenAI first) with a deterministic fake for tests.
 - Never print secret values. Check `env` for names only.
 

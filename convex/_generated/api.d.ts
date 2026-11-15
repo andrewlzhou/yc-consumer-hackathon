@@ -11,6 +11,7 @@
 import type * as agent_analyze from "../agent/analyze.js";
 import type * as agent_evals from "../agent/evals.js";
 import type * as agent_evidence from "../agent/evidence.js";
+import type * as agent_facts from "../agent/facts.js";
 import type * as agent_fake from "../agent/fake.js";
 import type * as agent_heuristic from "../agent/heuristic.js";
 import type * as agent_http from "../agent/http.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   "agent/analyze": typeof agent_analyze;
   "agent/evals": typeof agent_evals;
   "agent/evidence": typeof agent_evidence;
+  "agent/facts": typeof agent_facts;
   "agent/fake": typeof agent_fake;
   "agent/heuristic": typeof agent_heuristic;
   "agent/http": typeof agent_http;

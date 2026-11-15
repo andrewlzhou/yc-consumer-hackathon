@@ -15,7 +15,9 @@
 ## Run it locally (no Convex account)
 
 - Install packages: `npm install` (Node 20 or newer; Node 22+ for the AI-files step).
-- Start a local backend: `CONVEX_AGENT_MODE=anonymous npx convex dev`. It downloads the backend binary, runs it on
+- Start a local backend: `env -u CONVEX_DEPLOY_KEY -u CONVEX_DEPLOYMENT CONVEX_AGENT_MODE=anonymous npx convex dev`.
+  Unsetting the deploy key matters: when `CONVEX_DEPLOY_KEY` is set, Convex ignores anonymous mode and pushes to the
+  shared cloud deployment. The command downloads the backend binary, runs it on
   `127.0.0.1:3210`, and writes `.env.local`. Git ignores that file.
 - With a Convex account, `npm run dev` creates a cloud dev project instead.
 

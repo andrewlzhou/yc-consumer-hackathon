@@ -28,7 +28,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  delete process.env.OPENAI_API_KEY;
+  vi.unstubAllEnvs();
 });
 
 function stubOpenAI() {
@@ -39,6 +39,7 @@ function stubOpenAI() {
 }
 
 test("without a key, matching falls back to text-only", async () => {
+  vi.stubEnv("OPENAI_API_KEY", "");
   const r = await t.action(internal.data.embeddings.hybridMatch, { title: "Apple AirPods Pro 3" });
   expect(r.mode).toBe("text");
   expect(r.candidates[0].product.familyKey).toBe("apple-airpods-pro-3");
@@ -46,7 +47,7 @@ test("without a key, matching falls back to text-only", async () => {
 });
 
 test("embeds the catalog once and fuses text and vector hits", async () => {
-  process.env.OPENAI_API_KEY = "test-key";
+  vi.stubEnv("OPENAI_API_KEY", "test-key");
   stubOpenAI();
   expect(await t.action(internal.data.embeddings.embedCatalog, {})).toEqual({ status: "ok", embedded: 8 });
   expect(await t.action(internal.data.embeddings.embedCatalog, {})).toEqual({ status: "ok", embedded: 0 });
@@ -58,7 +59,7 @@ test("embeds the catalog once and fuses text and vector hits", async () => {
 });
 
 test("similar products stay in the category and skip the same family", async () => {
-  process.env.OPENAI_API_KEY = "test-key";
+  vi.stubEnv("OPENAI_API_KEY", "test-key");
   stubOpenAI();
   await t.action(internal.data.embeddings.embedCatalog, {});
   const r = await t.action(internal.data.embeddings.findSimilarProducts, { productId: ids["bose-qcu-2"] });
