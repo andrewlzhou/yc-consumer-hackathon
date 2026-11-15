@@ -70,7 +70,9 @@ export const matchProduct = internalQuery({
   args: { title: v.string(), category: v.optional(v.string()), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
     const queryTokens = tokenize(args.title);
-    const hits = await fullText(ctx, args.title, args.category, 25);
+    const all = await fullText(ctx, args.title, args.category, 25);
+    const real = all.filter((p) => !p.provisional);
+    const hits = real.length ? real : all;
     return hits
       .map((p) => scoreCandidate(queryTokens, p))
       .sort((a, b) => b.score - a.score)

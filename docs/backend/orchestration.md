@@ -3,6 +3,10 @@
 - Repo copy of the Captain's crew rules (CREW.md in Captain Ruhaan's drive). If they disagree, report it so both get fixed.
 - Owner: Ruhaan Singh. Several agent threads build the backend in parallel under one Captain.
 
+## How to resume
+
+- Start from [status.md](status.md): each workstream's working state, next steps, and gotchas, kept current per push.
+
 ## Branch and pushing
 
 - All backend work lands on `ruhaan_backend`, forked from `main`. Never commit to `main`, never merge into it,

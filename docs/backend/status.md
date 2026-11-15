@@ -4,6 +4,21 @@
 - Local Convex check (never the shared deployment): `env -u CONVEX_DEPLOY_KEY -u CONVEX_DEPLOYMENT CONVEX_AGENT_MODE=anonymous npx convex dev --once`.
 - Tests: `env -u OPENAI_API_KEY -u SERPAPI_API_KEY npx vitest run`; typecheck: `npm run typecheck`.
 
+## Data and retrieval (convex/data, convex/seed, eval/cases.json)
+
+- Works (tip of ruhaan_backend, see git log): catalog match (full-text + OCR fixes, size-variant guard) and hybrid
+  vector search (`productEmbeddings` table, OpenAI text-embedding-3-small, text-only without a key); bounded history,
+  exact stats, promo patterns, claimed-discount checks, sale calendar, digests; `recordObservation` / `recordBatch`.
+- Trust rule: scan prices count toward lows, typicals and alerts only when an api/scrape price at the same retailer
+  (3 days, 10%) or two distinct devices agree (`trustedPoints` in stats.ts). Only known retailers are stored.
+- Real-data adapters: SerpApi google_shopping + google_product (offers and `price_insights` history),
+  Wayback snapshots (`data/sources/wayback:ingest`, parsers in `pages.ts`), Best Buy live (optional). Keepa unused (paid).
+- Seed: `npm run seed` (action, one mutation per product, stable ids). Seed is a labeled fallback, never the main story.
+- In progress: picking the real-data demo set from Wayback density, better Amazon/Target parsers, daily SerpApi refresh.
+- Next steps: ingest the demo set into the shared deployment from a clean tip; measure hybrid vs text on eval titles.
+- Gotchas: Wayback `id_` pages are gzip; use exact-URL CDX queries; skip captcha stubs. SerpApi free tier is
+  250 searches/month: never call it in tests or loops.
+
 ## Shopping agent (convex/agent, convex/http.ts routes)
 
 - Works: POST /analyze (live card), GET /report, full tool-loop analysis, grounding checks, rate limit, fail-closed key.
