@@ -1,12 +1,16 @@
 /// <reference types="vite/client" />
 import { convexTest } from "convex-test";
-import { expect, test } from "vitest";
+import { beforeEach, expect, test, vi } from "vitest";
 import { internal } from "./_generated/api";
+import type { Id } from "./_generated/dataModel";
 import schema from "./schema";
 import { Snapshot, defaultPrefs } from "./monitoring/policy";
 
 const modules = import.meta.glob("./**/*.ts");
 const DEVICE = "device-test-0001";
+
+// Tests use the deterministic rules judge even when a real key is in the environment.
+beforeEach(() => vi.stubEnv("OPENAI_API_KEY", ""));
 
 async function setup(over: { targetPrice?: number; prefs?: ReturnType<typeof defaultPrefs> } = {}) {
   const t = convexTest(schema, modules);
@@ -94,4 +98,29 @@ test("a simulated price outside the demo helper never sends", async () => {
   await check({ currentPrice: 100 });
   await check({ currentPrice: 70, priceSource: "simulated" });
   expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
+});
+
+test("end to end on seeded data: seed history never sends, a real scan drop does", async () => {
+  const t = convexTest(schema, modules);
+  const { products } = await t.mutation(internal.seed.run.all, {});
+  const productId = Object.values(products)[0] as Id<"products">;
+  await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, prefs: defaultPrefs(), createdAt: Date.now() }));
+  const log = () => t.run((ctx) => ctx.db.query("notificationLog").collect());
+
+  expect(await t.action(internal.monitoring.check.checkProduct, { productId })).toMatchObject([{ status: "baseline" }]);
+  await t.action(internal.monitoring.check.checkProduct, { productId });
+  expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
+
+  const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });
+  const current = state!.snapshot;
+  expect(current.priceSource).toBe("seed");
+  await t.mutation(internal.data.prices.recordObservation, {
+    productId,
+    retailer: "target",
+    price: Math.min(current.currentPrice, current.priorLow ?? current.currentPrice) - 15,
+    source: "scan",
+  });
+  const res = await t.action(internal.monitoring.check.checkProduct, { productId });
+  expect(res).toMatchObject([{ status: "sent" }]);
+  expect((await log()).filter((r) => r.status === "sent")).toHaveLength(1);
 });
