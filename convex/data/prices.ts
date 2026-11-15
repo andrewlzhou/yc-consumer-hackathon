@@ -243,3 +243,56 @@ export const recordObservation = internalMutation({
     return { status: "recorded" as const, observationId, retailerSlug };
   },
 });
+
+const MAX_BATCH = 500;
+
+// Bulk write for provider history (Keepa, price insights). Same sanity rules as recordObservation, and
+// idempotent: a point from the same provider and retailer on the same UTC day is not written twice.
+export const recordBatch = internalMutation({
+  args: {
+    productId: v.id("products"),
+    retailer: v.string(),
+    source: observationSourceValidator,
+    provider: v.string(),
+    points: v.array(
+      v.object({
+        price: v.optional(v.number()),
+        originalPrice: v.optional(v.number()),
+        inStock: v.boolean(),
+        observedAt: v.number(),
+        url: v.optional(v.string()),
+      }),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const retailerSlug = normalizeRetailer(args.retailer);
+    if (!retailerSlug) return { recorded: 0, skipped: args.points.length, reason: "unknown retailer" };
+    if (args.points.length > MAX_BATCH) throw new Error(`batch too large: ${args.points.length} > ${MAX_BATCH}`);
+    if (!(await ctx.db.get(args.productId))) return { recorded: 0, skipped: args.points.length, reason: "unknown product" };
+    if (args.points.length === 0) return { recorded: 0, skipped: 0 };
+    const times = args.points.map((p) => p.observedAt);
+    const { rows } = await loadWindow(ctx, args.productId, retailerSlug, Math.min(...times) - DAY, Math.max(...times) + DAY);
+    const dayKey = (t: number) => Math.floor(t / DAY);
+    const seen = new Set(rows.filter((r) => r.provider === args.provider).map((r) => dayKey(r.observedAt)));
+    let recorded = 0;
+    for (const p of args.points) {
+      const priceOk = p.price !== undefined && Number.isFinite(p.price) && p.price >= MIN_PRICE && p.price <= MAX_PRICE;
+      if ((p.inStock && !priceOk) || seen.has(dayKey(p.observedAt)) || p.observedAt > Date.now() + DAY) continue;
+      seen.add(dayKey(p.observedAt));
+      const price = p.inStock ? round2(p.price!) : undefined;
+      await ctx.db.insert("priceObservations", {
+        productId: args.productId,
+        retailerSlug,
+        price,
+        originalPrice: price !== undefined && p.originalPrice !== undefined && p.originalPrice > price ? round2(p.originalPrice) : undefined,
+        inStock: p.inStock,
+        observedAt: p.observedAt,
+        source: args.source,
+        provider: args.provider,
+        url: p.url,
+      });
+      recorded++;
+    }
+    return { recorded, skipped: args.points.length - recorded };
+  },
+});

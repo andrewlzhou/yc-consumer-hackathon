@@ -152,3 +152,17 @@ test("history reads are bounded and the calendar finds Black Friday", async () =
   expect(cal.map((e) => e.name)).toEqual(expect.arrayContaining(["Black Friday 2026", "Cyber Monday 2026"]));
   expect(cal.some((e) => e.retailerSlug === "walmart")).toBe(false);
 });
+
+test("recordBatch writes provider history once per day and drops bad points", async () => {
+  const productId = ids["ember-mug-2-10oz"];
+  const points = [
+    { price: 99.95, inStock: true, observedAt: SEED_NOW - 3 * DAY },
+    { price: 0, inStock: true, observedAt: SEED_NOW - 2 * DAY },
+    { inStock: false, observedAt: SEED_NOW - DAY },
+  ];
+  const args = { productId, retailer: "amazon", source: "api" as const, provider: "keepa", points };
+  expect(await t.mutation(internal.data.prices.recordBatch, args)).toEqual({ recorded: 2, skipped: 1 });
+  expect(await t.mutation(internal.data.prices.recordBatch, args)).toEqual({ recorded: 0, skipped: 3 });
+  const s = await t.query(internal.data.prices.getPriceStats, { productId, now: SEED_NOW, windowDays: 30, retailerSlug: "amazon" });
+  expect(s.overall).toMatchObject({ observationCount: 1, outOfStockCount: 1, sources: { api: 2 } });
+});
