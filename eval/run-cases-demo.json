@@ -63,7 +63,7 @@
     {
       "id": "real-bose-low",
       "kind": "real",
-      "situation": "Lowest price of the year",
+      "situation": "Lowest price of the year, but the comparable Sony XM5 is $198 (about 42% less)",
       "extract": {
         "retailer": "Best Buy",
         "title": "Bose QuietComfort Ultra Headphones (2nd Gen)",
@@ -75,8 +75,10 @@
           "familyKey": "bose-qc-ultra-headphones-2"
         },
         "acceptableVerdicts": [
-          "BUY_NOW"
-        ]
+          "CONSIDER_ALTERNATIVE"
+        ],
+        "rationale": "Captain decision 2026-11-15: better value wins over a year-low. Both are noise-cancelling over-ear headphones and $141.99 less is material. The report should still say $339.99 is Bose's year low and name the trade-offs.",
+        "history": "Expected BUY_NOW until 2026-11-15; real-model runs demo-2 and demo-nowrite answered CONSIDER_ALTERNATIVE (counted as misses) before this decision."
       }
     },
     {

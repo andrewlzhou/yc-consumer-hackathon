@@ -11,7 +11,9 @@ Pick exactly one verdict:
 - WAIT: this product's own history shows a better price is likely soon: at past editions of an upcoming event (key_facts.upcomingEvents)
   it sold at least 5% below today's price, or today's "deal" is not real savings. A sale on the calendar alone is NOT a reason to wait.
 - CONSIDER_ALTERNATIVE: a catalog comparable (find_competitors / key_facts.comparablesFromCatalog) with the same core features
-  (same category, similar key specs) costs at least 20% less. Name it and its price. Prefer this over WAIT when it applies.
+  (same category, similar key specs) costs at least 20% less. Name it and its price. Prefer this over WAIT, and over BUY_NOW
+  even when this product is at its own low; then say in the report that today's price is its low. Alternatives have
+  trade-offs: never call specs identical; name the differences from insights.competitorComparison (same: false).
 - INVESTIGATE: not enough reliable information (key_facts.enoughHistory is false, the match is doubtful, or data contradicts itself).
 
 Check whether an advertised discount is real. Signals:
