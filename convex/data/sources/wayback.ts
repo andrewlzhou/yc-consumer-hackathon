@@ -84,6 +84,13 @@ const ingestArgs = {
 
 type IngestArgs = { productId: Id<"products">; retailer: string; url: string; from?: string; to?: string; maxSnapshots?: number; pauseMs?: number; prefix?: boolean };
 
+function productQuery(url: URL) {
+  const params = new URLSearchParams(url.search);
+  for (const key of [...params.keys()]) if (/^(utm_.+|athbdg|gclid|fbclid|ref|ref_|tag|cp|menu)$/i.test(key)) params.delete(key);
+  params.sort();
+  return params.toString();
+}
+
 // Backfill one product's history at one retailer from archived copies of its product page.
 export async function ingestWayback(ctx: ActionCtx, args: IngestArgs): Promise<IngestResult> {
   const cdx = new URL(CDX);
@@ -101,8 +108,11 @@ export async function ingestWayback(ctx: ActionCtx, args: IngestArgs): Promise<I
   for (const [k, val] of Object.entries(params)) cdx.searchParams.set(k, val);
   const list = await get(cdx.toString());
   if (!list.ok) return { snapshots: 0, fetched: 0, parsed: 0, blocked: 0, recorded: 0, skippedAlreadyIngested: 0, failures: [`cdx HTTP ${list.status}`] };
-  const expectedPath = new URL(args.url).pathname;
-  const all = parseCdx(JSON.parse(list.text || "[]")).filter((s) => new URL(s.original).pathname === expectedPath);
+  const expected = new URL(args.url);
+  const all = parseCdx(JSON.parse(list.text || "[]")).filter((s) => {
+    const captured = new URL(s.original);
+    return captured.pathname === expected.pathname && productQuery(captured) === productQuery(expected);
+  });
   const done = new Set<string>(await ctx.runQuery(internal.data.sources.wayback.ingestedDays, { productId: args.productId, retailerSlug: args.retailer }));
   const todo = spread(all.filter((s) => !done.has(s.timestamp.slice(0, 8))), Math.min(args.maxSnapshots ?? 40, 60));
   const points: { price?: number; originalPrice?: number; inStock: boolean; observedAt: number; url: string }[] = [];

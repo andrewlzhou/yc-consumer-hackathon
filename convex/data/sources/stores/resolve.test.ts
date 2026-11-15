@@ -57,7 +57,7 @@ test("Wayback ingest reads brand-store snapshots, including copies saved with tr
   vi.stubGlobal("fetch", vi.fn(async (url: string) => {
     if (url.includes("/cdx/")) {
       cdxUrls.push(url);
-      return new Response(JSON.stringify([["timestamp", "original"], ["20260211205804", AE + "?utm_medium=organic"], ["20260612053542", AE + "?menu=cat4840004"]]));
+      return new Response(JSON.stringify([["timestamp", "original"], ["20260211205804", AE + "?utm_medium=organic"], ["20260612053542", AE + "?menu=cat4840004"], ["20260716004800", AE + "?color=other"]]));
     }
     return new Response(real.aeBaggy);
   }));
