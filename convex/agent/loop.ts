@@ -1,6 +1,6 @@
 import type { ConversationItem, LlmProvider, ToolSpec, Usage } from "./llm";
 import { AGENT_OUTPUT_SCHEMA, parseAgentOutput, type AgentOutput } from "./output";
-import { checkGrounding, EvidenceLedger } from "./evidence";
+import { checkGrounding, EvidenceLedger, repairCitations } from "./evidence";
 
 export type AgentTool = ToolSpec & { run: (args: Record<string, unknown>) => Promise<unknown> };
 
@@ -63,6 +63,7 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
       continue;
     }
     const parsed = parseAgentOutput(result.text);
+    if (parsed.ok) parsed.value = repairCitations(parsed.value, ledger);
     const issues = parsed.ok ? checkGrounding(parsed.value, ledger, options.competitorTools ?? []) : parsed.errors;
     const outOfTime = options.deadlineMs !== undefined && Date.now() - started > options.deadlineMs * 0.6;
     if (issues.length === 0 || repairs >= maxRepairs || outOfTime) {

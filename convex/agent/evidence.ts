@@ -59,6 +59,30 @@ function claimsOf(output: AgentOutput): Claim[] {
   ];
 }
 
+// When a claim's number is missing from its cited evidence but present in another tool result, cite that result.
+// The number is still traceable; only the model's citation bookkeeping was off.
+export function repairCitations(output: AgentOutput, ledger: EvidenceLedger): AgentOutput {
+  const fix = (text: string, evidenceIds: string[]) => {
+    const ids = [...evidenceIds];
+    for (const n of textIsGrounded(text, ids.map((id) => ledger.get(id)).filter((e): e is Evidence => !!e))) {
+      const source = ledger.items.find((e) => numbersInValue(e.result).some((k) => numberMatches(n, k)));
+      if (source && !ids.includes(source.id)) ids.push(source.id);
+    }
+    return ids;
+  };
+  const forecastText = [output.forecast.explanation, output.forecast.low ?? "", output.forecast.high ?? ""].join(" ");
+  return {
+    ...output,
+    reasonEvidenceIds: fix(output.reason, output.reasonEvidenceIds),
+    priceAssessment: { ...output.priceAssessment, evidenceIds: fix(output.priceAssessment.summary, output.priceAssessment.evidenceIds) },
+    discount: { ...output.discount, evidenceIds: fix(output.discount.explanation, output.discount.evidenceIds) },
+    forecast: { ...output.forecast, evidenceIds: fix(forecastText, output.forecast.evidenceIds) },
+    retailers: { ...output.retailers, evidenceIds: fix(output.retailers.summary, output.retailers.evidenceIds) },
+    competitors: output.competitors.map((c) => ({ ...c, evidenceIds: fix(c.valueReasoning, c.evidenceIds) })),
+    recommendation: { ...output.recommendation, evidenceIds: fix(output.recommendation.reasoning, output.recommendation.evidenceIds) },
+  };
+}
+
 // Returns grounding problems: unknown citations, numbers no cited tool result contains, invented competitors.
 export function checkGrounding(output: AgentOutput, ledger: EvidenceLedger, competitorTools: string[]): string[] {
   const issues: string[] = [];

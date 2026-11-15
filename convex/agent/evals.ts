@@ -62,7 +62,7 @@ export const run = internalAction({
         t && {
           verdictOk: c.acceptable.includes(t.verdict),
           confidenceOk: c.maxConfidence === undefined || t.confidence <= c.maxConfidence,
-          grounded: t.groundingIssues.length === 0,
+          grounded: t.source === "heuristic" ? !t.groundingIssues.some((i) => i.startsWith("heuristic:")) : t.groundingIssues.length === 0,
           usedModel: t.source === "model" || t.source === "cache" || t.source === "live",
         };
       results.push({ id: c.id, matchOk, matchedFamily: matched?.familyKey ?? null, live: liveTier, liveScore: score(liveTier), full: fullTier, fullScore: score(fullTier) });

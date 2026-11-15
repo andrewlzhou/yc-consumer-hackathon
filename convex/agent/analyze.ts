@@ -13,6 +13,7 @@ import { runAgent } from "./loop";
 import { openAiProvider } from "./openai";
 import type { AgentOutput } from "./output";
 import { dataPort, type DataPort } from "./port";
+import { keyFacts } from "./facts";
 import { systemPrompt } from "./prompt";
 import { buildTools, COMPETITOR_TOOLS } from "./tools";
 
@@ -68,7 +69,6 @@ function scanPrompt(scan: Scan, productId: string, productTitle: string): string
 The shopper is looking at "${scan.title ?? productTitle}" at ${scan.retailer}${scan.currentPrice !== null ? ` for $${scan.currentPrice}` : ""}${scan.originalPrice !== null ? ` (shown as "was $${scan.originalPrice}")` : ""}. It matched catalog product ${productId}: "${productTitle}".`;
 }
 
-const evidenceBlock = (e: Evidence) => `<evidence id="${e.id}" tool="${e.tool}">${JSON.stringify(e.result)}</evidence>`;
 
 // The evidence every verdict rests on. Reused from the ledger when the model already fetched it.
 async function standardEvidence(data: DataPort, ledger: EvidenceLedger, productId: string, scan: Scan) {
@@ -80,11 +80,20 @@ async function standardEvidence(data: DataPort, ledger: EvidenceLedger, productI
     find("find_competitors") ?? data.comparables(productId),
   ]);
   const asEvidence = (tool: string, args: object, value: unknown) => (value && typeof value === "object" && "id" in value && "tool" in value ? (value as Evidence) : ledger.add(tool, args, value));
-  return {
+  const ev = {
     stats: asEvidence("get_price_stats", statsArgs, stats),
     promo: asEvidence("get_promo_patterns", { productId, retailer: null }, promo),
     competitors: asEvidence("find_competitors", { productId }, competitors),
   };
+  const facts = find("key_facts") ?? ledger.add("key_facts", { productId, retailer: scan.retailer }, keyFacts(scan.retailer, ev.stats, ev.promo, ev.competitors));
+  return { ...ev, facts };
+}
+
+// Prompt rendering of evidence. Long promo episode lists are trimmed for the prompt; the ledger keeps them whole.
+function evidenceBlock(e: Evidence): string {
+  if (e.tool !== "get_promo_patterns") return `<evidence id="${e.id}" tool="${e.tool}">${JSON.stringify(e.result)}</evidence>`;
+  const { episodes, ...rest } = e.result as { episodes?: unknown[] };
+  return `<evidence id="${e.id}" tool="${e.tool}">${JSON.stringify({ ...rest, recentEpisodes: (episodes ?? []).slice(-6) })}</evidence>`;
 }
 
 // Guardrails after the model: invalid or ungrounded answers and confident verdicts on thin data fall back to the
@@ -95,7 +104,7 @@ function finalize(productId: string, scan: Scan, ledger: EvidenceLedger, model: 
   let source: "model" | "heuristic" = "model";
   if (output && isThin(ev.stats.result) && output.verdict !== "INVESTIGATE") issues.push(`guardrail: thin history, model said ${output.verdict}`);
   if (!output || issues.length > 0) {
-    output = heuristicAnalysis({ productId, retailer: scan.retailer, ...ev });
+    output = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors });
     source = "heuristic";
     issues.push(...checkGrounding(output, ledger, COMPETITOR_TOOLS).map((i) => `heuristic: ${i}`));
   }
@@ -236,14 +245,14 @@ export const runFullAnalysis = internalAction({
       const ledger = new EvidenceLedger();
       ledger.add("scan", { retailer: scan.retailer }, { title: scan.title, retailer: scan.retailer, currentPrice: scan.currentPrice, claimedOriginalPrice: scan.originalPrice });
       ledger.add("get_product", { productId }, { productId, title: product.title, brand: product.brand, category: product.category, variant: product.variant ?? null, specs: product.specs, msrp: product.msrp ?? null, provisional: product.provisional, isSample: product.isSample });
+      const ev = await standardEvidence(data, ledger, productId, scan);
       const prompt = [
         scanPrompt(scan, productId, product.title),
         product.provisional ? "This product was created from an unmatched scan and has little or no history; search_catalog may find a real match." : "",
-        "Use the tools to check price stats (pass the scanned price and was-price), promotions and upcoming events, and competitors, then answer.",
+        "The core evidence is below. Use tools to dig deeper where it matters (history, per-retailer stats, compare_products for a competitor, calculate for any arithmetic), then answer with a full report.",
         ...ledger.items.map(evidenceBlock),
       ].join("\n");
       const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: buildTools(data), ledger, maxToolTurns: 6, maxRepairs: 2, competitorTools: COMPETITOR_TOOLS });
-      const ev = await standardEvidence(data, ledger, productId, scan);
       const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
       await save(ctx, productId, "full", config.full.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "done" });
