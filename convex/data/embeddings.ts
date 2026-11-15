@@ -185,3 +185,22 @@ export const findSimilarProducts = internalAction({
     };
   },
 });
+
+// One-off migration: moves vectors still stored inline on products into productEmbeddings, then clears the field.
+// Run with `npx convex run data/embeddings:migrateInlineEmbeddings` until it reports done: true.
+export const migrateInlineEmbeddings = internalMutation({
+  args: { cursor: v.optional(v.union(v.string(), v.null())) },
+  handler: async (ctx, args) => {
+    const page = await ctx.db.query("products").paginate({ numItems: 50, cursor: args.cursor ?? null });
+    let moved = 0;
+    for (const p of page.page) {
+      if (!p.embedding) continue;
+      const existing = await ctx.db.query("productEmbeddings").withIndex("by_productId", (q) => q.eq("productId", p._id)).first();
+      if (!existing) await ctx.db.insert("productEmbeddings", { productId: p._id, category: p.category, model: MODEL, embedding: p.embedding });
+      await ctx.db.patch(p._id, { embedding: undefined });
+      moved++;
+    }
+    if (!page.isDone) await ctx.scheduler.runAfter(0, internal.data.embeddings.migrateInlineEmbeddings, { cursor: page.continueCursor });
+    return { moved, done: page.isDone };
+  },
+});

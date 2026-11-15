@@ -86,3 +86,17 @@ test("vectors live in their own table and the backfill pages past the first page
   expect(counts).toEqual({ embeddings: 138, inline: 0 });
   expect(await t.action(internal.data.embeddings.embedCatalog, {})).toEqual({ status: "ok", embedded: 0 });
 });
+
+test("migration moves inline vectors into productEmbeddings and clears them", async () => {
+  vi.useFakeTimers();
+  await t.run((ctx) => ctx.db.patch(ids["bose-qcu-2"], { embedding: new Array(1536).fill(0.01) }));
+  await t.mutation(internal.data.embeddings.migrateInlineEmbeddings, {});
+  await t.finishAllScheduledFunctions(vi.runAllTimers);
+  vi.useRealTimers();
+  const state = await t.run(async (ctx) => ({
+    product: await ctx.db.get(ids["bose-qcu-2"]),
+    rows: await ctx.db.query("productEmbeddings").collect(),
+  }));
+  expect(state.product!.embedding).toBeUndefined();
+  expect(state.rows.map((r) => r.productId)).toEqual([ids["bose-qcu-2"]]);
+});
