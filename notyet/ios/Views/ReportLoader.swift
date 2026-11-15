@@ -238,11 +238,12 @@ private struct QuickAnswer: View {
             Text("First look")
                 .textStyle(.section)
                 .foregroundStyle(Palette.textTertiary)
-            if let verdict = quick.verdict {
-                let style = VerdictStyle(verdict)
-                Text(style.word)
+            let verdict = Verdict(quick.verdict)
+            if verdict != .unknown {
+                Label(verdict.word, systemImage: verdict.symbol)
+                    .labelStyle(.titleAndIcon)
                     .textStyle(.statement(size: 30))
-                    .foregroundStyle(style.color)
+                    .foregroundStyle(verdict.color)
             }
             if let line = quick.oneLiner {
                 Text(line)

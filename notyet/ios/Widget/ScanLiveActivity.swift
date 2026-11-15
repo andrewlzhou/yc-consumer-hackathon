@@ -8,63 +8,52 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// Same values as the app's Palette and Theme (the widget can't see Views/). Change both together.
+// Same values as the app's Palette and `Verdict` in App/Models.swift (the widget can't see App/ or
+// Views/). Change both together.
 private enum WidgetPalette {
     static let canvas = Color(red: 0x01 / 255, green: 0x01 / 255, blue: 0x01 / 255)
     static let glow = Color(red: 0x43 / 255, green: 0x6F / 255, blue: 0xFF / 255)
-    static let link = Color(red: 0x8C / 255, green: 0xA8 / 255, blue: 0xFF / 255)
-    static let danger = Color(red: 0xFF / 255, green: 0x5C / 255, blue: 0x7A / 255)
-    static let buy = Color(red: 0x3D / 255, green: 0xDC / 255, blue: 0x97 / 255)
-    static let wait = Color(red: 0xFF / 255, green: 0xB5 / 255, blue: 0x47 / 255)
     static let textPrimary = Color.white.opacity(0.94)
     static let textSecondary = Color.white.opacity(0.62)
     static let textTertiary = Color.white.opacity(0.36)
     static let fillChip = Color.white.opacity(0.10)
     static let stroke = Color.white.opacity(0.16)
+
+    static func rgb(_ hex: UInt32) -> Color {
+        Color(red: Double((hex >> 16) & 0xFF) / 255, green: Double((hex >> 8) & 0xFF) / 255, blue: Double(hex & 0xFF) / 255)
+    }
+}
+
+// Word, symbol and colour per verdict string, copied from `Verdict`. Strings this build doesn't
+// know read as a neutral "Ready" rather than "Checking", since the check has finished.
+private struct WidgetVerdict {
+    let word: String
+    let symbol: String
+    let color: Color
+
+    init(_ raw: String?) {
+        switch raw?.uppercased() {
+        case "BUY_NOW": (word, symbol, color) = ("Buy", "checkmark.circle.fill", WidgetPalette.rgb(0x3DDC97))
+        case "WAIT": (word, symbol, color) = ("Wait", "clock.fill", WidgetPalette.rgb(0xFFB547))
+        case "FAKE_DEAL": (word, symbol, color) = ("Fake deal", "exclamationmark.triangle.fill", WidgetPalette.rgb(0xFF5C7A))
+        case "CONSIDER_ALTERNATIVE": (word, symbol, color) = ("Look around", "arrow.left.arrow.right.circle.fill", WidgetPalette.rgb(0xC4A7FF))
+        case "INVESTIGATE": (word, symbol, color) = ("Check first", "magnifyingglass.circle.fill", WidgetPalette.rgb(0xFF9466))
+        case nil: (word, symbol, color) = ("No answer yet", "hourglass", WidgetPalette.textSecondary)
+        default: (word, symbol, color) = ("Ready", "ellipsis.circle.fill", WidgetPalette.rgb(0x9E9EA6))
+        }
+    }
 }
 
 private extension ScanAttributes.ContentState {
     var isWorking: Bool { stage == "working" }
-    var isFailed: Bool { stage == "failed" }
+    var kind: WidgetVerdict { WidgetVerdict(verdict) }
 
-    // The verdict word. Unknown verdict strings from a newer backend read as a neutral "Ready".
-    var word: String {
-        if isWorking { return "Digging…" }
-        if isFailed { return verdict == nil ? "No answer yet" : "Ready" }
-        switch verdict {
-        case "BUY_NOW": return "Buy"
-        case "WAIT": return "Wait"
-        case "FAKE_DEAL": return "Fake deal"
-        case "CONSIDER_ALTERNATIVE": return "Alternative"
-        case "INVESTIGATE": return "Investigate"
-        case nil: return "No answer yet"
-        default: return "Ready"
-        }
-    }
-
-    var color: Color {
-        if isWorking { return WidgetPalette.glow }
-        switch verdict {
-        case "BUY_NOW": return WidgetPalette.buy
-        case "WAIT": return WidgetPalette.wait
-        case "FAKE_DEAL": return WidgetPalette.danger
-        case "CONSIDER_ALTERNATIVE": return WidgetPalette.link
-        default: return WidgetPalette.textSecondary
-        }
-    }
+    var word: String { isWorking ? "Digging…" : kind.word }
+    var color: Color { isWorking ? WidgetPalette.glow : kind.color }
 
     // Live Activities can't loop animations, so the radar is a static symbol.
     // The swap to the verdict symbol animates when the verdict arrives.
-    var symbol: String {
-        if isWorking { return "dot.radiowaves.left.and.right" }
-        switch verdict {
-        case "BUY_NOW", "WAIT", "FAKE_DEAL": return "dollarsign.circle.fill"
-        case "CONSIDER_ALTERNATIVE": return "arrow.left.arrow.right.circle.fill"
-        case "INVESTIGATE": return "questionmark.circle.fill"
-        case nil: return "hourglass"
-        default: return "checkmark.circle.fill"
-        }
-    }
+    var symbol: String { isWorking ? "dot.radiowaves.left.and.right" : kind.symbol }
 
     var link: URL { URL(string: "notyet://scan/\(scanKey)") ?? URL(string: "notyet://")! }
 }
