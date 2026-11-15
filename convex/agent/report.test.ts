@@ -65,6 +65,15 @@ describe("report sections", () => {
     expect(report.analysis!.verdict).toBe("CONSIDER_ALTERNATIVE");
   });
 
+  test("a competitor's price is the cheapest retailer's current price, not the last one observed", async () => {
+    const report = await fullReport({ title: "Bose QuietComfort Ultra Headphones (2nd Gen)", retailer: "Best Buy", currentPrice: 399 });
+    for (const c of report.analysis!.insights!.competitorComparison) {
+      const stats = await t.query(internal.data.prices.getPriceStats, { productId: c.productId as Id<"products">, now: SEED_NOW, windowDays: 90 });
+      const fresh = stats.perRetailer.flatMap((r) => (r.prices && SEED_NOW - r.prices.latest.observedAt <= 14 * 86_400_000 ? [r.prices.latest.price] : []));
+      expect(c.latestPrice).toBe(Math.min(...fresh));
+    }
+  });
+
   test("a newer live analysis wins over an older full one", async () => {
     await fullReport({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99 });
     const later = await t.action(internal.agent.analyze.analyzeScan, { now: SEED_NOW + 13 * 3_600_000, title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 199.99 });

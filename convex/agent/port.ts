@@ -7,6 +7,7 @@ import type { productView } from "../data/catalog";
 type ProductView = ReturnType<typeof productView>;
 
 const DAY = 86_400_000;
+const COMPARABLE_FRESH_DAYS = 14;
 const isDateKey = (k: string) => /At$/.test(k) || k === "from" || k === "to";
 const isFractionKey = (k: string) => /Pct$/.test(k) || /[sS]hare/.test(k) || k === "percentile";
 const percentKey = (k: string) => (k === "percentile" ? "percentileRankPercent" : k.replace(/Pct$/, "Percent").replace(/(Share\w*|share\w*)$/, "$1Percent"));
@@ -80,6 +81,11 @@ export function dataPort(ctx: ActionCtx, now: number) {
         similar.products.map(async ({ product: p, similarity }) => {
           const s = track(await ctx.runQuery(internal.data.prices.getPriceStats, { productId: p._id, now, windowDays: 90 }));
           const prices = s.overall.prices;
+          // The price a shopper can get now: the cheapest retailer's latest price seen in the last 14 days, not
+          // whichever retailer happened to be observed last.
+          const cheapest = s.perRetailer
+            .filter((r) => r.prices && now - r.prices.latest.observedAt <= COMPARABLE_FRESH_DAYS * DAY)
+            .sort((a, b) => a.prices!.latest.price - b.prices!.latest.price)[0];
           return {
             productId: p._id as string,
             title: p.title,
@@ -87,7 +93,13 @@ export function dataPort(ctx: ActionCtx, now: number) {
             specs: p.specs,
             isSample: p.isSample,
             similarity,
-            last90Days: { observationCount: s.overall.observationCount, latestPrice: prices?.latest.price ?? null, latestRetailer: prices?.latest.retailerSlug ?? null, median: prices?.median ?? null, min: prices?.min ?? null },
+            last90Days: {
+              observationCount: s.overall.observationCount,
+              latestPrice: cheapest?.prices?.latest.price ?? prices?.latest.price ?? null,
+              latestRetailer: cheapest?.retailerSlug ?? prices?.latest.retailerSlug ?? null,
+              median: prices?.median ?? null,
+              min: prices?.min ?? null,
+            },
           };
         }),
       );
