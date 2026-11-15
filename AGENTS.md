@@ -7,9 +7,12 @@
 
 ## Product
 
-- <!-- TODO: one-line product goal. -->
-- <!-- TODO: stack, e.g. "X powers the frontend; Y is the backend direction. Keep other choices easy to change." -->
-- <!-- TODO: product-level rules that every change must respect. -->
+- Tell a shopper whether a product is worth buying right now, from its price history, competing products, and how real its discount is. The [README](README.md) holds the full product description.
+- Work falls into three workstreams: backend (historical price data), surfacing (when and how the assistant reaches the user), and UI/UX (how it looks and feels).
+- Convex is the backend. The client platform is not chosen yet; the planned entry points are iPhone ones (Shortcut, Control Center, Safari extension, share menu).
+- The price-history backend should be mostly deterministic: the same data gives the same numbers.
+- Every analysis ends in exactly one verdict: BUY NOW, WAIT, CONSIDER ALTERNATIVE, or INVESTIGATE. Use INVESTIGATE when the data is too thin to support the others.
+- Forecasts show a predicted range and a confidence level, not a bare guess.
 - Treat proposed features as plans until implemented. Never imply in docs or reports that a placeholder is working.
 
 ## Code
