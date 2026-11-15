@@ -40,6 +40,15 @@ export const agentTables = {
     error: v.optional(v.string()),
   }).index("by_productId_and_requestedAt", ["productId", "requestedAt"]),
 
+  // Product links the phone sent (share menu, Safari), resolved in the background to a catalog product.
+  resolvedUrls: defineTable({
+    url: v.string(),
+    status: v.union(v.literal("pending"), v.literal("resolved"), v.literal("failed")),
+    productId: v.optional(v.id("products")),
+    resolvedAt: v.number(),
+    error: v.optional(v.string()),
+  }).index("by_url", ["url"]),
+
   // One row per /analyze call with the path taken and measured latency.
   agentScans: defineTable({
     productId: v.optional(v.id("products")),

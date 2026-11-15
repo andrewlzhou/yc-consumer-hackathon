@@ -11,7 +11,7 @@
 - `currentPrice`: the price the shopper would pay now, in US dollars.
 - `originalPrice`: the crossed-out "was" price, if one is shown.
 - `deviceId`: anonymous random UUID made on first launch. Not real auth; used for watchlists and rate limits.
-- `url`: product URL, when the trigger has one (share sheet, Safari).
+- `url`: product URL, when the trigger has one (share sheet, Safari). Enough on its own; see [report](agent-report.md).
 - `ocrLines`: fallback only. A few pruned text lines when on-device parsing could not fill title and price.
 - `capturedAt`: phone time of the scan, epoch milliseconds.
 - The screenshot itself is never sent.
@@ -33,3 +33,4 @@
 - The HTTP endpoint, API key header, and error shape are owned by the shopping-agent thread; see [agent](agent.md).
 - `deviceId` is now required on `POST /analyze` (rate limiting). Errors: 400 invalid input, 401 bad key, 429 rate limited.
 - `GET /report?productId=` and the inbox notification shape are in `contract.ts` (`reportResponseValidator`, `notificationValidator`).
+- `/report` gained `chart` and `analysis.insights` (`chartValidator`, `insightsValidator`) on 2026-11-15; `/analyze` accepts a `url` without a title.

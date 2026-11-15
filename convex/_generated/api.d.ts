@@ -9,6 +9,7 @@
  */
 
 import type * as agent_analyze from "../agent/analyze.js";
+import type * as agent_chart from "../agent/chart.js";
 import type * as agent_evals from "../agent/evals.js";
 import type * as agent_evidence from "../agent/evidence.js";
 import type * as agent_facts from "../agent/facts.js";
@@ -16,6 +17,7 @@ import type * as agent_fake from "../agent/fake.js";
 import type * as agent_heuristic from "../agent/heuristic.js";
 import type * as agent_http from "../agent/http.js";
 import type * as agent_identify from "../agent/identify.js";
+import type * as agent_insights from "../agent/insights.js";
 import type * as agent_limits from "../agent/limits.js";
 import type * as agent_llm from "../agent/llm.js";
 import type * as agent_loop from "../agent/loop.js";
@@ -27,6 +29,7 @@ import type * as agent_prompt from "../agent/prompt.js";
 import type * as agent_store from "../agent/store.js";
 import type * as agent_tables from "../agent/tables.js";
 import type * as agent_tools from "../agent/tools.js";
+import type * as agent_urls from "../agent/urls.js";
 import type * as crons from "../crons.js";
 import type * as data_calendar from "../data/calendar.js";
 import type * as data_catalog from "../data/catalog.js";
@@ -74,6 +77,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "agent/analyze": typeof agent_analyze;
+  "agent/chart": typeof agent_chart;
   "agent/evals": typeof agent_evals;
   "agent/evidence": typeof agent_evidence;
   "agent/facts": typeof agent_facts;
@@ -81,6 +85,7 @@ declare const fullApi: ApiFromModules<{
   "agent/heuristic": typeof agent_heuristic;
   "agent/http": typeof agent_http;
   "agent/identify": typeof agent_identify;
+  "agent/insights": typeof agent_insights;
   "agent/limits": typeof agent_limits;
   "agent/llm": typeof agent_llm;
   "agent/loop": typeof agent_loop;
@@ -92,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   "agent/store": typeof agent_store;
   "agent/tables": typeof agent_tables;
   "agent/tools": typeof agent_tools;
+  "agent/urls": typeof agent_urls;
   crons: typeof crons;
   "data/calendar": typeof data_calendar;
   "data/catalog": typeof data_catalog;

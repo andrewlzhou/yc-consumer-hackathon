@@ -15,8 +15,9 @@ import { openAiProvider } from "./openai";
 import { CARD_SCHEMA, parseCard, type AgentCard, type AgentOutput } from "./output";
 import { dataPort, type DataPort } from "./port";
 import { keyFacts } from "./facts";
+import { buildInsights } from "./insights";
 import { systemPrompt } from "./prompt";
-import { buildTools, COMPETITOR_TOOLS } from "./tools";
+import { COMPETITOR_TOOLS } from "./tools";
 
 const HOUR = 3_600_000;
 const FULL_CACHE_MS = 12 * HOUR;
@@ -65,8 +66,10 @@ async function pickCandidate(provider: LlmProvider, model: string, title: string
   }
 }
 
-function scanPrompt(scan: Scan, productId: string, productTitle: string): string {
-  return `<scan>${JSON.stringify({ productId, retailer: scan.retailer, title: scan.title, currentPrice: scan.currentPrice, originalPrice: scan.originalPrice })}</scan>
+const isoDay = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+
+function scanPrompt(scan: Scan, productId: string, productTitle: string, now: number): string {
+  return `<scan>${JSON.stringify({ productId, retailer: scan.retailer, title: scan.title, currentPrice: scan.currentPrice, originalPrice: scan.originalPrice, today: isoDay(now) })}</scan>
 The shopper is looking at "${scan.title ?? productTitle}" at ${scan.retailer}${scan.currentPrice !== null ? ` for $${scan.currentPrice}` : ""}${scan.originalPrice !== null ? ` (shown as "was $${scan.originalPrice}")` : ""}. It matched catalog product ${productId}: "${productTitle}".`;
 }
 
@@ -97,6 +100,13 @@ async function standardEvidence(data: DataPort, ledger: EvidenceLedger, productI
   return { ...ev, facts };
 }
 
+type StandardEvidence = Awaited<ReturnType<typeof standardEvidence>>;
+
+// The deterministic report sections (forecast, retailer patterns, discount authenticity, competitor specs).
+function addInsights(ledger: EvidenceLedger, ev: StandardEvidence, productId: string, specs: Record<string, string | number | boolean>, now: number) {
+  return ledger.add("insights", { productId }, buildInsights({ stats: ev.stats, promo: ev.promo, competitors: ev.competitors, specs, today: isoDay(now) }));
+}
+
 // Prompt rendering of evidence. Long promo episode lists are trimmed for the prompt; the ledger keeps them whole.
 function evidenceBlock(e: Evidence): string {
   if (e.tool !== "get_promo_patterns") return `<evidence id="${e.id}" tool="${e.tool}">${JSON.stringify(e.result)}</evidence>`;
@@ -108,20 +118,20 @@ const cardSpec: OutputSpec<AgentCard> = { name: "purchase_card", schema: CARD_SC
 
 // The live record's report: the model's card on top of the deterministic analyst's factual sections. The full run
 // replaces it with a report the larger model writes itself.
-function withReport(card: AgentCard, productId: string, scan: Scan, ev: Awaited<ReturnType<typeof standardEvidence>>): AgentOutput {
-  const facts = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors });
+function withReport(card: AgentCard, productId: string, scan: Scan, ev: StandardEvidence, now: number): AgentOutput {
+  const facts = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors, today: isoDay(now) });
   return { ...facts, ...card, recommendation: { reasoning: card.reason, evidenceIds: card.reasonEvidenceIds } };
 }
 
 // Guardrails after the model: invalid or ungrounded answers and confident verdicts on thin data fall back to the
 // deterministic analyst, whose text only copies numbers from evidence.
-function finalize(productId: string, scan: Scan, ledger: EvidenceLedger, model: { output: AgentOutput | null; issues: string[] }, ev: Awaited<ReturnType<typeof standardEvidence>>) {
+function finalize(productId: string, scan: Scan, ledger: EvidenceLedger, model: { output: AgentOutput | null; issues: string[] }, ev: StandardEvidence, now: number) {
   const issues = [...model.issues];
   let output = model.output;
   let source: "model" | "heuristic" = "model";
   if (output && isThin(ev.stats.result) && output.verdict !== "INVESTIGATE") issues.push(`guardrail: thin history, model said ${output.verdict}`);
   if (!output || issues.length > 0) {
-    output = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors });
+    output = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors, today: isoDay(now) });
     source = "heuristic";
     issues.push(...checkGrounding(output, ledger, COMPETITOR_TOOLS).map((i) => `heuristic: ${i}`));
   }
@@ -158,13 +168,24 @@ async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Sca
   return jobId !== null;
 }
 
+// A clear catalog match by title, or the fast model's pick among close full-text or hybrid candidates.
+async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, title: string): Promise<MatchCandidate | null> {
+  const decision = decideMatch(await data.matchProduct(title));
+  if (decision.kind === "match") return decision.candidate;
+  const hybrid = await data.hybridMatch(title);
+  const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates) : decision.kind === "ambiguous" ? decision.candidates : [];
+  return viable.length ? pickCandidate(config.provider, config.fast.model, title, viable) : null;
+}
+
 const pathValidator = v.union(v.literal("cache"), v.literal("live"), v.literal("heuristic"), v.literal("unknown"));
 export const scanResultValidator = v.object({ response: analyzeResponseValidator, path: pathValidator, latencyMs: v.number(), timings: v.record(v.string(), v.number()), analysisId: v.optional(v.id("analyses")) });
 export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number>; analysisId?: Id<"analyses"> };
 type Card = AnalyzeResponse & { path: ScanResult["path"]; analysisId?: Id<"analyses"> };
+const NO_HISTORY = "We don't have price history for this product yet, so we can't judge this price.";
 
 // The live path: identify, record the price, then return a fresh stored analysis or run one fast model pass.
-// now is overridable so tests and evals are deterministic against the seed's clock.
+// The full report starts on first sight, in parallel with the card. now is overridable so tests and evals are
+// deterministic against the seed's clock.
 export const analyzeScan = internalAction({
   args: { ...productExtractValidator.fields, now: v.optional(v.number()), evaluation: v.optional(v.boolean()) },
   returns: scanResultValidator,
@@ -191,27 +212,30 @@ export const analyzeScan = internalAction({
       return { response, path, latencyMs, timings, analysisId };
     };
 
+    // A product link resolved earlier identifies the product exactly; a new link is resolved in the background
+    // (it may fetch the page), so it never slows this request.
+    const link = args.url ? await ctx.runQuery(internal.agent.urls.lookup, { url: args.url }) : null;
     let match: MatchCandidate | null = null;
-    if (title) {
-      const decision = decideMatch(await data.matchProduct(title));
-      if (decision.kind === "match") match = decision.candidate;
-      else {
-        const hybrid = await data.hybridMatch(title);
-        const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates) : decision.kind === "ambiguous" ? decision.candidates : [];
-        if (viable.length) match = await pickCandidate(config.provider, config.fast.model, title, viable);
-      }
+    if (link?.productId) {
+      const product = await data.product(link.productId);
+      if (product) match = { product, score: 1, matchedTokens: [], sizeConflict: false } as MatchCandidate;
     }
+    if (!match && title) match = await identify(data, config, title);
+    if (args.url && !link && !evaluation)
+      await ctx.scheduler.runAfter(0, internal.agent.urls.resolveInBackground, { url: args.url, title: orUndefined(title), retailer: args.retailer, deviceId: args.deviceId, currentPrice: args.currentPrice, originalPrice: args.originalPrice, now, startFullRun: !match });
     lap("identify");
 
     if (!match) {
+      if (args.url && !evaluation && (!link || link.status === "pending"))
+        return finish({ verdict: "INVESTIGATE", reason: "We're looking this product up from its link. Check again in a moment.", confidence: 0.1, isSampleData: false, reportStatus: "pending", path: "unknown" });
       if (!title) return finish({ verdict: "INVESTIGATE", reason: "We couldn't read a product name from the screen.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
-      if (evaluation) return finish({ verdict: "INVESTIGATE", reason: "We don't have price history for this product yet, so we can't judge this price.", confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
+      if (evaluation) return finish({ verdict: "INVESTIGATE", reason: NO_HISTORY, confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
       const allowed = !args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok;
-      if (!allowed) return finish({ verdict: "INVESTIGATE", reason: "We don't have price history for this product yet, so we can't judge this price.", confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
+      if (!allowed) return finish({ verdict: "INVESTIGATE", reason: NO_HISTORY, confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
       const productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title });
       await recordPrice(ctx, productId, scan, args.url, now, args.capturedAt);
       const queued = await queueFullRun(ctx, productId, scan, now);
-      return finish({ productId, verdict: "INVESTIGATE", reason: "We don't have price history for this product yet, so we can't judge this price. We've started looking it up.", confidence: 0.2, isSampleData: false, reportStatus: queued ? "pending" : "none", path: "unknown" });
+      return finish({ productId, verdict: "INVESTIGATE", reason: `${NO_HISTORY} We've started looking it up.`, confidence: 0.2, isSampleData: false, reportStatus: queued ? "pending" : "none", path: "unknown" });
     }
 
     const productId = match.product._id;
@@ -227,15 +251,15 @@ export const analyzeScan = internalAction({
     }
 
     ledger.add("scan", { retailer: scan.retailer }, { title: scan.title, retailer: scan.retailer, currentPrice: scan.currentPrice, claimedOriginalPrice: scan.originalPrice });
-    const ev = await standardEvidence(data, ledger, productId, scan);
+    const [ev, pending] = await Promise.all([standardEvidence(data, ledger, productId, scan), !evaluation && !fullFresh && queueFullRun(ctx, productId, scan, now)]);
     lap("evidence");
-    const prompt = [scanPrompt(scan, productId, match.product.title), "This is the fast pass for the phone card: all evidence is below and there are no tools. Answer with verdict, confidence, reason and the evidence ids behind the reason.", ...ledger.items.map(evidenceBlock)].join("\n");
+    const prompt = [scanPrompt(scan, productId, match.product.title, now), "This is the fast pass for the phone card: all evidence is below and there are no tools. Answer with verdict, confidence, reason and the evidence ids behind the reason.", ...ledger.items.map(evidenceBlock)].join("\n");
     const run = await runAgent({ provider: config.provider, model: config.fast.model, reasoning: config.fast.reasoning, system: systemPrompt(), prompt, tools: [], output: cardSpec, ledger, maxRepairs: 1, maxOutputTokens: 300, deadlineMs: LIVE_DEADLINE_MS });
     lap("model");
-    const final = finalize(productId, scan, ledger, run.ok ? { output: withReport(run.output, productId, scan, ev), issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
+    addInsights(ledger, ev, productId, match.product.specs, now);
+    const final = finalize(productId, scan, ledger, run.ok ? { output: withReport(run.output, productId, scan, ev, now), issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev, now);
     const isSampleData = data.sampleDataSeen() || match.product.isSample;
     const { analysisId, reason } = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);
-    const pending = !evaluation && !fullFresh && (await queueFullRun(ctx, productId, scan, now));
     return finish({ productId, matchedTitle: match.product.title, verdict: final.output.verdict, reason, confidence: final.output.confidence, isSampleData, reportStatus: pending ? "pending" : "ready", path: final.source === "model" ? "live" : "heuristic", analysisId });
   },
 });
@@ -247,33 +271,58 @@ async function recordPrice(ctx: ActionCtx, productId: Id<"products">, scan: Scan
   return ctx.runMutation(internal.data.prices.recordObservation, { productId, retailer: scan.retailer, price: scan.currentPrice, originalPrice: orUndefined(scan.originalPrice), observedAt, source: "scan", url });
 }
 
-// The background path: the full tool-use loop with the larger model, stored as the product's detailed report.
+// Real data for a product created from an unmatched scan: one SerpApi refresh (Google Shopping offers and price
+// history), at most once a day per product and a few times a day overall, since the free tier is 250 searches a month.
+async function lookUpRealData(ctx: ActionCtx, productId: Id<"products">): Promise<string> {
+  if (!process.env.SERPAPI_API_KEY) return "no_key";
+  if (!(await rateLimiter.limit(ctx, "realDataLookupPerProduct", { key: productId })).ok) return "already_looked_up_today";
+  if (!(await rateLimiter.limit(ctx, "realDataLookupGlobal")).ok) return "daily_budget_spent";
+  const result = await ctx.runAction(internal.data.sources.serpapi.refreshCurrentPrices, { productId });
+  return result.status;
+}
+
+// The background path: every piece of evidence is prefetched in code and the larger model writes the full report
+// in one pass with no tool turns, stored as the product's detailed report.
 export const runFullAnalysis = internalAction({
   args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()) },
-  handler: async (ctx, { productId, jobId, scan, now: nowArg }): Promise<{ analysisId: Id<"analyses">; verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number }> => {
+  handler: async (ctx, { productId, jobId, scan, now: nowArg }): Promise<{ analysisId: Id<"analyses">; verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number; timings: Record<string, number> }> => {
     const started = Date.now();
     const now = nowArg ?? started;
+    const timings: Record<string, number> = {};
+    let mark = started;
+    const lap = (name: string) => {
+      const t = Date.now();
+      timings[name] = t - mark;
+      mark = t;
+    };
     if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "running" });
     try {
       const config = agentConfig();
       const data = dataPort(ctx, now);
       const product = await data.product(productId);
       if (!product) throw new Error("product not found");
+      const lookup = product.provisional ? await lookUpRealData(ctx, productId) : null;
+      lap("realDataLookup");
       const ledger = new EvidenceLedger();
       ledger.add("scan", { retailer: scan.retailer }, { title: scan.title, retailer: scan.retailer, currentPrice: scan.currentPrice, claimedOriginalPrice: scan.originalPrice });
       ledger.add("get_product", { productId }, { productId, title: product.title, brand: product.brand, category: product.category, variant: product.variant ?? null, specs: product.specs, msrp: product.msrp ?? null, provisional: product.provisional, isSample: product.isSample });
-      const ev = await standardEvidence(data, ledger, productId, scan);
+      const [ev, sources] = await Promise.all([standardEvidence(data, ledger, productId, scan), data.priceSources(productId, 365)]);
+      ledger.add("price_sources", { productId, days: 365 }, { ...sources, realDataLookup: lookup });
+      addInsights(ledger, ev, productId, product.specs, now);
+      lap("evidence");
       const prompt = [
-        scanPrompt(scan, productId, product.title),
-        product.provisional ? "This product was created from an unmatched scan and has little or no history; search_catalog may find a real match." : "",
-        "The core evidence is below. Use tools to dig deeper where it matters (history, per-retailer stats, compare_products for a competitor, calculate for any arithmetic), then answer with a full report.",
+        scanPrompt(scan, productId, product.title, now),
+        product.provisional ? "This product was created from an unmatched scan; any history comes from the real-data lookup in price_sources." : "",
+        "This is the full report. All evidence is below and there are no tools. Take forecast numbers from insights.forecast, retailer patterns from insights.retailerPatterns, discount checks from insights.discountAuthenticity, and competitor price gaps and spec matches from insights.competitorComparison. Say where the prices come from (price_sources).",
         ...ledger.items.map(evidenceBlock),
       ].join("\n");
-      const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: buildTools(data), output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 6, maxRepairs: 2 });
-      const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
+      const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: [], output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 0, maxRepairs: 1 });
+      lap("model");
+      const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev, now);
       const { analysisId } = await save(ctx, productId, "full", config.full.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "done" });
-      return { analysisId, verdict: final.output.verdict, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns };
+      lap("save");
+      return { analysisId, verdict: final.output.verdict, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns, timings };
     } catch (error) {
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "failed", error: String(error).slice(0, 500) });
       throw error;

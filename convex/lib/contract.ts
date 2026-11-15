@@ -76,10 +76,84 @@ export const reportValidator = v.object({
 });
 
 
+const specValue = v.union(v.string(), v.number(), v.boolean());
+const nullableNumber = v.union(v.number(), v.null());
+const nullableString = v.union(v.string(), v.null());
+
+// Deterministic report sections, computed in code from the same evidence the model cites (agent/insights.ts).
+export const insightsValidator = v.object({
+  forecast: v.object({
+    outlook: v.union(v.literal("better_price_likely"), v.literal("better_price_possible"), v.literal("no_better_price_expected"), v.literal("unknown")),
+    low: nullableNumber,
+    high: nullableNumber,
+    byDate: nullableString,
+    basedOn: v.union(v.literal("past_event_editions"), v.literal("sale_cycle"), v.literal("none")),
+    eventName: nullableString,
+    pastEditions: v.number(),
+    confidence: v.number(),
+    savingsAtLow: nullableNumber,
+    savingsAtLowPercent: nullableNumber,
+  }),
+  retailerPatterns: v.array(v.object({
+    retailer: v.string(),
+    latestPrice: v.number(),
+    latestSeen: v.string(),
+    typicalPrice: v.number(),
+    lowestPrice: v.number(),
+    observationCount: v.number(),
+    saleEpisodes: v.number(),
+    medianSaleDepthPercent: nullableNumber,
+    deepestSalePrice: nullableNumber,
+    lastSaleStarted: nullableString,
+    advertisedDiscounts: v.number(),
+    advertisedWithRarelyChargedWasPrice: v.number(),
+    priceRaisedBeforeSale: v.number(),
+  })),
+  discountAuthenticity: v.object({
+    claimedWasPrice: nullableNumber,
+    wasPriceChargedSharePercent: nullableNumber,
+    claimedDiscountPercent: nullableNumber,
+    realDiscountVsTypicalPercent: nullableNumber,
+    saleEpisodes12Months: v.number(),
+    medianDaysBetweenSales: nullableNumber,
+    discountingIsRoutine: v.boolean(),
+    pastAdvertisedDiscounts: v.number(),
+    pastAdvertisedWithRarelyChargedWasPrice: v.number(),
+    preSaleHikes: v.array(v.object({ retailer: v.string(), saleStarted: v.string(), hikePercent: nullableNumber })),
+  }),
+  competitorComparison: v.array(v.object({
+    productId: v.string(),
+    title: v.string(),
+    brand: v.string(),
+    latestPrice: v.number(),
+    retailer: nullableString,
+    observations90Days: v.number(),
+    similarityPercent: v.number(),
+    savingsVsCurrent: nullableNumber,
+    savingsPercent: nullableNumber,
+    matchingSpecsPercent: nullableNumber,
+    specs: v.array(v.object({ key: v.string(), thisProduct: v.union(specValue, v.null()), competitor: v.union(specValue, v.null()), same: v.boolean() })),
+  })),
+});
+
+// Chart-ready price history for GET /report: step series per retailer, sale events, and point sources.
+export const chartValidator = v.object({
+  kind: v.literal("step"),
+  from: nullableString,
+  to: nullableString,
+  series: v.array(v.object({ retailer: v.string(), points: v.array(v.object({ date: v.string(), price: v.number(), source: v.string() })), lowest: v.number(), latest: v.number() })),
+  lowest: v.union(v.null(), v.object({ price: v.number(), date: v.string(), retailer: v.string() })),
+  typicalPrice: nullableNumber,
+  events: v.array(v.object({ name: v.string(), startsAt: v.string(), endsAt: v.string(), retailer: nullableString })),
+  sources: v.record(v.string(), v.number()),
+  isSampleData: v.boolean(),
+});
+
 // backend -> phone: GET /report?productId= (on demand, not on the live path).
 export const reportResponseValidator = v.object({
   product: v.object({ productId: v.id("products"), title: v.string(), brand: v.string(), category: v.string(), provisional: v.boolean(), isSample: v.boolean() }),
   pending: v.boolean(),
+  chart: chartValidator,
   analysis: v.union(
     v.null(),
     v.object({
@@ -96,6 +170,7 @@ export const reportResponseValidator = v.object({
       evidence: v.array(v.object({ id: v.string(), tool: v.string(), args: v.any(), result: v.any() })),
       groundingIssues: v.array(v.string()),
       isSampleData: v.boolean(),
+      insights: v.union(v.null(), insightsValidator),
     }),
   ),
 });

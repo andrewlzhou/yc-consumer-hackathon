@@ -6,4 +6,6 @@ export const rateLimiter = new RateLimiter(components.rateLimiter, {
   analyzePerDevice: { kind: "token bucket", rate: 20, period: MINUTE, capacity: 10 },
   analyzeGlobal: { kind: "token bucket", rate: 600, period: HOUR, capacity: 60 },
   provisionalPerDevice: { kind: "fixed window", rate: 10, period: HOUR },
+  realDataLookupPerProduct: { kind: "fixed window", rate: 1, period: 24 * HOUR },
+  realDataLookupGlobal: { kind: "fixed window", rate: 8, period: 24 * HOUR },
 });

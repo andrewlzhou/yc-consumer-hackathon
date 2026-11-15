@@ -35,7 +35,8 @@ export function parseExtract(body: unknown): { ok: true; value: Extract } | { ok
     value.ocrLines = b.ocrLines as string[];
   }
   if (!value.deviceId || value.deviceId.length > 100) return { ok: false, error: "deviceId is required" };
-  if (!value.title && !value.ocrLines?.length) return { ok: false, error: "title or ocrLines is required" };
+  if (value.url && !/^https?:\/\/[^\s/]+\.[^\s]+$/i.test(value.url)) return { ok: false, error: "url must be an http(s) link" };
+  if (!value.title && !value.ocrLines?.length && !value.url) return { ok: false, error: "title, ocrLines, or url is required" };
   return { ok: true, value: value as Extract };
 }
 
@@ -72,7 +73,7 @@ export function registerAgentRoutes(http: HttpRouter) {
       const productId = new URL(req.url).searchParams.get("productId");
       if (!productId || productId.length > 64) return json({ error: "productId is required" }, 400);
       try {
-        const report = await ctx.runQuery(internal.agent.store.report, { productId: productId as Id<"products"> });
+        const report = await ctx.runQuery(internal.agent.store.report, { productId: productId as Id<"products">, now: Date.now() });
         return report ? json(report) : json({ error: "product not found" }, 404);
       } catch {
         return json({ error: "productId is not valid" }, 400);

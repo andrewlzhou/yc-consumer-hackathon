@@ -2,7 +2,7 @@ import type { ConversationItem, LlmProvider, TurnRequest, TurnResult } from "./l
 import type { Evidence } from "./evidence";
 import { heuristicAnalysis } from "./heuristic";
 
-type Scan = { productId: string | null; retailer: string; currentPrice: number | null; originalPrice: number | null };
+type Scan = { productId: string | null; retailer: string; currentPrice: number | null; originalPrice: number | null; today: string };
 
 // The scan facts reach the fake as the same <scan> JSON block the real model reads in its prompt.
 function readScan(items: ConversationItem[]): Scan | null {
@@ -52,7 +52,7 @@ export function fakeProvider(): LlmProvider {
         };
       }
       const ev = evidenceByTool(request.items);
-      const output = heuristicAnalysis({ productId: scan.productId, retailer: scan.retailer, stats: ev.get("get_price_stats"), promo: ev.get("get_promo_patterns"), competitors: ev.get("find_competitors") });
+      const output = heuristicAnalysis({ productId: scan.productId, retailer: scan.retailer, stats: ev.get("get_price_stats"), promo: ev.get("get_promo_patterns"), competitors: ev.get("find_competitors"), today: scan.today });
       const card = { verdict: output.verdict, confidence: output.confidence, reason: output.reason, reasonEvidenceIds: output.reasonEvidenceIds };
       return { kind: "final", text: JSON.stringify(request.output.name === "purchase_card" ? card : output), usage };
     },

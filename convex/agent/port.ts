@@ -58,6 +58,20 @@ export function dataPort(ctx: ActionCtx, now: number) {
       const sampled = priced.filter((_, i) => i % step === 0 || i === priced.length - 1);
       return present({ pointCount: priced.length, shownCount: sampled.length, truncated, points: sampled.map((p) => ({ observedAt: p.observedAt, retailerSlug: p.retailerSlug, price: p.price, originalPrice: p.originalPrice ?? null, source: p.source })) });
     },
+    // Where the stored prices come from (seed, Wayback snapshots, SerpApi, scans), with a few example source URLs.
+    priceSources: async (productId: string, days: number) => {
+      const { points, truncated } = await ctx.runQuery(internal.data.prices.getPriceHistory, { productId: id(productId), from: now - days * DAY, to: now, limit: 3000 });
+      const groups = new Map<string, { source: string; provider: string | null; observationCount: number; firstObservedAt: number; lastObservedAt: number; exampleUrls: string[] }>();
+      for (const p of points) {
+        const key = `${p.source}/${p.provider ?? ""}`;
+        const g = groups.get(key) ?? { source: p.source, provider: p.provider ?? null, observationCount: 0, firstObservedAt: p.observedAt, lastObservedAt: p.observedAt, exampleUrls: [] };
+        g.observationCount++;
+        g.lastObservedAt = Math.max(g.lastObservedAt, p.observedAt);
+        if (p.url && g.exampleUrls.length < 3 && !g.exampleUrls.includes(p.url)) g.exampleUrls.push(p.url);
+        groups.set(key, g);
+      }
+      return present({ observationCount: points.length, truncated, sources: [...groups.values()].sort((a, b) => b.observationCount - a.observationCount) }) as Record<string, unknown>;
+    },
     calendar: async (days: number) => present(await ctx.runQuery(internal.data.calendar.getSaleCalendar, { from: now, to: now + days * DAY })),
     digest: async (productId: string) => present(await ctx.runQuery(internal.data.digests.getDigest, { productId: id(productId) })),
     comparables: async (productId: string, limit = 5) => {

@@ -11,16 +11,19 @@
   Measured: vector search only runs on unclear titles (an OCR-mangled title adds ~1.4s once); clear titles stay at ~2ms.
 - Record: every priced scan goes through `data/prices:recordObservation` as `source: "scan"`.
 - No match: a provisional product is created, the phone gets INVESTIGATE at once, and a full run is queued.
+- Links: a `url` resolved earlier identifies the product exactly; a new one is resolved off the live path (see [report](agent-report.md)).
 - Cached: a full analysis under 12 hours old (or a live one under 30 minutes) made within 2% of today's price is returned as is.
 - Otherwise the live pass: stats, promo patterns, competitors and exact `key_facts` are fetched in code, then one small
   structured call (verdict, confidence, reason, evidence ids) to the fast model (default `gpt-5.4-mini`, reasoning none), no tools.
-- After a live pass, a background full run is queued (one per product at a time, `analysisJobs`).
+- The full run is queued on first sight, in parallel with the live pass (one per product at a time, `analysisJobs`).
 
 ## The full run
 
-- `agent/analyze:runFullAnalysis`: a tool-use loop (`loop.ts`) on the larger model (default `gpt-6.1-sol`, low).
-- Tools (`tools.ts`) wrap the data thread's functions: search_catalog, get_price_stats, get_price_history,
-  get_promo_patterns, get_sale_calendar, get_price_digest, find_competitors, compare_products, calculate.
+- `agent/analyze:runFullAnalysis`: all evidence is prefetched in code (stats, promo, competitors, `key_facts`,
+  `insights`, `price_sources`), then one structured call to the larger model (default `gpt-6.1-sol`, low), no tool turns.
+  Tool turns cost ~3s each and measured 8-14s per run before; see [evals](agent-evals.md).
+- Provisional products first get one SerpApi refresh (offers and Google price history), at most once a day per
+  product and 8 a day overall. The tool definitions in `tools.ts` remain for the loop in `loop.ts`.
 - `port.ts` presents tool results to the model: timestamps become ISO dates, fractions become percents.
 
 ## Grounding
@@ -36,9 +39,8 @@
 
 - One row per run: tier (live/full), source (model/heuristic), model, verdict, confidence, reason, report,
   the full evidence trail (tool, args, result as JSON text), grounding issues, latency, token usage.
-- Report sections: match, priceAssessment, discount (status + signals), forecast (low, high, byDate, confidence),
-  retailers, competitors (with value reasoning), recommendation. Each section lists its evidence ids.
-- `GET /report?productId=` returns the newest full (else live) analysis with evidence, and whether a run is pending.
+- Report sections written by the model (each with evidence ids) plus deterministic `insights` and a chart:
+  see [report](agent-report.md).
 
 ## Config (Convex env)
 

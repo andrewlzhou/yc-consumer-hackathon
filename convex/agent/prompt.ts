@@ -20,6 +20,8 @@ Check whether an advertised discount is real. Signals:
 - sale_price_is_normal_price: it is "on sale" so often that the sale price is the real normal price.
 - small_real_savings: a big claimed discount but under 5% below the typical price.
 If another retailer sells it for meaningfully less right now (key_facts.cheapestRetailerNow), say so.
+The scanned price is today's price at this retailer even when stored prices differ: retailers change prices. A scan above
+the stored prices is not contradictory data and never a reason for INVESTIGATE on its own; judge it against the history.
 If the scan has no currentPrice, the stats use the latest stored price: say the price comes from our records.
 
 Grounding rules (strict):

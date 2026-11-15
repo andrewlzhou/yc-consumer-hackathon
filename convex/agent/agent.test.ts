@@ -53,7 +53,7 @@ describe("grounding", () => {
   test("flags invented numbers, unknown citations, and invented competitors", () => {
     const ledger = new EvidenceLedger();
     const stats = ledger.add("get_price_stats", { productId: "p" }, { overall: { observationCount: 40, prices: { median: 249, min: 179, spanDays: 300, latest: { price: 179.99, retailerSlug: "target" }, minLastSeenAt: "2026-06-26", mean: 240 }, current: { price: 179.99, percentileRankPercent: 3, vsMedianPercent: -27.7, vsMinPercent: 0.6, atOrBelowLow: false } }, perRetailer: [], wasPrice: null });
-    const good = heuristicAnalysis({ productId: "p", retailer: "target", stats });
+    const good = heuristicAnalysis({ productId: "p", retailer: "target", stats, today: "2026-11-15" });
     expect(checkGrounding(good, ledger, COMPETITOR_TOOLS)).toEqual([]);
     const bad = { ...good, reason: "Down to $149 from $249.", reasonEvidenceIds: ["E1"], competitors: [{ productId: "x", title: "Made Up", valueReasoning: "cheaper", evidenceIds: ["E9"] }] };
     const issues = checkGrounding(bad, ledger, COMPETITOR_TOOLS);
@@ -65,7 +65,7 @@ describe("grounding", () => {
   test("schema validation rejects missing fields and out-of-range confidence", () => {
     expect(parseAgentOutput("{}").ok).toBe(false);
     const ledger = new EvidenceLedger();
-    const ok = heuristicAnalysis({ productId: "p", retailer: "target", stats: ledger.add("get_price_stats", {}, null) });
+    const ok = heuristicAnalysis({ productId: "p", retailer: "target", stats: ledger.add("get_price_stats", {}, null), today: "2026-11-15" });
     expect(parseAgentOutput(JSON.stringify(ok)).ok).toBe(true);
     expect(parseAgentOutput(JSON.stringify({ ...ok, confidence: 2 })).ok).toBe(false);
   });
@@ -86,7 +86,7 @@ describe("live scans of seeded products (fake provider)", () => {
       expect(r.productId).toBeDefined();
       expect(r.isSampleData).toBe(true);
       expect(r.reason).toMatch(/\(sample data\)$/);
-      const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products"> });
+      const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products">, now: SEED_NOW });
       expect(report!.analysis!.groundingIssues).toEqual([]);
       expect(report!.analysis!.evidence.map((e: { tool: string }) => e.tool)).toEqual(expect.arrayContaining(["scan", "get_price_stats", "get_promo_patterns", "find_competitors"]));
     });
@@ -119,19 +119,28 @@ describe("unknown products and the background run", () => {
     const r = await scan({ title: "Zorblax Hyperwidget 9000 Turbo", retailer: "Target", currentPrice: 59.99 });
     expect(r).toMatchObject({ verdict: "INVESTIGATE", path: "unknown", reportStatus: "pending" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products"> });
+    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products">, now: SEED_NOW });
     expect(report!.product.provisional).toBe(true);
     expect(report!.analysis).toMatchObject({ tier: "full", verdict: "INVESTIGATE" });
   });
 
-  test("the full run uses the tool loop and stores an evidence trail", async () => {
+  test("the full run is one prefetched pass and stores an evidence trail", async () => {
     const r = await scan({ title: "Sony WH-1000XM5", retailer: "Amazon", currentPrice: 249.99 });
     expect(r.reportStatus).toBe("pending");
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products"> });
+    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products">, now: SEED_NOW });
     expect(report!.analysis!.tier).toBe("full");
     expect(report!.analysis!.groundingIssues).toEqual([]);
     expect(report!.analysis!.evidence[0].tool).toBe("scan");
+    expect(report!.analysis!.evidence.map((e: { tool: string }) => e.tool)).toEqual(expect.arrayContaining(["key_facts", "insights", "price_sources"]));
+  });
+
+  test("an unknown product's full run tries the real-data lookup (skipped without a SerpApi key)", async () => {
+    const r = await scan({ title: "Zorblax Hyperwidget 9000 Turbo", retailer: "Target", currentPrice: 59.99 });
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products">, now: SEED_NOW });
+    const sources = report!.analysis!.evidence.find((e: { tool: string }) => e.tool === "price_sources");
+    expect(sources!.result).toMatchObject({ realDataLookup: "no_key" });
   });
 });
 

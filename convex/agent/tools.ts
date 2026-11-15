@@ -23,7 +23,7 @@ export function calculate(operation: string, a: number, b: number): number {
   throw new Error(`unknown operation ${operation}`);
 }
 
-export const COMPETITOR_TOOLS = ["find_competitors", "compare_products"];
+export const COMPETITOR_TOOLS = ["find_competitors", "compare_products", "insights"];
 
 export function buildTools(data: DataPort): AgentTool[] {
   return [

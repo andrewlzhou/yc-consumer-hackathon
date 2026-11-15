@@ -1,4 +1,5 @@
 import type { Evidence } from "./evidence";
+import { forecastPrice, type Promo as InsightPromo } from "./insights";
 import type { AgentOutput, Verdict } from "./output";
 
 // Presented shapes (see port.ts present()): dates are ISO strings, fractions are percents.
@@ -25,6 +26,7 @@ export type HeuristicInput = {
   stats?: Evidence;
   promo?: Evidence;
   competitors?: Evidence;
+  today: string;
 };
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
@@ -104,13 +106,23 @@ export function heuristicAnalysis(input: HeuristicInput): AgentOutput {
         ? { status: "genuine", signals: [], explanation: `The discount is real: ${pct(was.realDiscountVsTypicalPercent!)} below the typical ${usd(was.typicalPrice!)}.`, evidenceIds: ids(input.stats) }
         : { status: "unclear", signals: [], explanation: "The advertised price is close to the typical price, so the savings are small.", evidenceIds: ids(input.stats) };
 
-  const soon = (promo?.upcoming ?? []).filter((e) => e.daysAway <= 21 && e.pastSales.length > 0);
-  const lows = soon.flatMap((e) => e.pastSales.map((s) => s.minPrice));
-  const event = soon.find((e) => e.pastSales.some((s) => s.minPrice === Math.min(...lows)));
-  const forecast: AgentOutput["forecast"] = event
-    ? { low: Math.min(...lows), high: Math.max(...lows), byDate: event.startsAt, confidence: lows.length >= 2 ? 0.6 : 0.4,
-        explanation: `At past editions of upcoming sales this sold for ${usd(Math.min(...lows))} to ${usd(Math.max(...lows))}; ${event.name} is ${event.daysAway} days away.`, evidenceIds: ids(input.promo) }
-    : base.forecast;
+  const f = forecastPrice(promo as InsightPromo | undefined, current, input.today);
+  const forecast: AgentOutput["forecast"] =
+    f.low === null
+      ? base.forecast
+      : {
+          low: f.low,
+          high: f.high,
+          byDate: f.byDate,
+          confidence: f.confidence,
+          explanation:
+            f.basedOn === "past_event_editions"
+              ? `At past editions of ${f.eventName} this sold for ${usd(f.low)} to ${usd(f.high!)}.`
+              : `Its recent sales bottomed out between ${usd(f.low)} and ${usd(f.high!)}.`,
+          evidenceIds: ids(input.promo),
+        };
+  const near = forecastPrice(promo as InsightPromo | undefined, current, input.today, 21);
+  const event = near.eventName ? promo?.upcoming.find((e) => e.name === near.eventName) : undefined;
 
   const priced = stats.perRetailer.filter((r) => r.prices);
   const cheapest = [...priced].sort((a, b) => a.prices!.latest.price - b.prices!.latest.price)[0];
@@ -137,10 +149,10 @@ export function heuristicAnalysis(input: HeuristicInput): AgentOutput {
     confidence = 0.6;
     reason = `${cheaper[0].brand}'s ${cheaper[0].title} sells for ${usd(cheaper[0].last90Days.latestPrice!)}, versus ${usd(current)} here.`;
     reasonIds = ids(input.competitors, input.stats);
-  } else if (forecast.low !== null && forecast.low < current * 0.95 && event) {
+  } else if (near.low !== null && near.low < current * 0.95 && event) {
     verdict = "WAIT";
-    confidence = forecast.confidence;
-    reason = `${event.name} is ${event.daysAway} days away, and last time this dropped to ${usd(forecast.low)}.`;
+    confidence = near.confidence;
+    reason = `${event.name} is ${event.daysAway} days away, and last time this dropped to ${usd(near.low)}.`;
     reasonIds = ids(input.promo);
   } else if (signals.length > 0 && !cur.atOrBelowLow && cur.vsMinPercent > 3) {
     verdict = "WAIT";
