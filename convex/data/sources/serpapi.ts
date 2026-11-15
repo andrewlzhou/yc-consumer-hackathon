@@ -4,7 +4,7 @@ import type { Doc, Id } from "../../_generated/dataModel";
 import { internalAction, internalMutation, internalQuery, type ActionCtx } from "../../_generated/server";
 import { scoreCandidate } from "../catalog";
 import { KNOWN_RETAILERS } from "../retailers";
-import { tokenize } from "../text";
+import { modelConflict, tokenize } from "../text";
 
 // SerpApi Google Shopping + Google Product: current prices across retailers, and Google's own per-store
 // price history (product_results.price_insights). Needs SERPAPI_API_KEY. Shapes follow the documented
@@ -58,15 +58,6 @@ export function retailerFromSource(source: string | undefined): string | null {
   return KNOWN_RETAILERS.find((r) => r.aliases.includes(s) || r.slug === s.replace(/\s+/g, ""))?.slug ?? null;
 }
 
-// Model-like tokens (letters and digits) with the same shape but different digits are different models: 1000xm5 vs 1000xm6.
-export function modelConflict(titleTokens: string[], product: Doc<"products">) {
-  const productTokens = new Set(product.searchText.split(" "));
-  const shape = (t: string) => t.replace(/\d+/g, "#");
-  const isModel = (t: string) => /\d/.test(t) && /[a-z]/.test(t);
-  const productShapes = new Set([...productTokens].filter(isModel).map(shape));
-  return titleTokens.some((t) => isModel(t) && !productTokens.has(t) && productShapes.has(shape(t)));
-}
-
 const EARBUDS = /\b(earbuds?|in-ear)\b/i;
 
 // A new item from a first-party retailer is never far outside its list price: under 40% or over 200% of MSRP is
@@ -79,7 +70,7 @@ export function isSameProduct(title: string | undefined, product: Doc<"products"
   if (!title || NOT_THE_PRODUCT.test(title)) return false;
   if (product.category === "headphones" && EARBUDS.test(title)) return false;
   const tokens = tokenize(title);
-  if (modelConflict(tokens, product)) return false;
+  if (modelConflict(tokens, new Set(product.searchText.split(" ")))) return false;
   const m = scoreCandidate(tokens, product);
   return !m.sizeConflict && m.score >= MIN_TITLE_SCORE;
 }

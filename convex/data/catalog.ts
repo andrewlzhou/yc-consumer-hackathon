@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, type QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { buildSearchText, sizeTokens, tokenize } from "./text";
+import { buildSearchText, modelConflict, sizeTokens, tokenize } from "./text";
 
 // What the agent sees of a product: everything except the internal search text.
 export function productView(p: Doc<"products">) {
@@ -37,7 +37,9 @@ export function scoreCandidate(queryTokens: string[], product: Doc<"products">):
   const sizeConflict = querySizes.some(
     (q) => productSizes.some((p) => unit(p) === unit(q)) && !productSizes.includes(q),
   );
-  const score = total === 0 ? 0 : (hit / total) * (sizeConflict ? 0.6 : 1);
+  // A different model number of the same line (XM4 scanned, XM5 in the catalog) halves the score, below viable.
+  const otherModel = modelConflict(queryTokens, productTokens);
+  const score = total === 0 ? 0 : (hit / total) * (sizeConflict ? 0.6 : 1) * (otherModel ? 0.5 : 1);
   return {
     product: productView(product),
     score: Math.round(score * 1000) / 1000,

@@ -46,6 +46,15 @@ export function sizeTokens(tokens: string[]): string[] {
   return tokens.filter((t) => /^\d+(\.\d+)?(gb|tb|qt|oz|in)$/.test(t));
 }
 
+// Model-like tokens (letters and digits) with the same shape but different digits name different models:
+// 1000xm4 vs 1000xm5. True when the query carries such a token and the product only has its sibling.
+export function modelConflict(queryTokens: string[], productTokens: Set<string>): boolean {
+  const shape = (t: string) => t.replace(/\d+/g, "#");
+  const isModel = (t: string) => /\d/.test(t) && /[a-z]/.test(t);
+  const productShapes = new Set([...productTokens].filter(isModel).map(shape));
+  return queryTokens.some((t) => isModel(t) && !productTokens.has(t) && productShapes.has(shape(t)));
+}
+
 export function buildSearchText(parts: (string | undefined)[]): string {
   return [...new Set(parts.filter(Boolean).flatMap((p) => tokenize(p!)))].join(" ");
 }

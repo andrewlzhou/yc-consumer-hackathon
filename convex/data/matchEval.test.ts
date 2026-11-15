@@ -13,5 +13,6 @@ test("match eval runs on the seeded catalog and scores text-only fallback identi
   await t.action(internal.seed.run.all, {});
   const r = await t.action(internal.data.matchEval.run, {});
   expect(r.summary.all.text).toBe(r.summary.all.hybrid);
+  expect(r.misses.map((m) => m.title)).not.toContain("Sony WH-1000XM4 Wireless Noise Canceling Headphones");
   expect(r.summary["near-duplicate"].text).toMatch(/^\d+\/7$/);
 });
