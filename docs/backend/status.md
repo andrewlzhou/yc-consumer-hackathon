@@ -48,3 +48,9 @@
 - Next steps: real-price pushes now depend only on prices moving; real iPhone push needs APNS_* and a device.
 - Gotchas: seed rows anywhere in the window block verdict pushes; lone scans are ignored (trustedPoints);
   previous lows are real-only, so demo drops on seeded products need a target price.
+
+## More stores
+
+- Registered Nike, American Eagle, lululemon and Apple; the generic parser and background URL resolver are in progress.
+- Survey: 18 product URLs across major consumer stores; exact archive counts and parse yields are being checked.
+- Next: push the reader/resolver and three real-data products, then deploy only from a clean origin/ruhaan_backend tip.

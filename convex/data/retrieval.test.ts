@@ -219,6 +219,6 @@ describe("untrusted scan prices", () => {
     const r = await scan({ retailer: "totally-fake-store.biz", price: 179.99 });
     expect(r).toEqual({ status: "rejected", reason: "unknown retailer" });
     const slugs = await t.run(async (ctx) => (await ctx.db.query("retailers").take(50)).map((x) => x.slug));
-    expect(slugs.sort()).toEqual(["amazon", "bestbuy", "target", "walmart"]);
+    expect(slugs.sort()).toEqual(["ae", "amazon", "apple", "bestbuy", "lululemon", "nike", "target", "walmart"]);
   });
 });
