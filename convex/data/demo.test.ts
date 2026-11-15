@@ -19,6 +19,7 @@ test("ingesting a demo product replaces its seeded history with real Google pric
   const { products } = await t.action(internal.seed.run.all, {});
   const productId = products["sony-xm5"] as Id<"products">;
   vi.stubEnv("SERPAPI_API_KEY", "test-key");
+  vi.stubEnv("OPENAI_API_KEY", "");
   const calls: string[] = [];
   vi.stubGlobal("fetch", vi.fn(async (url: URL) => {
     calls.push(new URL(url).searchParams.get("engine")!);
@@ -45,4 +46,18 @@ test("ingesting a demo product replaces its seeded history with real Google pric
   const after = await t.query(internal.data.prices.getPriceStats, { productId, now: SEED_NOW });
   expect(after.overall.sources).not.toHaveProperty("seed");
   expect(await t.query(internal.data.demo.demoProductIds, {})).toEqual([productId]);
+});
+
+test("operator cleanup removes only the named provider's rows at that instant", async () => {
+  const t = convexTest(schema, modules);
+  const { products } = await t.action(internal.seed.run.all, {});
+  const productId = products["sony-xm6"] as Id<"products">;
+  const at = SEED_NOW - 3600_000;
+  for (const [retailer, price, provider] of [["bestbuy", 148, "serpapi-google-shopping"], ["target", 379.99, "serpapi-google-product"]] as const) {
+    await t.mutation(internal.data.prices.recordObservation, { productId, retailer, price, observedAt: at, source: "api", provider });
+  }
+  const r = await t.mutation(internal.data.demo.removeObservationsAt, { productId, provider: "serpapi-google-shopping", observedAt: at });
+  expect(r.deleted).toEqual([{ retailerSlug: "bestbuy", price: 148 }]);
+  const left = await t.query(internal.data.prices.getPriceHistory, { productId, from: at - 1, to: at + 1 });
+  expect(left.points.filter((p) => p.source === "api").map((p) => p.price)).toEqual([379.99]);
 });

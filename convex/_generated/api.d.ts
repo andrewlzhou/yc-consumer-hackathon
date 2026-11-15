@@ -33,6 +33,7 @@ import type * as data_catalog from "../data/catalog.js";
 import type * as data_demo from "../data/demo.js";
 import type * as data_digests from "../data/digests.js";
 import type * as data_embeddings from "../data/embeddings.js";
+import type * as data_matchEval from "../data/matchEval.js";
 import type * as data_prices from "../data/prices.js";
 import type * as data_retailers from "../data/retailers.js";
 import type * as data_sources_bestbuy from "../data/sources/bestbuy.js";
@@ -97,6 +98,7 @@ declare const fullApi: ApiFromModules<{
   "data/demo": typeof data_demo;
   "data/digests": typeof data_digests;
   "data/embeddings": typeof data_embeddings;
+  "data/matchEval": typeof data_matchEval;
   "data/prices": typeof data_prices;
   "data/retailers": typeof data_retailers;
   "data/sources/bestbuy": typeof data_sources_bestbuy;

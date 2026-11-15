@@ -14,4 +14,5 @@
 - Changed: embeddings live in `productEmbeddings`; deployed product rows still carried `embedding`, so one deploy (24e2962) kept it optional while a tested migration moved 8 vectors and cleared the field on the shared deployment; the field and migration are now removed.
 - Changed: real demo set in `convex/data/demo.ts` (SerpApi Google price history + Wayback), daily `refresh demo prices` cron in `convex/crons.ts` (monitoring's file, one line), Google change points expanded to daily steps, Amazon pages no longer read template text as out of stock; seeding skips products that are real.
 - Changed: tighter SerpApi offer matching (model-shape conflict, earbuds vs headphones, bundles/kits, 40-200% MSRP band) after YCCO-5 saw a $148 XM6 match; tested on real shopping results.
+- Changed: `eval/cases-match.json` + `data/matchEval:run` (text vs hybrid with the agent's decision rules), `data/demo:removeObservationsAt` operator cleanup, demo ingest embeds the product.
 - Next: real-data ingestion (Keepa, SerpApi insights, Best Buy live), hybrid vector search, unknown-product ingest, docs.

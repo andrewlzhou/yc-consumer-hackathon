@@ -5,6 +5,7 @@ import { internalAction, internalMutation, internalQuery } from "../_generated/s
 import { SEED_PRODUCTS, type SeedProduct } from "../seed/catalog";
 import { deleteSeedObservations } from "../seed/run";
 import { refreshDigestFor } from "./digests";
+import { embedProducts } from "./embeddings";
 import { refreshProduct } from "./sources/serpapi";
 import { ingestWayback } from "./sources/wayback";
 import { buildSearchText } from "./text";
@@ -94,6 +95,7 @@ export const ingest = internalAction({
     const p = DEMO_PRODUCTS.find((x) => x.key === args.key);
     if (!p) throw new Error("unknown demo product " + args.key);
     const ensured: { productId: Id<"products">; deletedSeedPoints: number } = await ctx.runMutation(internal.data.demo.ensureDemoProduct, { key: p.key });
+    await embedProducts(ctx, [ensured.productId]);
     const serpapi = await refreshProduct(ctx, ensured.productId);
     const wayback = [];
     for (const w of args.wayback === false ? [] : (p.wayback ?? [])) {
@@ -129,5 +131,20 @@ export const refreshDaily = internalAction({
       results.push({ productId, status: r.status, recorded: r.recorded });
     }
     return results;
+  },
+});
+
+// Operator cleanup for rows a past bug wrote (e.g. a wrong-product offer): deletes one product's rows from one
+// provider at one exact observedAt. npx convex run data/demo:removeObservationsAt '{"productId":"…","provider":"…","observedAt":…}'
+export const removeObservationsAt = internalMutation({
+  args: { productId: v.id("products"), provider: v.string(), observedAt: v.number() },
+  handler: async (ctx, args) => {
+    const rows = await ctx.db
+      .query("priceObservations")
+      .withIndex("by_product_and_observedAt", (q) => q.eq("productId", args.productId).eq("observedAt", args.observedAt))
+      .take(50);
+    const doomed = rows.filter((r) => r.provider === args.provider);
+    for (const r of doomed) await ctx.db.delete(r._id);
+    return { deleted: doomed.map((r) => ({ retailerSlug: r.retailerSlug, price: r.price })) };
   },
 });
