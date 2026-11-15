@@ -34,8 +34,8 @@ export type EvalResult = { id: string; timings: Record<string, number>; matchOk:
 // Runs each eval case through the live pass and the full run without recording prices or touching the cache,
 // and scores identification, verdict, confidence ceiling, and grounding. Wording is left for a human to judge.
 export const run = internalAction({
-  args: { cases: v.array(caseValidator), now: v.number(), full: v.optional(v.boolean()) },
-  handler: async (ctx, { cases, now, full }): Promise<EvalResult[]> => {
+  args: { cases: v.array(caseValidator), now: v.number(), full: v.optional(v.boolean()), fullModel: v.optional(v.object({ model: v.string(), reasoning: v.union(v.literal("none"), v.literal("minimal"), v.literal("low"), v.literal("medium"), v.literal("high")) })) },
+  handler: async (ctx, { cases, now, full, fullModel }): Promise<EvalResult[]> => {
     const results: EvalResult[] = [];
     for (const c of cases) {
       const live: ScanResult = await ctx.runAction(internal.agent.analyze.analyzeScan, { ...c.extract, now, evaluation: true });
@@ -54,6 +54,7 @@ export const run = internalAction({
         const r: FullRun = await ctx.runAction(internal.agent.analyze.runFullAnalysis, {
           productId,
           now,
+          modelOverride: fullModel,
           scan: { title: c.extract.title ?? null, retailer: c.extract.retailer ?? "unknown", currentPrice: c.extract.currentPrice ?? null, originalPrice: c.extract.originalPrice ?? null },
         });
         const full: Stored = await ctx.runQuery(internal.agent.store.analysisById, { analysisId: r.analysisId });

@@ -26,6 +26,7 @@ const PRICE_TOLERANCE = 0.02;
 const LIVE_DEADLINE_MS = 4000;
 export const SAMPLE_NOTE = " (sample data)";
 
+const reasoningValidator = v.union(v.literal("none"), v.literal("minimal"), v.literal("low"), v.literal("medium"), v.literal("high"));
 type Reasoning = "none" | "minimal" | "low" | "medium" | "high";
 
 // Fake provider when forced (tests, offline eval) or when no OpenAI key is configured.
@@ -283,9 +284,10 @@ async function lookUpRealData(ctx: ActionCtx, productId: Id<"products">): Promis
 
 // The background path: every piece of evidence is prefetched in code and the larger model writes the full report
 // in one pass with no tool turns, stored as the product's detailed report.
+// modelOverride lets evals compare full-tier models without changing the deployment's env.
 export const runFullAnalysis = internalAction({
-  args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()) },
-  handler: async (ctx, { productId, jobId, scan, now: nowArg }): Promise<{ analysisId: Id<"analyses">; verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number; timings: Record<string, number> }> => {
+  args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()), modelOverride: v.optional(v.object({ model: v.string(), reasoning: reasoningValidator })) },
+  handler: async (ctx, { productId, jobId, scan, now: nowArg, modelOverride }): Promise<{ analysisId: Id<"analyses">; verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number; timings: Record<string, number> }> => {
     const started = Date.now();
     const now = nowArg ?? started;
     const timings: Record<string, number> = {};
@@ -298,6 +300,7 @@ export const runFullAnalysis = internalAction({
     if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "running" });
     try {
       const config = agentConfig();
+      const model = config.provider.name === "fake" ? config.full : (modelOverride ?? config.full);
       const data = dataPort(ctx, now);
       const product = await data.product(productId);
       if (!product) throw new Error("product not found");
@@ -316,10 +319,10 @@ export const runFullAnalysis = internalAction({
         "This is the full report. All evidence is below and there are no tools. Take forecast numbers from insights.forecast, retailer patterns from insights.retailerPatterns, discount checks from insights.discountAuthenticity, and competitor price gaps and spec matches from insights.competitorComparison. Say where the prices come from (price_sources).",
         ...ledger.items.map(evidenceBlock),
       ].join("\n");
-      const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: [], output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 0, maxRepairs: 1 });
+      const run = await runAgent({ provider: config.provider, model: model.model, reasoning: model.reasoning, system: systemPrompt(), prompt, tools: [], output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 0, maxRepairs: 1 });
       lap("model");
       const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev, now);
-      const { analysisId } = await save(ctx, productId, "full", config.full.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
+      const { analysisId } = await save(ctx, productId, "full", model.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "done" });
       lap("save");
       return { analysisId, verdict: final.output.verdict, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns, timings };
