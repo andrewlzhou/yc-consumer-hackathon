@@ -24,6 +24,7 @@
 - `productId`: our catalog id when the product was identified; use it to save to the watchlist.
 - `matchedTitle`: the catalog title we matched, so the phone can show "we think this is ...".
 - `isSampleData`: true when any evidence behind the verdict is seeded. The phone must label it as sample data.
+- `reportStatus`: `pending` while a fuller background analysis runs (fetch `GET /report?productId=` later), else `ready` or `none`.
 
 ## Extensions over the original spec
 

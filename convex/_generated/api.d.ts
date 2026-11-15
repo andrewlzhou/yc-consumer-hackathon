@@ -8,6 +8,20 @@
  * @module
  */
 
+import type * as agent_analyze from "../agent/analyze.js";
+import type * as agent_evidence from "../agent/evidence.js";
+import type * as agent_fake from "../agent/fake.js";
+import type * as agent_heuristic from "../agent/heuristic.js";
+import type * as agent_identify from "../agent/identify.js";
+import type * as agent_llm from "../agent/llm.js";
+import type * as agent_loop from "../agent/loop.js";
+import type * as agent_openai from "../agent/openai.js";
+import type * as agent_output from "../agent/output.js";
+import type * as agent_port from "../agent/port.js";
+import type * as agent_prompt from "../agent/prompt.js";
+import type * as agent_store from "../agent/store.js";
+import type * as agent_tables from "../agent/tables.js";
+import type * as agent_tools from "../agent/tools.js";
 import type * as crons from "../crons.js";
 import type * as data_calendar from "../data/calendar.js";
 import type * as data_catalog from "../data/catalog.js";
@@ -45,6 +59,20 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "agent/analyze": typeof agent_analyze;
+  "agent/evidence": typeof agent_evidence;
+  "agent/fake": typeof agent_fake;
+  "agent/heuristic": typeof agent_heuristic;
+  "agent/identify": typeof agent_identify;
+  "agent/llm": typeof agent_llm;
+  "agent/loop": typeof agent_loop;
+  "agent/openai": typeof agent_openai;
+  "agent/output": typeof agent_output;
+  "agent/port": typeof agent_port;
+  "agent/prompt": typeof agent_prompt;
+  "agent/store": typeof agent_store;
+  "agent/tables": typeof agent_tables;
+  "agent/tools": typeof agent_tools;
   crons: typeof crons;
   "data/calendar": typeof data_calendar;
   "data/catalog": typeof data_catalog;

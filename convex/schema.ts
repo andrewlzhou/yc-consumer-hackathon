@@ -2,6 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { observationSourceValidator } from "./lib/contract";
 import { watchlistTables } from "./watchlist/tables";
+import { agentTables } from "./agent/tables";
 
 const specValue = v.union(v.string(), v.number(), v.boolean());
 
@@ -98,4 +99,7 @@ export default defineSchema({
 
   // ---- Watchlist & monitoring (convex/watchlist, convex/monitoring) ----
   ...watchlistTables,
+
+  // ---- Shopping agent (convex/agent) ----
+  ...agentTables,
 });

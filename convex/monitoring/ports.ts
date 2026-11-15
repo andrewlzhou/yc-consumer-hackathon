@@ -5,6 +5,7 @@ import { internalAction, internalQuery } from "../_generated/server";
 import { loadWindow, computePromo } from "../data/prices";
 import { DAY, median, priced } from "../data/stats";
 import type { Snapshot } from "./policy";
+import { analysisForMonitoring } from "../agent/monitor";
 
 export type ProductSnapshot = { title: string; snapshot: Snapshot };
 
@@ -15,7 +16,7 @@ const money = (n: number) => "$" + n.toFixed(2);
 // shopping agent's analysis is wired in (see getSnapshot); verdict is INVESTIGATE so no verdict trigger fires.
 export const readState = internalQuery({
   args: { productId: v.id("products"), now: v.number() },
-  handler: async (ctx, args): Promise<ProductSnapshot | null> => {
+  handler: async (ctx, args): Promise<(ProductSnapshot & { retailerSlug: string }) | null> => {
     const product = await ctx.db.get(args.productId);
     if (!product) return null;
     const { rows } = await loadWindow(ctx, args.productId, undefined, args.now - 365 * DAY, args.now);
@@ -41,6 +42,7 @@ export const readState = internalQuery({
         : money(current.price) + " at " + current.retailerSlug + "; too little history to compare.";
     return {
       title: product.title,
+      retailerSlug: current.retailerSlug,
       snapshot: {
         currentPrice: current.price,
         priceSource: current.source as Snapshot["priceSource"],
@@ -54,15 +56,17 @@ export const readState = internalQuery({
   },
 });
 
-// Refreshes prices for a product and re-runs the analysis, returning what monitoring needs.
-// Not wired yet: the data layer has no live price source and the agent's analysis action has not landed on this
-// branch, so this reads the latest stored observation. Replace the verdict, confidence, reason, alternative and
-// the sale flag here with the agent's output once it exists.
+// Stored price history gives the price facts; the shopping agent's newest analysis gives verdict, confidence,
+// reason and alternative (and queues a background re-analysis when stale). Without a usable analysis the
+// placeholder INVESTIGATE stays, so no verdict trigger fires.
 export const getSnapshot = internalAction({
   args: { productId: v.id("products") },
   handler: async (ctx, args): Promise<ProductSnapshot> => {
-    const state: ProductSnapshot | null = await ctx.runQuery(internal.monitoring.ports.readState, { productId: args.productId, now: Date.now() });
+    const now = Date.now();
+    const state: (ProductSnapshot & { retailerSlug: string }) | null = await ctx.runQuery(internal.monitoring.ports.readState, { productId: args.productId, now });
     if (!state) throw new Error("no price history for this product");
-    return state;
+    const analysis = await analysisForMonitoring(ctx, args.productId, state.snapshot.currentPrice, state.retailerSlug, now);
+    if (!analysis) return { title: state.title, snapshot: state.snapshot };
+    return { title: state.title, snapshot: { ...state.snapshot, ...analysis } };
   },
 });

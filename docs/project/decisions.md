@@ -22,10 +22,14 @@
 - Tests use vitest with convex-test (in-memory). Local development uses an anonymous local Convex backend until a cloud
   deployment exists.
 
+- 2026-11-15: the agent is a hand-rolled tool loop over the OpenAI Responses API (fetch, no SDK), not
+  `@convex-dev/agent`: analyses are one-shot, with no conversation history to persist. See [agent](../backend/agent.md).
+- 2026-11-15 (Ruhaan): keep the phone side light. Live path = cached analysis or one fast small-model call;
+  the detailed report is a separate on-demand endpoint.
+
 ## Open questions
 
 - Which price data sources we can use this weekend, and which retailers work live versus seeded.
 - How competing products are found and matched for comparison.
-- Live-path latency: cached analysis versus a short live agent pass. Decided by measurement.
 - Push delivery: APNs from Convex, a relay, or local notifications as the demo fallback.
 - What role Revyl (required by the hackathon) should play; it likely can't test Back Tap. Ask the organizers.

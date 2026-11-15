@@ -33,6 +33,8 @@ export const analyzeResponseValidator = v.object({
   reason: v.string(),
   confidence: v.number(),
   isSampleData: v.boolean(),
+  // "pending": a fuller background analysis is running; fetch GET /report?productId= later.
+  reportStatus: v.optional(v.union(v.literal("ready"), v.literal("pending"), v.literal("none"))),
 });
 export type AnalyzeResponse = Infer<typeof analyzeResponseValidator>;
 
