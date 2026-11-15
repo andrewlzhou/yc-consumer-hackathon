@@ -4,7 +4,8 @@
 
 - [Try it now](try-now.md): fresh checkout, no-write real-model demo, optional authenticated HTTP smoke test.
 - `node eval/run.mjs --full`: original 10 scenarios (sample/adversarial); `--cases eval/run-cases-demo.json`:
-  five real-history products, a buy-elsewhere scan, two look-alikes and an OCR-mangled title.
+  real-history products (electronics plus AE, Nike, lululemon from YCCO-8), a buy-elsewhere scan, two look-alikes,
+  an OCR-mangled title, and an Align scan whose only prices are three-month-old archives.
 - `--full-model gpt-6.1-terra:none` or `gpt-5.4-mini:none` compares models without changing deployment settings.
 - Evals skip cache and all app writes, including analysis rows and scan logs; no SerpApi lookup or jobs.
   OpenAI calls still cost tokens. CI uses the fake provider; scores cover match, verdict, confidence and citations.
@@ -18,6 +19,10 @@
   wins, so the case now expects CONSIDER_ALTERNATIVE; rationale and history are kept in the case file.
 - After that decision and a prompt fix (`demo-3`): 9/9 matches, 9/9 live, 7/7 full, all grounded. A live Bose report
   names its year low and the trade-offs (Sony: LDAC, older; Bose: spatial and lossless USB-C audio).
+- With store products (`demo-4`, e732bda): 12/12 matches, 12/12 live, 10/10 full, all grounded. AE is the first real
+  WAIT ($35.97 vs $29.97 at past Black Friday). Nike Zenvy at $105 is BUY_NOW, with no saving claimed from Align's
+  stale $98. Align with no scan price first got BUY_NOW at $98: fixed with a guardrail (stored price over 14 days
+  old and no scan price means INVESTIGATE); priced scans also no longer reuse a price-less cached analysis.
 - The real demo caught a bug: competitor price used the last retailer observed (XM5 at Target, $399.99) instead
   of the cheapest current retailer (Best Buy, $198). Fixed in b1d9b44; XM6 now recommends the XM5 as intended.
 - Inflated-was full-tier miss (INVESTIGATE on a scan above stored prices) is fixed: the prompt treats a higher
