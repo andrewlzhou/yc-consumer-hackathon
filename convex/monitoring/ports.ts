@@ -115,8 +115,8 @@ export const getSnapshot = internalAction({
       state.retailerSlug,
       now,
     );
-    if (!analysis) return { title: state.title, snapshot: state.snapshot };
+    if (!analysis) return { title: state.title, snapshot: { ...state.snapshot, hasAnalysis: false } };
     const { isSampleData, ...verdictFields } = analysis;
-    return { title: state.title, snapshot: { ...state.snapshot, ...verdictFields, isSampleData: state.hasSeedRows || isSampleData === true } };
+    return { title: state.title, snapshot: { ...state.snapshot, ...verdictFields, hasAnalysis: true, isSampleData: state.hasSeedRows || isSampleData === true } };
   },
 });

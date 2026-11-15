@@ -210,3 +210,13 @@ test("a target price crossing notifies even when the LLM judge would decline; ot
     vi.unstubAllGlobals();
   }
 });
+
+test("a placeholder verdict (no analysis yet) is not a baseline, so the first real analysis is not a flip", async () => {
+  const { check, log, t } = await setup();
+  await check({ currentPrice: 100, verdict: "INVESTIGATE", hasAnalysis: false });
+  expect((await t.run((ctx) => ctx.db.query("watchItems").collect()))[0].lastVerdict).toBeUndefined();
+  await check({ currentPrice: 100, verdict: "BUY_NOW", hasAnalysis: true });
+  expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
+  await check({ currentPrice: 100, verdict: "INVESTIGATE", hasAnalysis: false });
+  expect((await t.run((ctx) => ctx.db.query("watchItems").collect()))[0].lastVerdict).toBe("BUY_NOW");
+});

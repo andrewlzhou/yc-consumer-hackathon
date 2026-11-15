@@ -13,6 +13,7 @@ const snapshotV = v.object({
   reason: v.string(),
   saleStartDetected: v.optional(v.boolean()),
   isSampleData: v.optional(v.boolean()),
+  hasAnalysis: v.optional(v.boolean()),
   alternative: v.optional(v.object({ title: v.string(), price: v.number(), savingsPct: v.number() })),
 });
 export { snapshotV };
@@ -62,7 +63,7 @@ export const commit = internalMutation({
     if (!args.simulated) {
       await ctx.db.patch(item._id, {
         lastPrice: snap.currentPrice,
-        lastVerdict: snap.verdict,
+        lastVerdict: snap.hasAnalysis === false ? item.lastVerdict : snap.verdict,
         lastReason: snap.reason,
         lastCheckedAt: now,
       });

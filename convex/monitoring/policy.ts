@@ -19,6 +19,8 @@ export type Snapshot = {
   saleStartDetected?: boolean;
   // True when the verdict or alternative may rest on seeded evidence (agent's isSampleData, or seed rows in the window).
   isSampleData?: boolean;
+  // False when no agent analysis was available and verdict is only the INVESTIGATE placeholder.
+  hasAnalysis?: boolean;
   alternative?: { title: string; price: number; savingsPct: number };
 };
 
@@ -68,7 +70,7 @@ export function findCandidates(snap: Snapshot, state: WatchState): Candidate[] {
   if (dropped && snap.priorLow !== undefined && snap.currentPrice < snap.priorLow) {
     out.push({ trigger: "new_low", fact: `price ${money(snap.currentPrice)} is below the previous observed low ${money(snap.priorLow)}` });
   }
-  if (snap.verdict === "BUY_NOW" && state.lastVerdict !== undefined && state.lastVerdict !== "BUY_NOW" && snap.confidence >= GUARDRAILS.minBuyNowConfidence) {
+  if (snap.verdict === "BUY_NOW" && snap.hasAnalysis !== false && state.lastVerdict !== undefined && state.lastVerdict !== "BUY_NOW" && snap.confidence >= GUARDRAILS.minBuyNowConfidence) {
     out.push({ trigger: "buy_now_flip", fact: `verdict changed from ${state.lastVerdict} to BUY_NOW (confidence ${snap.confidence})` });
   }
   if (snap.saleStartDetected && dropped) {

@@ -43,8 +43,8 @@
 - Verified live on the shared deployment (tip 022b41c): 401 without or with a wrong key, CRUD + prefs, bad environment 400,
   save schedules refresh+check, simulated drop below target sent (inbox), repeat held by cooldown, baseline unchanged,
   ack empties the inbox, sweep scheduled checks. Local run with real keys: OpenAI judge sent new_low, sample flip blocked.
-- Open: SerpApi refresh on the deployment records 0 offers for Sony XM6 and Ninja AF101 (data thread), so every
-  deployed product is still seed-only and real-price pushes cannot happen there yet.
-- Next steps: once real api rows exist, save a watch with a target under the real price and wait for a sweep.
+- Real data live (XM6, api rows from SerpApi): a real check sent buy_now_flip via the OpenAI judge with the agent's reason.
+  That flip came from the INVESTIGATE placeholder, so placeholders are no longer stored as baseline verdicts.
+- Next steps: real-price pushes now depend only on prices moving; real iPhone push needs APNS_* and a device.
 - Gotchas: seed rows anywhere in the window block verdict pushes; lone scans are ignored (trustedPoints);
   previous lows are real-only, so demo drops on seeded products need a target price.
