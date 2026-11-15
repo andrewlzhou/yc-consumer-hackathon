@@ -1,0 +1,9 @@
+# 2026-11-15 Check Price Home: main check on the first screen, summary below
+
+- Author: Claude agent (Opus), for Andrew, one of five parallel agents on `checkprice-ios`.
+- Instructions: owner spec for Home: a main area that does the app's primary function (final animation "yet to be decided"), then an aggregate summary after scrolling past it. Recorded in `ios/AGENTS.md` (Files). No new features beyond that.
+- Changed: Home's first screen (`PrimaryCheckArea`, full height) runs the capture → analyzing → reveal demo in Worldscape: hopping dots with the current step, a thin progress line, and a reveal where the verdict symbol, word (verdict colour) and summary spring in one after another. The reveal starts a thread for the demo product; "See the signal" opens it. `-autoReveal YES` still works.
+- Changed: below it, `HomeSummary` shows checks this month, items watched, an estimated "saved by waiting" (today's price minus the low end of the predicted range, over saved threads), a verdict breakdown bar and counts, and the three newest threads, which open on tap.
+- Changed: `HomeView(autoReveal:)` only; the `report` binding is gone and ContentView's `openNewestThread` bridge is deleted. `Card`, `Metric`, `SignalRow` restyled (Hiragino, flat cards); `SignalRow` gains an optional `note`; `Badge` deleted (nothing used it).
+- Checks: `xcodegen generate`; Mac Catalyst iOS 18 type-check in Swift 5 and 6 modes: no errors or warnings in Home or Components (the only error is another file's `#Preview` macro, which needs full Xcode). Not built for iOS or run; nothing seen on screen.
+- Next: judge the first screen by eye. Cards use flat surfaces, not glass, because the shared backdrop only lights the top of the screen. There is no way back to the ready state after a reveal (same as the prototype).

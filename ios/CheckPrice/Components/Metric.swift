@@ -1,6 +1,20 @@
+// A small label over a value: "Today" over "$349".
 import SwiftUI
 
 struct Metric: View {
-    let title: String; let value: String
-    var body: some View { VStack(alignment: .leading, spacing: 5) { Text(title).font(.system(size: 10, weight: .bold, design: .rounded)).tracking(1).foregroundStyle(AppColor.muted); Text(value).font(.system(size: 19, weight: .bold, design: .rounded)) } }
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .textStyle(.section)
+                .foregroundStyle(Palette.textSecondary)
+            Text(value)
+                .font(.hiragino(.w6, size: 20, relativeTo: .title3))
+                .monospacedDigit()
+                .foregroundStyle(Palette.textPrimary)
+        }
+        .accessibilityElement(children: .combine)
+    }
 }

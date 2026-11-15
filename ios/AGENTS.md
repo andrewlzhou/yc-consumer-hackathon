@@ -16,8 +16,8 @@
 
 - `CheckPrice/ContentView.swift`: root tabs (Home, Threads, Account), the thread detail sheet (shown whenever `ThreadStore.openThreadID` is set, cleared on dismiss), launch arguments. Each tab sits on `ScreenBackdrop`, so screens don't draw their own. `ThreadStore.shared` is also in the environment (`@Environment(ThreadStore.self)`).
 - `CheckPrice/Components/TabBar.swift`: `AppTab` and `TabBarStyle`, the system tab bar dressed as Not Yet's dark glass (one row of three, no search tab).
-- `CheckPrice/Screens/`: `HomeView` (capture, analyzing, reveal, recent signals), `Threads/ThreadsView`, `Threads/ThreadDetailView` (sheet), `Account/AccountView`, and `SetupView` until the Account work replaces it.
-- `CheckPrice/Components/`: the prototype's `Card`, `Badge`, `Metric`, `SignalRow`.
+- `CheckPrice/Screens/`: `Home/HomeView` (first screen `Home/PrimaryCheckArea`: capture, analyzing, reveal, swappable as one view; below it `Home/HomeSummary`: totals, verdicts, recent threads), `Threads/ThreadsView`, `Threads/ThreadDetailView` (sheet), `Account/AccountView`, and `SetupView` until the Account work replaces it.
+- `CheckPrice/Components/`: `Card` (a padded `FlatCard`), `Metric` (label over value), `SignalRow` (product row on a flat card, optional trailing note), restyled in Worldscape. `Badge` is retired.
 - `CheckPrice/Models/Demo.swift`: `Verdict`, `Product`, `Demo` data.
 - When agents work in parallel, each owns its screen files. `Components/`, `DesignSystem/` and `Models/` are shared: add new pieces freely, but change or remove an existing one only by agreement, since other screens use it.
 

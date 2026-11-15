@@ -17,7 +17,7 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $tab) {
             Tab(AppTab.home.title, systemImage: AppTab.home.symbol, value: AppTab.home) {
-                HomeView(report: openNewestThread, autoReveal: $autoReveal)
+                HomeView(autoReveal: $autoReveal)
                     .background { ScreenBackdrop() }
             }
             Tab(AppTab.threads.title, systemImage: AppTab.threads.symbol, value: AppTab.threads) {
@@ -51,15 +51,6 @@ struct ContentView: View {
         Binding(
             get: { store.openThreadID.map(OpenThread.init) },
             set: { store.openThreadID = $0?.id }
-        )
-    }
-
-    // Bridges Home's old `report` flag to the store until Home opens threads itself: true opens
-    // the newest thread.
-    private var openNewestThread: Binding<Bool> {
-        Binding(
-            get: { store.openThreadID != nil },
-            set: { store.openThreadID = $0 ? store.threads.first?.id : nil }
         )
     }
 }
