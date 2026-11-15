@@ -8,6 +8,8 @@
 
 - Read `notyet/ios/design/worldscape-language.md`, including the component catalog (section 5). Short version: dark only, near-black canvas, one blue family, white at fixed opacities; only keys have depth; glass only over the blue backdrop; Hiragino Sans by role; springy arrival, quiet exit; one blue place per screen.
 - Use the pieces in `CheckPrice/DesignSystem/` (copied from `notyet/ios/Views/DesignSystem/`): `Palette`, `TextStyle`/`.textStyle()`, `Spacing`, `Radius`, `ControlHeight`, `Shadows`, `Motion`, `.transition(.rise)`, `KeyButtonStyle`, `QuietButtonStyle`, `GlassSurface`/`.glassSurface()`, `GlassCardButtonStyle`, `BackdropGradient`, `ScreenBackdrop`, `FlatCard`, `Hairline`, `Chip`, `Bubble`, `OutlinedField`, `ScreenTitle`, `SectionLabel`, `ListRowButtonStyle`, `RoundIcon`, `IconPressStyle`, `HoppingDots`, `ThinkingLine`, `.shimmering()`, `StreamingText`, `WorkingIndicator`, `FailureNote`, `InputBarSurface`, `SampleDataTag`, `ConfidenceMeter`, `PriceChartView`.
+- No screen titles (owner, 2026-11-15): no in-content heading that names the screen and no navigation-bar title. Back buttons and bar buttons stay. Section labels that name content (Summary, Price, Chat) are fine. The Account top bar keeps the user's handle, as profile info.
+- The tab bar is icons only, no names under them (owner, 2026-11-15): outline when not selected, filled when selected (`house`, `bubble.left.and.text.bubble.right`, `person.crop.circle`). Titles stay on the items, drawn clear, so VoiceOver reads them.
 - Verdicts: `Verdict.word`, `.symbol`, `.color` (`DesignSystem/VerdictStyle.swift`): Buy green, Wait amber, Look around lavender, Check first coral.
 - `AppColor` (`DesignSystem/AppColor.swift`) is the prototype's colour names pointed at `Palette`, so unrestyled screens still compile. Use `Palette` in new code; delete `AppColor` when nothing uses it.
 - How Not Yet drew similar screens: `notyet/ios/Views/` (for example `ProductReportView.swift`, `HomeView.swift`, `HistoryView.swift`).
@@ -22,7 +24,7 @@
 ## Files
 
 - `CheckPrice/ContentView.swift`: root tabs (Home, Threads, Account), the thread detail sheet (shown whenever `ThreadStore.openThreadID` is set, cleared on dismiss), launch arguments. Each tab sits on `ScreenBackdrop`, so screens don't draw their own. `ThreadStore.shared` is also in the environment (`@Environment(ThreadStore.self)`).
-- `CheckPrice/Components/TabBar.swift`: `AppTab` and `TabBarStyle`, the system tab bar dressed as Not Yet's dark glass (one row of three, no search tab).
+- `CheckPrice/Components/TabBar.swift`: `AppTab` and `TabBarStyle`, the system tab bar dressed as Not Yet's dark glass (one row of three, no search tab, icons only), and `TabBarIconInsets`, which moves each icon down into the space the hidden title leaves.
 - `CheckPrice/Screens/`: `Home/HomeView` (first screen `Home/PrimaryCheckArea`: capture, analyzing, reveal, swappable as one view; below it `Home/HomeSummary`: totals, verdicts, recent threads), `Threads/ThreadsView`, `Threads/ThreadDetailView` (pushed or sheet: report from `ThreadDetailReport`, demo chart history from `ThreadDetailHistory`, chat from `ChatColumn` and `ChatInputBar`), `Account/AccountView`, and `SetupView` until the Account work replaces it.
 - `CheckPrice/Components/`: `Card` (a padded `FlatCard`), `Metric` (label over value), `SignalRow` (product row on a flat card, optional trailing note), restyled in Worldscape. `Badge` is retired.
 - `CheckPrice/Models/Demo.swift`: `Verdict`, `Product`, `Demo` data.

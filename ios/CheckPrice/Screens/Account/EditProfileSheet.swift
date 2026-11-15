@@ -34,11 +34,6 @@ struct EditProfileSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Edit profile")
-                        .textStyle(.cardTitle)
-                        .foregroundStyle(Palette.textPrimary)
-                }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                         .tint(Palette.textSecondary)

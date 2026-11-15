@@ -1,7 +1,7 @@
 import SwiftUI
 
-// The root: three tabs (Home, Threads, Account) and the thread detail sheet. The bar's look lives
-// in `Components/TabBar.swift`. Each tab sits on `ScreenBackdrop`, so screens draw no backdrop
+// The root: three tabs (Home, Threads, Account), icons only, and the thread detail sheet. The bar's
+// look lives in `Components/TabBar.swift`. Each tab sits on `ScreenBackdrop`, so screens draw no backdrop
 // of their own. Any screen opens a thread by setting `ThreadStore.openThreadID`; this view
 // presents it and clears it on dismiss.
 //
@@ -16,18 +16,15 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            Tab(AppTab.home.title, systemImage: AppTab.home.symbol, value: AppTab.home) {
-                HomeView(autoReveal: $autoReveal)
-                    .background { ScreenBackdrop() }
-            }
-            Tab(AppTab.threads.title, systemImage: AppTab.threads.symbol, value: AppTab.threads) {
-                ThreadsView()
-                    .background { ScreenBackdrop() }
-            }
-            Tab(AppTab.account.title, systemImage: AppTab.account.symbol, value: AppTab.account) {
-                AccountView()
-                    .background { ScreenBackdrop() }
-            }
+            Tab(value: AppTab.home) {
+                screen(HomeView(autoReveal: $autoReveal))
+            } label: { label(.home) }
+            Tab(value: AppTab.threads) {
+                screen(ThreadsView())
+            } label: { label(.threads) }
+            Tab(value: AppTab.account) {
+                screen(AccountView())
+            } label: { label(.account) }
         }
         // Tint still reaches the screens (toolbar buttons, links); the bar's own colours are in TabBarStyle.
         .tint(Palette.glow)
@@ -42,6 +39,24 @@ struct ContentView: View {
             if UserDefaults.standard.bool(forKey: "openThread") { store.openThreadID = store.threads.first?.id }
         }
         .preferredColorScheme(.dark)
+    }
+
+    // Every tab sits on the backdrop and carries the hook that centres the bar's icons.
+    private func screen(_ content: some View) -> some View {
+        content
+            .background { ScreenBackdrop() }
+            .background { TabBarIconInsets(selection: tab).frame(width: 0, height: 0) }
+    }
+
+    // Icon only: the title is kept for VoiceOver and drawn clear by TabBarStyle. The system tab bar
+    // fills every symbol by default; `.none` keeps the outline on tabs that aren't selected.
+    private func label(_ item: AppTab) -> some View {
+        Label {
+            Text(item.title)
+        } icon: {
+            Image(systemName: item.symbol(selected: tab == item))
+                .environment(\.symbolVariants, .none)
+        }
     }
 
     // `.sheet(item:)` needs an Identifiable value; it keeps the detail on screen while it slides away.

@@ -33,14 +33,8 @@ struct AccountSettingsView: View {
         }
         .background(Palette.canvas)
         .navigationBarTitleDisplayMode(.inline)
+        // No title in the bar (owner, 2026-11-15); it holds only the back button.
         .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                Text("Settings")
-                    .textStyle(.cardTitle)
-                    .foregroundStyle(Palette.textPrimary)
-            }
-        }
     }
 
     private static var version: String {

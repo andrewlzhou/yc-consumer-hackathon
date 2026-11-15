@@ -29,13 +29,17 @@ struct AccountView: View {
             // ContentView draws the backdrop behind every tab; keep the stack see-through.
             .containerBackground(.clear, for: .navigation)
             .toolbar {
+                // The handle is profile info, as on Instagram, not a screen title, so it stays.
+                // With no handle set the corner is empty rather than saying "Account".
                 ToolbarItem(placement: .topBarLeading) {
-                    Text(handle.isEmpty ? "Account" : handle)
-                        .font(.hiragino(.w6, size: 20, relativeTo: .title3))
-                        .tracking(-0.2)
-                        .foregroundStyle(Palette.textPrimary)
-                        .lineLimit(1)
-                        .accessibilityAddTraits(.isHeader)
+                    if !handle.isEmpty {
+                        Text(handle)
+                            .font(.hiragino(.w6, size: 20, relativeTo: .title3))
+                            .tracking(-0.2)
+                            .foregroundStyle(Palette.textPrimary)
+                            .lineLimit(1)
+                            .accessibilityAddTraits(.isHeader)
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     NavigationLink {

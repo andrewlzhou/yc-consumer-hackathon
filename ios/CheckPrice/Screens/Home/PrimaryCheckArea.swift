@@ -17,7 +17,7 @@ struct PrimaryCheckArea: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            ScreenTitle("Check Price")
+            // No screen title (owner, 2026-11-15); the spacer keeps the content clear of the top.
             Spacer(minLength: Spacing.titleToForm)
             switch phase {
             case .ready: ready.transition(.rise)

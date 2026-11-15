@@ -47,10 +47,10 @@ struct ThreadsView: View {
         }
     }
 
-    // Title and chips sit in the content, as the first unstyled row, so they scroll with the list.
+    // The chips sit in the content, as the first unstyled row, so they scroll with the list. No
+    // screen title (owner, 2026-11-15).
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
-            ScreenTitle("Threads")
             HStack(spacing: 8) {
                 ForEach(ThreadsListFilter.allCases) { f in
                     Chip(title: f.title, selected: filter == f) {
