@@ -37,8 +37,6 @@ export default defineSchema({
     msrp: v.optional(v.number()),
     isSample: v.boolean(),
     provisional: v.boolean(),
-    // Deprecated: vectors moved to productEmbeddings. Kept optional until migrateInlineEmbeddings has run everywhere.
-    embedding: v.optional(v.array(v.float64())),
   })
     .index("by_family", ["familyKey"])
     .index("by_category", ["category"])

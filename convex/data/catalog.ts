@@ -5,7 +5,7 @@ import { buildSearchText, sizeTokens, tokenize } from "./text";
 
 // What the agent sees of a product: everything except the internal search text.
 export function productView(p: Doc<"products">) {
-  const { searchText: _searchText, embedding: _embedding, ...rest } = p;
+  const { searchText: _searchText, ...rest } = p;
   return rest;
 }
 

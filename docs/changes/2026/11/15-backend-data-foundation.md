@@ -11,5 +11,5 @@
 - Checks: `npm test` 22 passed, including per-scenario numbers for every seeded product; seed loaded on the local backend (2728 points).
 - Changed: `eval/cases.json` (5 seeded + 5 adversarial cases), SerpApi Google Shopping adapter (fixture-tested), `provider` on observations; `npm run seed` is now an action, one mutation per product, keeping product ids stable.
 - Changed: Best Buy live price (`getLivePrice`, optional, never stored) and a Keepa adapter (unused after Ruhaan ruled out paid APIs), both fixture-tested from the docs, not live; see [data providers](../../../backend/data-providers.md). Caution: with `CONVEX_DEPLOY_KEY` set, `convex dev --once` deploys to the shared dev deployment even in anonymous mode; unset it for local runs.
-- Changed: embeddings live in `productEmbeddings`; deployed product rows still carried `embedding`, so products keep it optional for one deploy and `data/embeddings:migrateInlineEmbeddings` moves and clears it (tested).
+- Changed: embeddings live in `productEmbeddings`; deployed product rows still carried `embedding`, so one deploy (24e2962) kept it optional while a tested migration moved 8 vectors and cleared the field on the shared deployment; the field and migration are now removed.
 - Next: real-data ingestion (Keepa, SerpApi insights, Best Buy live), hybrid vector search, unknown-product ingest, docs.
