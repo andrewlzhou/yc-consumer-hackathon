@@ -1,7 +1,7 @@
 # Shopping agent
 
 - Owned by the shopping-agent thread. Code in `convex/agent/`; routes in `convex/agent/http.ts`. Built from spec 02.
-- Status: built; tests run on the deterministic fake provider. Real-model evals and latency are recorded separately.
+- Status: built and verified on the dev deployment with real models; numbers in [agent evals](agent-evals.md).
 
 ## How a scan flows
 

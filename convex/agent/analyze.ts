@@ -132,7 +132,7 @@ type Run = { output: AgentOutput; source: "model" | "heuristic"; issues: string[
 
 async function save(ctx: ActionCtx, productId: Id<"products">, tier: "live" | "full", model: string, scan: Scan, run: Run, usage: { inputTokens: number; outputTokens: number }, ledger: EvidenceLedger, latencyMs: number, isSampleData: boolean, now: number) {
   const reason = isSampleData && !run.output.reason.endsWith(SAMPLE_NOTE) ? run.output.reason + SAMPLE_NOTE : run.output.reason;
-  await ctx.runMutation(internal.agent.store.saveAnalysis, {
+  const analysisId: Id<"analyses"> = await ctx.runMutation(internal.agent.store.saveAnalysis, {
     productId,
     tier,
     source: run.source,
@@ -149,7 +149,7 @@ async function save(ctx: ActionCtx, productId: Id<"products">, tier: "live" | "f
     usage,
     isSampleData,
   });
-  return reason;
+  return { analysisId, reason };
 }
 
 async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Scan, now: number) {
@@ -159,9 +159,9 @@ async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Sca
 }
 
 const pathValidator = v.union(v.literal("cache"), v.literal("live"), v.literal("heuristic"), v.literal("unknown"));
-export const scanResultValidator = v.object({ response: analyzeResponseValidator, path: pathValidator, latencyMs: v.number(), timings: v.record(v.string(), v.number()) });
-export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number> };
-type Card = AnalyzeResponse & { path: ScanResult["path"] };
+export const scanResultValidator = v.object({ response: analyzeResponseValidator, path: pathValidator, latencyMs: v.number(), timings: v.record(v.string(), v.number()), analysisId: v.optional(v.id("analyses")) });
+export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number>; analysisId?: Id<"analyses"> };
+type Card = AnalyzeResponse & { path: ScanResult["path"]; analysisId?: Id<"analyses"> };
 
 // The live path: identify, record the price, then return a fresh stored analysis or run one fast model pass.
 // now is overridable so tests and evals are deterministic against the seed's clock.
@@ -185,10 +185,10 @@ export const analyzeScan = internalAction({
       timings[name] = t - mark;
       mark = t;
     };
-    const finish = async ({ path, ...response }: Card): Promise<ScanResult> => {
+    const finish = async ({ path, analysisId, ...response }: Card): Promise<ScanResult> => {
       const latencyMs = Date.now() - started;
       await ctx.runMutation(internal.agent.store.logScan, { productId: response.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: response.verdict, path, latencyMs, at: started });
-      return { response, path, latencyMs, timings };
+      return { response, path, latencyMs, timings, analysisId };
     };
 
     let match: MatchCandidate | null = null;
@@ -234,9 +234,9 @@ export const analyzeScan = internalAction({
     lap("model");
     const final = finalize(productId, scan, ledger, run.ok ? { output: withReport(run.output, productId, scan, ev), issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
     const isSampleData = data.sampleDataSeen() || match.product.isSample;
-    const reason = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);
+    const { analysisId, reason } = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);
     const pending = !evaluation && !fullFresh && (await queueFullRun(ctx, productId, scan, now));
-    return finish({ productId, matchedTitle: match.product.title, verdict: final.output.verdict, reason, confidence: final.output.confidence, isSampleData, reportStatus: pending ? "pending" : "ready", path: final.source === "model" ? "live" : "heuristic" });
+    return finish({ productId, matchedTitle: match.product.title, verdict: final.output.verdict, reason, confidence: final.output.confidence, isSampleData, reportStatus: pending ? "pending" : "ready", path: final.source === "model" ? "live" : "heuristic", analysisId });
   },
 });
 
@@ -250,7 +250,7 @@ async function recordPrice(ctx: ActionCtx, productId: Id<"products">, scan: Scan
 // The background path: the full tool-use loop with the larger model, stored as the product's detailed report.
 export const runFullAnalysis = internalAction({
   args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()) },
-  handler: async (ctx, { productId, jobId, scan, now: nowArg }): Promise<{ verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number }> => {
+  handler: async (ctx, { productId, jobId, scan, now: nowArg }): Promise<{ analysisId: Id<"analyses">; verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number }> => {
     const started = Date.now();
     const now = nowArg ?? started;
     if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "running" });
@@ -271,9 +271,9 @@ export const runFullAnalysis = internalAction({
       ].join("\n");
       const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: buildTools(data), output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 6, maxRepairs: 2 });
       const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
-      await save(ctx, productId, "full", config.full.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
+      const { analysisId } = await save(ctx, productId, "full", config.full.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "done" });
-      return { verdict: final.output.verdict, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns };
+      return { analysisId, verdict: final.output.verdict, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns };
     } catch (error) {
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "failed", error: String(error).slice(0, 500) });
       throw error;

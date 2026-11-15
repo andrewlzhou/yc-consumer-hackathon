@@ -15,6 +15,14 @@ export const latestAnalyses = internalQuery({
   },
 });
 
+export const analysisById = internalQuery({
+  args: { analysisId: v.id("analyses") },
+  handler: async (ctx, { analysisId }) => {
+    const a = await ctx.db.get(analysisId);
+    return a && { verdict: a.verdict, confidence: a.confidence, reason: a.reason, source: a.source, groundingIssues: a.groundingIssues, usage: a.usage };
+  },
+});
+
 export const saveAnalysis = internalMutation({
   args: {
     productId: v.id("products"),
