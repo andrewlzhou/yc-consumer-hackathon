@@ -83,7 +83,7 @@ describe("live scans of seeded products (fake provider)", () => {
       expect(r.reason).toMatch(/\(sample data\)$/);
       const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products"> });
       expect(report!.analysis!.groundingIssues).toEqual([]);
-      expect(report!.analysis!.evidence.map((e) => e.tool)).toEqual(expect.arrayContaining(["scan", "get_price_stats", "get_promo_patterns", "find_competitors"]));
+      expect(report!.analysis!.evidence.map((e: { tool: string }) => e.tool)).toEqual(expect.arrayContaining(["scan", "get_price_stats", "get_promo_patterns", "find_competitors"]));
     });
 
   test("the 256GB iPad is not confused with the 128GB one", async () => {

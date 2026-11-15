@@ -9,12 +9,15 @@
  */
 
 import type * as agent_analyze from "../agent/analyze.js";
+import type * as agent_evals from "../agent/evals.js";
 import type * as agent_evidence from "../agent/evidence.js";
 import type * as agent_fake from "../agent/fake.js";
 import type * as agent_heuristic from "../agent/heuristic.js";
+import type * as agent_http from "../agent/http.js";
 import type * as agent_identify from "../agent/identify.js";
 import type * as agent_llm from "../agent/llm.js";
 import type * as agent_loop from "../agent/loop.js";
+import type * as agent_monitor from "../agent/monitor.js";
 import type * as agent_openai from "../agent/openai.js";
 import type * as agent_output from "../agent/output.js";
 import type * as agent_port from "../agent/port.js";
@@ -60,12 +63,15 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   "agent/analyze": typeof agent_analyze;
+  "agent/evals": typeof agent_evals;
   "agent/evidence": typeof agent_evidence;
   "agent/fake": typeof agent_fake;
   "agent/heuristic": typeof agent_heuristic;
+  "agent/http": typeof agent_http;
   "agent/identify": typeof agent_identify;
   "agent/llm": typeof agent_llm;
   "agent/loop": typeof agent_loop;
+  "agent/monitor": typeof agent_monitor;
   "agent/openai": typeof agent_openai;
   "agent/output": typeof agent_output;
   "agent/port": typeof agent_port;

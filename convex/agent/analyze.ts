@@ -156,8 +156,11 @@ export const analyzeScan = internalAction({
     ocrLines: v.optional(v.array(v.string())),
     capturedAt: v.optional(v.number()),
     now: v.optional(v.number()),
+    evaluation: v.optional(v.boolean()),
   },
   handler: async (ctx, args): Promise<ScanResult> => {
+    // An evaluation run neither records prices, creates products, uses the cache, nor queues background runs.
+    const evaluation = args.evaluation === true;
     const started = Date.now();
     const now = args.now ?? started;
     const config = agentConfig();
@@ -181,6 +184,7 @@ export const analyzeScan = internalAction({
 
     if (!match) {
       if (!title) return finish({ verdict: "INVESTIGATE", reason: "We couldn't read a product name from the screen.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
+      if (evaluation) return finish({ verdict: "INVESTIGATE", reason: "We don't have price history for this product yet, so we can't judge this price.", confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
       const productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title });
       await recordPrice(ctx, productId, scan, args.url, now, args.capturedAt);
       const queued = await queueFullRun(ctx, productId, scan, now);
@@ -188,11 +192,11 @@ export const analyzeScan = internalAction({
     }
 
     const productId = match.product._id;
-    const [{ live, full }] = await Promise.all([ctx.runQuery(internal.agent.store.latestAnalyses, { productId }), recordPrice(ctx, productId, scan, args.url, now, args.capturedAt)]);
+    const [{ live, full }] = await Promise.all([ctx.runQuery(internal.agent.store.latestAnalyses, { productId }), evaluation ? null : recordPrice(ctx, productId, scan, args.url, now, args.capturedAt)]);
     const fresh = (a: typeof live, maxAge: number) =>
       !!a && Math.abs(now - a.createdAt) < maxAge && (scan.currentPrice === null || a.scanPrice === undefined || Math.abs(a.scanPrice - scan.currentPrice) / scan.currentPrice <= PRICE_TOLERANCE);
     const fullFresh = fresh(full, FULL_CACHE_MS);
-    const cached = fullFresh ? full : fresh(live, LIVE_CACHE_MS) ? live : null;
+    const cached = evaluation ? null : fullFresh ? full : fresh(live, LIVE_CACHE_MS) ? live : null;
     if (cached) {
       const pending = cached.tier === "live" && (await queueFullRun(ctx, productId, scan, now));
       return finish({ productId, matchedTitle: match.product.title, verdict: cached.verdict, reason: cached.reason, confidence: cached.confidence, isSampleData: cached.isSampleData, reportStatus: cached.tier === "full" ? "ready" : pending ? "pending" : "ready", path: "cache" });
@@ -205,7 +209,7 @@ export const analyzeScan = internalAction({
     const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
     const isSampleData = data.sampleDataSeen() || match.product.isSample;
     const reason = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);
-    const pending = !fullFresh && (await queueFullRun(ctx, productId, scan, now));
+    const pending = !evaluation && !fullFresh && (await queueFullRun(ctx, productId, scan, now));
     return finish({ productId, matchedTitle: match.product.title, verdict: final.output.verdict, reason, confidence: final.output.confidence, isSampleData, reportStatus: pending ? "pending" : "ready", path: final.source === "model" ? "live" : "heuristic" });
   },
 });

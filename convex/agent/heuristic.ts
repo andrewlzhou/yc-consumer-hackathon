@@ -142,11 +142,14 @@ export function heuristicAnalysis(input: HeuristicInput): AgentOutput {
     confidence = forecast.confidence;
     reason = `${event.name} is ${event.daysAway} days away, and last time this dropped to ${usd(forecast.low)}.`;
     reasonIds = ids(input.promo);
-  } else if (signals.length > 0 && cur.vsMedianPercent > -5) {
+  } else if (signals.length > 0 && !cur.atOrBelowLow && cur.vsMinPercent > 3) {
     verdict = "WAIT";
-    confidence = 0.55;
-    reason = `This deal isn't real savings: ${usd(current)} is close to the typical ${usd(prices.median)}.`;
-    reasonIds = ids(input.stats);
+    confidence = 0.6;
+    const elsewhere = cheapest && cheapest.retailerSlug !== input.retailer && cheapest.prices!.latest.price < current * 0.95 ? cheapest : null;
+    reason = elsewhere
+      ? `The advertised discount is misleading, and ${elsewhere.retailerSlug} has it for ${usd(elsewhere.prices!.latest.price)} right now.`
+      : `The advertised discount is misleading: ${usd(current)} is close to the typical ${usd(prices.median)}.`;
+    reasonIds = ids(input.stats, input.promo);
   } else if (cur.atOrBelowLow || cur.vsMinPercent <= 3 || cur.percentileRankPercent <= 10) {
     verdict = "BUY_NOW";
     confidence = o.observationCount >= 30 ? 0.8 : 0.65;
