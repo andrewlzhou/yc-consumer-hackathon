@@ -1,0 +1,9 @@
+# 2026-11-15 Check Price iPhone: Threads list
+
+- Author: Claude (Opus agent, one of five parallel iOS agents), for Andrew.
+- Instructions: owner spec for Threads: one thread per time the app was triggered while shopping; detail on tap; heart and save; no search (a general agent does that); chat in threads. Heart = favourite, save = watch the price and alert. Already captured in `ThreadStore.swift`; no new lasting rule.
+- Changed: `ios/CheckPrice/Screens/Threads/ThreadsView.swift` is now the list: in-content "Threads" title, All / Hearted / Saved chips, Today / This week / Earlier sections, rows with verdict-tinted product tile, name, verdict word, retailer · price, time, latest chat line with message count, and heart / saved marks that spring in. Swipe right to heart, left to save, long-press for both. Tapping pushes `ThreadDetailView(threadID:)`. One-line empty state per filter. Rows live in `ThreadsListRow.swift`, filters and grouping in `ThreadsListFilter.swift`.
+- It is a SwiftUI `List` (inset grouped), not Not Yet's ScrollView of FlatCards, because swipe actions only work on List rows. Rows use the FlatCard fill and divider colours, but not its gradient border or shadow.
+- Checks: `xcodegen generate` ran. Mac Catalyst type-check of the Threads files against a copy of the committed tree passed with no errors. The live tree had errors only in another agent's in-progress `Screens/Home/HomeSummary.swift`. Not run on a simulator; no screenshots.
+- Next: check by eye on a device: list margins (`contentMargins` on an inset grouped list), whether the app backdrop shows through the NavigationStack (`containerBackground(.clear, for: .navigation)`), swipe tint colours (iris for heart, electric for save), and section corner radius against Worldscape's 14pt.
+- `#Preview` blocks fail the swiftc type-check without full Xcode (no PreviewsMacros plugin), so this screen has none.
