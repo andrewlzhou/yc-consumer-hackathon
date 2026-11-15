@@ -47,7 +47,7 @@
 - Keep old logs out of routine startup context. Search them only for relevant history. Git stores the full diffs.
 - Run `python3 scripts/check_docs.py`, then the relevant checks in the module docs. CI requires a session note added or updated in each push to `main` or pull request; later pushes in the same session may update that session's note.
 - Review the final diff for unrelated changes and secrets. Report the outcome, verification, and any remaining limitation.
-- Commit after each feature or fix is built and its checks pass, in its own commit with a clear message, so the tree never holds several sessions of uncommitted work. Keep unrelated changes in separate commits. Push when the user asks. Never force-push or overwrite remote work to get a push through.
+- Commit after each feature or fix is built and its checks pass, in its own commit with a clear message, so the tree never holds several sessions of uncommitted work. Keep unrelated changes in separate commits. Committed work on `main` is pushed automatically every five minutes by `scripts/autopush.sh` (Andrew, 2026-11-15), so commit only work whose checks pass and that includes the session note. Never force-push or overwrite remote work to get a push through.
 
 <!-- convex-ai-start -->
 

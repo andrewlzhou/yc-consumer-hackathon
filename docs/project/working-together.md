@@ -23,6 +23,13 @@
 - CI checks document length and requires an added or updated session note in each push to `main` or pull request. Later pushes may update the active session's note; past sessions stay intact.
 - CI cannot judge whether a note is complete or whether an old note was edited; the agent must respect the shared rules.
 
+## Automatic push
+
+- `scripts/autopush.sh` checks GitHub every five minutes and pushes `main` when it has new local commits. It never commits, merges, or force-pushes.
+- Start it from the repo root: `nohup scripts/autopush.sh >/dev/null 2>&1 &`. Stop it with `kill "$(cat build/autopush.pid)"`.
+- It writes to `build/autopush.log`. Only one copy runs at a time.
+- When GitHub has commits this clone lacks, it skips and logs that instead of merging. Pull by hand then.
+
 ## Keep context small
 
 - Start with current rules, the root README, current decisions, and docs for the module you're touching.
