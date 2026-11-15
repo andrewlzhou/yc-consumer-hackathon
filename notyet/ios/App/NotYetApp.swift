@@ -71,10 +71,15 @@ struct NotYetApp: App {
                             .toolbar {
                                 ToolbarItem(placement: .confirmationAction) {
                                     Button("Done") { router.openKey = nil }
+                                        .tint(Palette.textPrimary)
                                 }
                             }
+                            // The report scrolls under a bar of the same near-black, not a grey one.
+                            .toolbarBackground(Palette.canvas, for: .navigationBar)
                     }
                     .environmentObject(router)
+                    .presentationDragIndicator(.visible)
+                    .presentationBackground(Palette.canvas)
                     .preferredColorScheme(.dark)
                 }
         }
