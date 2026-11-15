@@ -313,6 +313,10 @@ parts stubbed. "iOS:" marks where it differs from the Worldscape source.
   `StreamingCaret.image` is the caret alone, for use inside `Text("\(…)\(StreamingCaret.image)")`.
 - `WorkingIndicator(size: 15, color: .white)`: the arc spinner keys use while working.
 - `InsetShadow(shape:color:radius:y:)`: inner shadow that is safe to fade between states.
+- `Verdict.color` (`VerdictColors.swift`): colour for each `Verdict` case in `App/Models.swift`, which also
+  holds the word, symbol and hex. Buy green, Wait amber, Fake deal red, Look around lavender, Check first coral.
+- `SampleDataTag()` and `ConfidenceMeter(value:tint:)` (`ReportBits.swift`): the sample-data label the backend
+  contract requires, and "Confidence ━━── 78%".
 
 **Old names kept** (`Views/Theme.swift`): `Theme.paper/ink/slate/hairline/prussian/prussianLight` map to
 canvas / textPrimary / textSecondary / stroke / electric / glow. `Theme.buy` and `Theme.wait` keep their
