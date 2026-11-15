@@ -7,12 +7,18 @@ struct HomeView: View {
     @Binding var autoReveal: Bool
 
     var body: some View {
-        ScrollView(.vertical, showsIndicators: false) {
-            VStack(spacing: 0) {
-                PrimaryCheckArea(autoReveal: $autoReveal)
-                    .containerRelativeFrame(.vertical)
-                HomeSummary()
+        // The reader's size leaves out the status bar and the tab bar, so the first screen ends at
+        // the bar's top edge and the summary starts below it instead of under it.
+        GeometryReader { proxy in
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 0) {
+                    PrimaryCheckArea(autoReveal: $autoReveal)
+                        .frame(height: proxy.size.height)
+                    HomeSummary()
+                }
             }
+            // Room past the last row so it scrolls clear of the floating tab bar.
+            .contentMargins(.bottom, 24, for: .scrollContent)
         }
     }
 }

@@ -35,11 +35,11 @@ struct EditProfileSheet: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
+                    Button { dismiss() } label: { Text("Cancel").textStyle(.body) }
                         .tint(Palette.textSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { save() }
+                    Button { save() } label: { Text("Done").textStyle(.button) }
                         .tint(Palette.glow)
                 }
             }

@@ -1,6 +1,6 @@
 // The Account tab, laid out the way Instagram's profile page is: handle and a gear in the top bar,
-// avatar beside three counts, name and bio, Edit profile and Share profile keys, then a grid of
-// the user's threads under two tabs (Hearted, Saved). The counts are Check Price's own: checks,
+// avatar beside three counts, name and bio (each only when set), Edit profile and Share profile keys, then a grid of
+// the user's threads under two icon tabs (Hearted, Saved). The counts are Check Price's own: checks,
 // saved threads, and the money saved by waiting on saved threads.
 import SwiftUI
 
@@ -54,6 +54,8 @@ struct AccountView: View {
             }
             .toolbarColorScheme(.dark, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
+            // Settings' back button is the chevron alone, no word beside it.
+            .toolbarRole(.editor)
             .sheet(isPresented: $editing) {
                 EditProfileSheet()
                     .presentationDragIndicator(.visible)
@@ -74,10 +76,12 @@ struct AccountView: View {
                     ProfileStat(value: Text(SavedByWaiting.format(waited)), number: Double(waited), label: "Saved by waiting")
                 }
             }
-            Text(name.isEmpty ? "Your name" : name)
-                .textStyle(.cardTitle)
-                .foregroundStyle(name.isEmpty ? Palette.textTertiary : Palette.textPrimary)
-                .padding(.top, 14)
+            if !name.isEmpty {
+                Text(name)
+                    .textStyle(.cardTitle)
+                    .foregroundStyle(Palette.textPrimary)
+                    .padding(.top, 14)
+            }
             if !bio.isEmpty {
                 Text(bio)
                     .textStyle(.body)

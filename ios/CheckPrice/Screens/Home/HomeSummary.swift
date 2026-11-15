@@ -1,5 +1,6 @@
-// Below Home's first screen: totals across all threads, then the three newest. Everything is
-// computed from `ThreadStore.threads`, so it changes as checks are made or saved.
+// Below Home's first screen: totals across all threads, verdict counts, then the three newest, with
+// no headings over them. Everything is computed from `ThreadStore.threads`, so it changes as checks
+// are made or saved.
 import SwiftUI
 
 struct HomeSummary: View {
@@ -8,23 +9,18 @@ struct HomeSummary: View {
     var body: some View {
         let threads = store.threads
         VStack(alignment: .leading, spacing: 28) {
-            section("Summary") {
-                FlatCard {
-                    VStack(spacing: 0) {
-                        SummaryRow(title: "Checks this month", value: "\(HomeTotals.checksThisMonth(threads))")
-                        Hairline()
-                        SummaryRow(title: "Watching", value: "\(store.saved.count)")
-                        Hairline()
-                        SummaryRow(title: "Saved by waiting", value: HomeTotals.savedByWaiting(store.saved))
-                    }
+            FlatCard {
+                VStack(spacing: 0) {
+                    SummaryRow(title: "Checks this month", value: "\(HomeTotals.checksThisMonth(threads))")
+                    Hairline()
+                    SummaryRow(title: "Saved", value: "\(store.saved.count)")
+                    Hairline()
+                    SummaryRow(title: "Saved by waiting", value: HomeTotals.savedByWaiting(store.saved))
                 }
-                Text("Estimated: today’s price minus the predicted low.")
-                    .textStyle(.footnote)
-                    .foregroundStyle(Palette.textTertiary)
             }
-            section("Verdicts") { VerdictBreakdown(threads: threads) }
+            VerdictBreakdown(threads: threads)
             if !threads.isEmpty {
-                section("Recent") {
+                VStack(spacing: 10) {
                     ForEach(HomeTotals.newest(threads, count: 3)) { thread in
                         SignalRow(product: thread.product, note: thread.startedAt.formatted(.relative(presentation: .named))) {
                             store.openThreadID = thread.id
@@ -36,13 +32,6 @@ struct HomeSummary: View {
         .padding(.horizontal, Spacing.screenMargin)
         .padding(.top, 32)
         .padding(.bottom, 40)
-    }
-
-    private func section<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionLabel(title)
-            content()
-        }
     }
 }
 

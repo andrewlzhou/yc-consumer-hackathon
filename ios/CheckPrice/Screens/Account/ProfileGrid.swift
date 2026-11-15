@@ -2,7 +2,8 @@
 // way Instagram shows posts under a profile. Tapping a tile opens that thread.
 import SwiftUI
 
-// Icon-and-word tabs with a sliding underline under the chosen one, on a full-width hairline.
+// Icon tabs with a sliding underline under the chosen one, on a full-width hairline. The word is
+// for VoiceOver only.
 struct ProfileShelfPicker: View {
     @Binding var selection: ProfileShelf
     @Namespace private var underline
@@ -15,12 +16,9 @@ struct ProfileShelfPicker: View {
                     withAnimation(Motion.layout) { selection = shelf }
                 } label: {
                     VStack(spacing: 10) {
-                        HStack(spacing: 6) {
-                            Image(systemName: chosen ? "\(shelf.symbol).fill" : shelf.symbol)
-                                .font(.system(size: 14, weight: .semibold))
-                            Text(shelf.title).textStyle(.label)
-                        }
-                        .foregroundStyle(chosen ? Palette.textPrimary : Palette.textTertiary)
+                        Image(systemName: chosen ? "\(shelf.symbol).fill" : shelf.symbol)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(chosen ? Palette.textPrimary : Palette.textTertiary)
                         ZStack {
                             if chosen {
                                 Capsule()
@@ -34,6 +32,7 @@ struct ProfileShelfPicker: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel(shelf.title)
                 .accessibilityAddTraits(chosen ? .isSelected : [])
             }
         }
@@ -42,7 +41,7 @@ struct ProfileShelfPicker: View {
     }
 }
 
-// Three square tiles per row, or a one-line empty state when the shelf has nothing.
+// Three square tiles per row; nothing when the shelf is empty.
 struct ProfileGrid: View {
     let threads: [ShoppingThread]
     let shelf: ProfileShelf
@@ -52,10 +51,7 @@ struct ProfileGrid: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            if threads.isEmpty {
-                empty
-                    .transition(.opacity)
-            } else {
+            if !threads.isEmpty {
                 LazyVGrid(columns: columns, spacing: 8) {
                     ForEach(threads) { thread in
                         Button {
@@ -73,20 +69,6 @@ struct ProfileGrid: View {
         .animation(Motion.emptyStateSwap, value: threads.isEmpty)
         .animation(Motion.rise, value: threads.map(\.id))
         .id(shelf)
-    }
-
-    // Worldscape's empty list: a light symbol and one line, no paragraph.
-    private var empty: some View {
-        VStack(spacing: 12) {
-            Image(systemName: shelf.symbol)
-                .font(.system(size: 22, weight: .light))
-                .foregroundStyle(Palette.textTertiary)
-            Text(shelf == .hearted ? "Threads you heart show up here." : "Threads you save show up here.")
-                .textStyle(.caption)
-                .foregroundStyle(Palette.textSecondary)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 56)
     }
 }
 

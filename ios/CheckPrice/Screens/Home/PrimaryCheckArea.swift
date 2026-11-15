@@ -16,9 +16,8 @@ struct PrimaryCheckArea: View {
     private let product = Demo.headphones
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // No screen title (owner, 2026-11-15); the spacer keeps the content clear of the top.
-            Spacer(minLength: Spacing.titleToForm)
+        // Each phase is one block, centred vertically in the first screen.
+        ZStack(alignment: .leading) {
             switch phase {
             case .ready: ready.transition(.rise)
             case .analyzing: analyzing.transition(.rise)
@@ -26,8 +25,6 @@ struct PrimaryCheckArea: View {
             }
         }
         .padding(.horizontal, Spacing.screenMargin)
-        .padding(.top, 8)
-        .padding(.bottom, 24)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .onAppear {
             if autoReveal { autoReveal = false; start() }
@@ -37,24 +34,11 @@ struct PrimaryCheckArea: View {
     // MARK: Ready
 
     private var ready: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Image(systemName: "hand.tap")
-                .font(.system(size: 22, weight: .light))
-                .foregroundStyle(Palette.textSecondary)
-                .symbolEffect(.pulse, options: .repeating)
-                .accessibilityHidden(true)
-                .padding(.bottom, 14)
+        VStack(alignment: .leading, spacing: Spacing.titleToForm) {
             Text("See a price you like?")
                 .textStyle(.statement(size: 30))
                 .foregroundStyle(Palette.textPrimary)
-                .padding(.bottom, 12)
-            Text("Double-tap the back of your phone. We’ll check whether it’s a real deal without taking you out of what you’re doing.")
-                .textStyle(.body)
-                .lineSpacing(6)
-                .foregroundStyle(.white.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: Spacing.titleToForm)
-            Button("Try the reveal", action: start)
+            Button("Check price", action: start)
                 .buttonStyle(KeyButtonStyle())
         }
     }
@@ -62,26 +46,18 @@ struct PrimaryCheckArea: View {
     // MARK: Analyzing
 
     private var analyzing: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-            VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: Spacing.rowIconToText) {
                     Image(systemName: product.icon)
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Palette.textPrimary)
                         .frame(width: ControlHeight.avatar, height: ControlHeight.avatar)
                         .background { Circle().fill(.white.opacity(0.1)) }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(product.name)
-                            .textStyle(.cardTitle)
-                            .foregroundStyle(Palette.textPrimary)
-                            .lineLimit(2)
-                        Text("Screenshot captured")
-                            .textStyle(.caption)
-                            .foregroundStyle(.white.opacity(0.82))
-                    }
+                    Text(product.name)
+                        .textStyle(.cardTitle)
+                        .foregroundStyle(Palette.textPrimary)
+                        .lineLimit(2)
                 }
-                ThinkingLine(step: step)
                 ProgressLine(value: progress)
             }
             .padding(.leading, Spacing.cardLeading)
@@ -90,31 +66,14 @@ struct PrimaryCheckArea: View {
             .padding(.bottom, Spacing.cardBottom + 2)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background { flatCard }
-            Text("You can keep scrolling. We’ll tap you when it’s ready.")
-                .textStyle(.footnote)
-                .foregroundStyle(.white.opacity(0.68))
-                .frame(maxWidth: .infinity)
-                .padding(.top, 16)
-            Spacer(minLength: 0)
-        }
     }
 
     // MARK: Reveal
 
-    // The verdict arrives in steps: symbol, word, then the details, each rising in with a spring.
+    // The verdict arrives in steps: word, summary, then the numbers, each rising in with a spring.
     private var reveal: some View {
         let verdict = product.verdict
         return VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 0)
-            Image(systemName: verdict.symbol)
-                .font(.system(size: 40, weight: .semibold))
-                .foregroundStyle(verdict.color)
-                .symbolEffect(.bounce, value: arrived)
-                .accessibilityHidden(true)
-                .scaleEffect(arrived ? 1 : 0.4)
-                .opacity(arrived ? 1 : 0)
-                .animation(.spring(response: 0.5, dampingFraction: 0.6), value: arrived)
-                .padding(.bottom, 10)
             Text(verdict.word)
                 .textStyle(.wordmark(size: 72))
                 .foregroundStyle(verdict.color)
@@ -130,7 +89,6 @@ struct PrimaryCheckArea: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .modifier(RiseEffect(progress: arrived ? 1 : 0))
                 .animation(Motion.cardArrive.delay(0.18), value: arrived)
-            Spacer(minLength: Spacing.titleToForm)
             VStack(spacing: 18) {
                 HStack(alignment: .top) {
                     Metric(title: "Today", value: product.price)
@@ -141,16 +99,10 @@ struct PrimaryCheckArea: View {
                 .padding(.trailing, Spacing.cardLeading)
                 .padding(.vertical, 16)
                 .background { flatCard }
-                Button(action: openThread) {
-                    HStack {
-                        Text("See the signal")
-                        Spacer()
-                        Image(systemName: "arrow.up.right").font(.system(size: 14, weight: .semibold))
-                    }
-                    .padding(.horizontal, 18)
-                }
-                .buttonStyle(KeyButtonStyle())
+                Button("Details", action: openThread)
+                    .buttonStyle(KeyButtonStyle())
             }
+            .padding(.top, Spacing.titleToForm)
             .modifier(RiseEffect(progress: arrived ? 1 : 0))
             .animation(Motion.cardArrive.delay(0.3), value: arrived)
         }
@@ -163,20 +115,28 @@ struct PrimaryCheckArea: View {
         FlatCard(cornerRadius: Radius.glassCard) { Color.clear }
     }
 
-    private var step: String {
-        progress < 0.34 ? "Finding the product…" : progress < 0.67 ? "Reading 2 years of prices…" : "Picking the best store…"
-    }
-
     private func start() {
         withAnimation(Motion.rise) { phase = .analyzing }
         withAnimation(.easeInOut(duration: 3.4)) { progress = 1 }
         // The same run in the pop-up (Live Activity), seen once the user leaves the app.
-        Task { await CheckActivity.play(verdict: product.verdict, reason: product.summary, over: 3.5) }
+        Task { await CheckActivity.play(verdict: product.verdict, reason: Self.islandReason(product.summary), over: 3.5) }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3.5))
             threadID = store.startThread(for: product)
             withAnimation(Motion.screenSwap) { phase = .reveal }
         }
+    }
+
+    // The island wants a few words: the summary without its hedge word or full stop,
+    // "Likely ~$40 less by Cyber Monday." → "~$40 less by Cyber Monday".
+    static func islandReason(_ summary: String) -> String {
+        var reason = summary.trimmingCharacters(in: .whitespaces)
+        for hedge in ["Likely ", "Usually "] where reason.hasPrefix(hedge) {
+            reason = String(reason.dropFirst(hedge.count))
+            reason = reason.prefix(1).uppercased() + reason.dropFirst()
+        }
+        if reason.hasSuffix(".") { reason.removeLast() }
+        return reason
     }
 
     private func openThread() {
