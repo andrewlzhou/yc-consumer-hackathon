@@ -66,7 +66,7 @@ export const getPriceHistory = internalQuery({
   },
   handler: async (ctx, args) => {
     const { rows, truncated } = await loadWindow(ctx, args.productId, args.retailerSlug, args.from, args.to, args.limit ?? 500);
-    return { points: rows.map(toPoint), truncated };
+    return { points: rows.map((r) => ({ ...toPoint(r), url: r.url })), truncated };
   },
 });
 
