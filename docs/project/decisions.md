@@ -6,14 +6,26 @@
 
 - 2026-11-15: the product is an AI shopping assistant that says whether to buy now or wait; see the [README](../../README.md).
 - Work is split into three workstreams that each get improved over time: backend, surfacing, and UI/UX.
+- 2026-11-15 (Ruhaan): the client is an iOS 26 app in SwiftUI. Back Tap running a Shortcut is the first trigger;
+  Control Center, Action Button, or share menu can replace it later. See [iOS capture](../backend/ios-capture.md).
+- 2026-11-15 (Ruhaan): the screenshot never leaves the phone and is never stored; only extracted fields are sent.
+- 2026-11-15 (Ruhaan): the backend is an LLM agent that reasons over retrieved evidence, not a rules engine.
+  Exact math, storage, scheduling, and caching stay in code. See [product context](../backend/product.md).
+- 2026-11-15 (Ruhaan): seeded or simulated data is always labeled as sample data and never fires real notifications.
+- 2026-11-15 (Ruhaan): backend work lands on branch `ruhaan_backend`. See [orchestration](../backend/orchestration.md).
 
 ## Initial setup choices
 
 - Convex is the backend (database and server functions). Chosen 2026-11-15. See [backend](../backend/README.md).
 - Commit `convex/_generated/`, `.agents/skills/`, `.claude/skills/`, and `skills-lock.json`, so every clone has the same Convex code and agent guides.
+- The phone contract lives in `convex/lib/contract.ts`; see [contract](../backend/contract.md).
+- Tests use vitest with convex-test (in-memory). Local development uses an anonymous local Convex backend until a cloud
+  deployment exists.
 
 ## Open questions
 
-- Where historical price data comes from, and which retailers are covered first.
-- Client platform: iPhone app, Safari extension, or both, and which entry point comes first.
+- Which price data sources we can use this weekend, and which retailers work live versus seeded.
 - How competing products are found and matched for comparison.
+- Live-path latency: cached analysis versus a short live agent pass. Decided by measurement.
+- Push delivery: APNs from Convex, a relay, or local notifications as the demo fallback.
+- What role Revyl (required by the hackathon) should play; it likely can't test Back Tap. Ask the organizers.

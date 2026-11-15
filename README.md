@@ -22,7 +22,8 @@ An AI shopping assistant that tells you whether a product is worth buying right 
 
 ## What exists today
 
-- Product idea chosen 2026-11-15. Everything above is the plan; no product features are built yet. The Convex backend is set up and empty.
+- Product idea chosen 2026-11-15. Everything above is the plan; no product features are built yet.
+- Backend work started on branch `ruhaan_backend`: the data tables and the phone-to-backend contract exist. Price data, the agent, and monitoring are being built.
 
 ## Where this goes
 
@@ -30,7 +31,7 @@ An AI shopping assistant that tells you whether a product is worth buying right 
 
 ## Find your way
 
-- `convex/` — the backend (Convex). Set up, but nothing built yet.
+- `convex/` — the backend (Convex). Tables and the phone contract so far.
 - [Docs](docs/README.md) — setup, module guides, and current decisions.
 - [Agent rules](AGENTS.md) — how Codex, Claude, and other contributors should work here.
 - [Change history](docs/changes/README.md) — short session notes; full code history lives in Git.
