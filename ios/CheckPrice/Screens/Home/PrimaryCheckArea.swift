@@ -170,6 +170,8 @@ struct PrimaryCheckArea: View {
     private func start() {
         withAnimation(Motion.rise) { phase = .analyzing }
         withAnimation(.easeInOut(duration: 3.4)) { progress = 1 }
+        // The same run in the pop-up (Live Activity), seen once the user leaves the app.
+        Task { await CheckActivity.play(verdict: product.verdict, reason: product.summary, over: 3.5) }
         Task { @MainActor in
             try? await Task.sleep(for: .seconds(3.5))
             threadID = store.startThread(for: product)
