@@ -166,3 +166,59 @@ test("recordBatch writes provider history once per day and drops bad points", as
   const s = await t.query(internal.data.prices.getPriceStats, { productId, now: SEED_NOW, windowDays: 30, retailerSlug: "amazon" });
   expect(s.overall).toMatchObject({ observationCount: 1, outOfStockCount: 1, sources: { api: 2 } });
 });
+
+describe("untrusted scan prices", () => {
+  const scan = (args: Record<string, unknown>) =>
+    t.mutation(internal.data.prices.recordObservation, { productId: ids["airpods-pro-3"], source: "scan", observedAt: SEED_NOW, ...args } as never);
+  const stats = () =>
+    t.query(internal.data.prices.getPriceStats, { productId: ids["airpods-pro-3"], now: SEED_NOW, windowDays: 30, currentPrice: 150 });
+
+  test("a fake $1 scan is rejected even though history is thin per retailer", async () => {
+    const r = await scan({ retailer: "bestbuy", price: 1 });
+    expect(r.status).toBe("rejected");
+    const s = await stats();
+    expect(s.overall.prices!.min).toBeGreaterThan(100);
+  });
+
+  test("a plausible but uncorroborated scan does not move the low or the typical price", async () => {
+    const before = await stats();
+    expect((await scan({ retailer: "target", price: 120, deviceId: "dev-a" })).status).toBe("recorded");
+    const after = await stats();
+    expect(after.window.excludedScans).toBe(1);
+    expect(after.overall.prices).toEqual(before.overall.prices);
+    const promo = await t.query(internal.data.prices.findPromoPatterns, { productId: ids["airpods-pro-3"], now: SEED_NOW });
+    expect(promo.episodes.some((e) => e.minPrice === 120)).toBe(false);
+  });
+
+  test("an api price within 10% at the same retailer corroborates the scan", async () => {
+    await scan({ retailer: "target", price: 120, deviceId: "dev-a" });
+    await t.mutation(internal.data.prices.recordObservation, {
+      productId: ids["airpods-pro-3"], retailer: "target", price: 125, observedAt: SEED_NOW - 3600_000, source: "api", provider: "serpapi-google-product",
+    });
+    const s = await stats();
+    expect(s.window.excludedScans).toBe(0);
+    expect(s.overall.prices!.min).toBe(120);
+  });
+
+  test("scans from two distinct devices that agree are trusted; one device repeating itself is not", async () => {
+    await scan({ retailer: "target", price: 120, deviceId: "dev-a" });
+    await scan({ retailer: "target", price: 121, deviceId: "dev-a", observedAt: SEED_NOW - 7 * 3600_000 });
+    expect((await stats()).window.excludedScans).toBe(2);
+    await scan({ retailer: "target", price: 119, deviceId: "dev-b", observedAt: SEED_NOW - 3600_000 });
+    expect((await stats()).window.excludedScans).toBe(0);
+  });
+
+  test("monitoring never sees an uncorroborated scan as the current price", async () => {
+    await scan({ retailer: "target", price: 120, deviceId: "dev-a" });
+    const state = await t.query(internal.monitoring.ports.readState, { productId: ids["airpods-pro-3"], now: SEED_NOW });
+    expect(state!.snapshot.currentPrice).toBe(179.99);
+    expect(state!.snapshot.priorLow).toBe(179);
+  });
+
+  test("unknown retailer strings are rejected and create no retailer rows", async () => {
+    const r = await scan({ retailer: "totally-fake-store.biz", price: 179.99 });
+    expect(r).toEqual({ status: "rejected", reason: "unknown retailer" });
+    const slugs = await t.run(async (ctx) => (await ctx.db.query("retailers").take(50)).map((x) => x.slug));
+    expect(slugs.sort()).toEqual(["amazon", "bestbuy", "target", "walmart"]);
+  });
+});

@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import { internalAction, internalQuery } from "../_generated/server";
 import { loadWindow, computePromo } from "../data/prices";
-import { DAY, median, priced } from "../data/stats";
+import { DAY, median, priced, trustedPoints } from "../data/stats";
 import type { Snapshot } from "./policy";
 import { analysisForMonitoring } from "../agent/monitor";
 
@@ -20,7 +20,7 @@ export const readState = internalQuery({
     const product = await ctx.db.get(args.productId);
     if (!product) return null;
     const { rows } = await loadWindow(ctx, args.productId, undefined, args.now - 365 * DAY, args.now);
-    const inStock = priced(rows);
+    const inStock = priced(trustedPoints(rows));
     if (inStock.length === 0) return null;
     const latestPerRetailer = new Map<string, (typeof inStock)[number]>();
     for (const r of inStock) {

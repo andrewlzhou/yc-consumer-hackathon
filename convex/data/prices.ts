@@ -3,7 +3,7 @@ import { internalMutation, internalQuery, type QueryCtx } from "../_generated/se
 import type { Id } from "../_generated/dataModel";
 import { observationSourceValidator } from "../lib/contract";
 import { normalizeRetailer } from "./retailers";
-import { DAY, findClaimedDiscounts, findSaleEpisodes, median, priced, round2, summarize, wasPriceCheck, type PricePoint } from "./stats";
+import { DAY, findClaimedDiscounts, findSaleEpisodes, median, priced, round2, summarize, trustedPoints, wasPriceCheck, type PricePoint } from "./stats";
 
 const MAX_POINTS = 3000;
 const MAX_WINDOW_DAYS = 400;
@@ -46,8 +46,9 @@ function windowBounds(now: number, windowDays: number | undefined) {
   return { from: now - days * DAY, to: now, days };
 }
 
-const toPoint = (r: { retailerSlug: string; price?: number; originalPrice?: number; inStock: boolean; observedAt: number; source: string; provider?: string }): PricePoint => ({
+const toPoint = (r: { retailerSlug: string; price?: number; originalPrice?: number; inStock: boolean; observedAt: number; source: string; provider?: string; deviceId?: string }): PricePoint => ({
   provider: r.provider,
+  deviceId: r.deviceId,
   retailerSlug: r.retailerSlug,
   price: r.price,
   originalPrice: r.originalPrice,
@@ -77,10 +78,11 @@ export async function computeStats(
 ) {
   const { from, to, days } = windowBounds(args.now, args.windowDays);
   const { rows, truncated } = await loadWindow(ctx, args.productId, args.retailerSlug, from, to);
-  const points = rows.map(toPoint);
+  const all = rows.map(toPoint);
+  const points = trustedPoints(all);
   const retailers = [...new Set(points.map((p) => p.retailerSlug))].sort();
   return {
-    window: { from, to, days, truncated },
+    window: { from, to, days, truncated, excludedScans: all.length - points.length },
     isSampleData: points.some((p) => p.source === "seed"),
     overall: summarize(points, args.currentPrice),
     perRetailer: retailers.map((retailerSlug) => ({
@@ -108,7 +110,7 @@ export async function computePromo(
 ) {
   const { from, to, days } = windowBounds(args.now, args.windowDays ?? 365);
   const { rows } = await loadWindow(ctx, args.productId, args.retailerSlug, from - BASELINE_LOOKBACK, to);
-  const withLookback = rows.map(toPoint);
+  const withLookback = trustedPoints(rows.map(toPoint));
   const points = withLookback.filter((p) => p.observedAt >= from);
   const retailersSeen = new Set(points.map((p) => p.retailerSlug));
   const events = await ctx.db
@@ -178,6 +180,8 @@ export const findPromoPatterns = internalQuery({
 
 const MIN_PRICE = 0.5;
 const MAX_PRICE = 50_000;
+const SCAN_LOW = 0.4;
+const SCAN_HIGH = 2.5;
 const OUTLIER_LOW = 0.25;
 const OUTLIER_HIGH = 4;
 const DEDUPE_WINDOW = 6 * 60 * 60 * 1000;
@@ -195,6 +199,7 @@ export const recordObservation = internalMutation({
     source: observationSourceValidator,
     provider: v.optional(v.string()),
     url: v.optional(v.string()),
+    deviceId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const retailerSlug = normalizeRetailer(args.retailer);
@@ -209,14 +214,18 @@ export const recordObservation = internalMutation({
     }
     if (price !== undefined) {
       price = round2(price);
-      const { rows } = await loadWindow(ctx, args.productId, retailerSlug, observedAt - 90 * DAY, observedAt, 200);
-      const recent = priced(rows.map(toPoint)).map((p) => p.price);
-      if (recent.length >= 5) {
-        const typical = median(recent);
-        if (price < typical * OUTLIER_LOW || price > typical * OUTLIER_HIGH) {
-          return { status: "rejected" as const, reason: `price ${price} is far from typical ${round2(typical)}` };
+      // The reference is the product's last few trusted prices at any retailer, so thin per-retailer history
+      // can't be used to slip a fake price through. Scans get tighter bounds than api and scrape data.
+      const { rows: productRows } = await loadWindow(ctx, args.productId, undefined, observedAt - 365 * DAY, observedAt, 200);
+      const reference = priced(trustedPoints(productRows.map(toPoint))).slice(-5).map((p) => p.price);
+      if (reference.length > 0) {
+        const typical = median(reference);
+        const [low, high] = args.source === "scan" ? [SCAN_LOW, SCAN_HIGH] : [OUTLIER_LOW, OUTLIER_HIGH];
+        if (price < typical * low || price > typical * high) {
+          return { status: "rejected" as const, reason: `price ${price} is far from the recent typical ${round2(typical)}` };
         }
       }
+      const { rows } = await loadWindow(ctx, args.productId, retailerSlug, observedAt - DEDUPE_WINDOW, observedAt, 20);
       const last = rows[rows.length - 1];
       if (last && last.source === args.source && last.price === price && observedAt - last.observedAt < DEDUPE_WINDOW && observedAt >= last.observedAt) {
         return { status: "duplicate" as const, observationId: last._id };
@@ -226,9 +235,6 @@ export const recordObservation = internalMutation({
       price !== undefined && args.originalPrice !== undefined && Number.isFinite(args.originalPrice) && args.originalPrice > price
         ? round2(args.originalPrice)
         : undefined;
-    if (!(await ctx.db.query("retailers").withIndex("by_slug", (q) => q.eq("slug", retailerSlug)).first())) {
-      await ctx.db.insert("retailers", { slug: retailerSlug, name: args.retailer.trim() });
-    }
     const observationId = await ctx.db.insert("priceObservations", {
       productId: args.productId,
       retailerSlug,
@@ -239,6 +245,7 @@ export const recordObservation = internalMutation({
       source: args.source,
       provider: args.provider,
       url: args.url,
+      deviceId: args.deviceId,
     });
     return { status: "recorded" as const, observationId, retailerSlug };
   },

@@ -100,7 +100,7 @@ test("a simulated price outside the demo helper never sends", async () => {
   expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
 });
 
-test("end to end on seeded data: seed history never sends, a real scan drop does", async () => {
+test("end to end on seeded data: seed history never sends, a lone scan drop doesn't, a real api drop does", async () => {
   const t = convexTest(schema, modules);
   const { products } = await t.action(internal.seed.run.all, {});
   const productId = Object.values(products)[0] as Id<"products">;
@@ -114,12 +114,11 @@ test("end to end on seeded data: seed history never sends, a real scan drop does
   const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });
   const current = state!.snapshot;
   expect(current.priceSource).toBe("seed");
-  await t.mutation(internal.data.prices.recordObservation, {
-    productId,
-    retailer: "target",
-    price: Math.min(current.currentPrice, current.priorLow ?? current.currentPrice) - 15,
-    source: "scan",
-  });
+  const dropped = Math.min(current.currentPrice, current.priorLow ?? current.currentPrice) - 15;
+  await t.mutation(internal.data.prices.recordObservation, { productId, retailer: "target", price: dropped, source: "scan", deviceId: "dev-a" });
+  await t.action(internal.monitoring.check.checkProduct, { productId });
+  expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
+  await t.mutation(internal.data.prices.recordObservation, { productId, retailer: "walmart", price: dropped, source: "api", provider: "serpapi-google-product" });
   const res = await t.action(internal.monitoring.check.checkProduct, { productId });
   expect(res).toMatchObject([{ status: "sent" }]);
   expect((await log()).filter((r) => r.status === "sent")).toHaveLength(1);

@@ -38,7 +38,7 @@ async function upsertProduct(ctx: MutationCtx, p: SeedProduct): Promise<Id<"prod
     .take(20);
   const existing = family.find((x) => x.isSample && sameVariant(x.variant, p.variant));
   if (!existing) return ctx.db.insert("products", doc);
-  await ctx.db.replace(existing._id, { ...doc, embedding: existing.embedding });
+  await ctx.db.replace(existing._id, doc);
   return existing._id;
 }
 
@@ -131,6 +131,8 @@ export const clear = internalMutation({
     for await (const p of ctx.db.query("products")) {
       if (!p.isSample) continue;
       await deleteSeedObservations(ctx, p._id);
+      const embedding = await ctx.db.query("productEmbeddings").withIndex("by_productId", (q) => q.eq("productId", p._id)).first();
+      if (embedding) await ctx.db.delete(embedding._id);
       const digest = await ctx.db.query("priceDigests").withIndex("by_productId", (q) => q.eq("productId", p._id)).unique();
       if (digest) await ctx.db.delete(digest._id);
       await ctx.db.delete(p._id);

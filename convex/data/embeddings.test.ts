@@ -66,3 +66,23 @@ test("similar products stay in the category and skip the same family", async () 
   expect(r.mode).toBe("vector");
   expect(r.products.map((p) => p.product.familyKey).sort()).toEqual(["sony-wh-1000xm5", "sony-wh-1000xm6"]);
 });
+
+test("vectors live in their own table and the backfill pages past the first page", async () => {
+  vi.stubEnv("OPENAI_API_KEY", "test-key");
+  stubOpenAI();
+  await t.run(async (ctx) => {
+    for (let i = 0; i < 130; i++) {
+      await ctx.db.insert("products", {
+        title: `Filler Gadget ${i}`, brand: "Acme", category: "gadgets", familyKey: `filler-${i}`, specs: {}, aliases: [],
+        searchText: `filler gadget ${i}`, isSample: false, provisional: false,
+      });
+    }
+  });
+  expect(await t.action(internal.data.embeddings.embedCatalog, {})).toEqual({ status: "ok", embedded: 138 });
+  const counts = await t.run(async (ctx) => ({
+    embeddings: (await ctx.db.query("productEmbeddings").collect()).length,
+    inline: (await ctx.db.query("products").collect()).filter((p) => "embedding" in p).length,
+  }));
+  expect(counts).toEqual({ embeddings: 138, inline: 0 });
+  expect(await t.action(internal.data.embeddings.embedCatalog, {})).toEqual({ status: "ok", embedded: 0 });
+});

@@ -8,6 +8,7 @@ export type PricePoint = {
   observedAt: number;
   source: string;
   provider?: string;
+  deviceId?: string;
 };
 
 export type PricedPoint = PricePoint & { price: number };
@@ -16,6 +17,28 @@ export const DAY = 24 * 60 * 60 * 1000;
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+const CORROBORATION_WINDOW = 3 * DAY;
+const CORROBORATION_TOLERANCE = 0.1;
+const MIN_CORROBORATING_DEVICES = 2;
+
+// A scan price comes from anyone's phone, so it only counts toward lows, typical prices, and notification
+// triggers once something else backs it: an api or scrape price at the same retailer within 3 days and 10%, or scans
+// from at least two distinct devices that agree the same way. Seed points never corroborate. Out-of-stock scans pass through.
+export function trustedPoints<T extends PricePoint>(points: T[]): T[] {
+  const scans = points.filter((p) => p.source === "scan" && p.inStock && p.price !== undefined);
+  if (scans.length === 0) return points;
+  const real = points.filter((p) => (p.source === "api" || p.source === "scrape") && p.inStock && p.price !== undefined);
+  const near = (a: T, b: T) =>
+    Math.abs(a.observedAt - b.observedAt) <= CORROBORATION_WINDOW && Math.abs(a.price! - b.price!) / b.price! <= CORROBORATION_TOLERANCE;
+  const untrusted = new Set<T>();
+  for (const s of scans) {
+    if (real.some((r) => r.retailerSlug === s.retailerSlug && near(s, r))) continue;
+    const devices = new Set(scans.filter((o) => o.retailerSlug === s.retailerSlug && o.deviceId && near(s, o)).map((o) => o.deviceId));
+    if (devices.size < MIN_CORROBORATING_DEVICES) untrusted.add(s);
+  }
+  return untrusted.size === 0 ? points : points.filter((p) => !untrusted.has(p));
+}
 
 export function priced(points: PricePoint[]): PricedPoint[] {
   return points.filter((p): p is PricedPoint => p.inStock && typeof p.price === "number");

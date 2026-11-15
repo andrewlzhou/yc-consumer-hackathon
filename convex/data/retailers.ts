@@ -7,6 +7,7 @@ export const KNOWN_RETAILERS = [
   { slug: "amazon", name: "Amazon", domain: "amazon.com", aliases: ["amazon", "amzn"] },
 ];
 
+// Only retailers we know map to a slug; anything else is null so untrusted strings never create rows.
 export function normalizeRetailer(raw: string | undefined): string | null {
   if (!raw) return null;
   const cleaned = raw
@@ -20,5 +21,5 @@ export function normalizeRetailer(raw: string | undefined): string | null {
   const known = KNOWN_RETAILERS.find(
     (r) => r.slug === cleaned.replace(/\s+/g, "") || r.aliases.includes(cleaned),
   );
-  return known ? known.slug : cleaned.replace(/\s+/g, "-");
+  return known ? known.slug : null;
 }

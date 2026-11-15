@@ -3,9 +3,9 @@ import { internalMutation, internalQuery, type QueryCtx } from "../_generated/se
 import type { Doc, Id } from "../_generated/dataModel";
 import { buildSearchText, sizeTokens, tokenize } from "./text";
 
-// What the agent sees of a product: everything except the embedding.
+// What the agent sees of a product: everything except the internal search text.
 export function productView(p: Doc<"products">) {
-  const { embedding: _embedding, searchText: _searchText, ...rest } = p;
+  const { searchText: _searchText, ...rest } = p;
   return rest;
 }
 

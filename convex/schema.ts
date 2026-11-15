@@ -37,14 +37,22 @@ export default defineSchema({
     msrp: v.optional(v.number()),
     isSample: v.boolean(),
     provisional: v.boolean(),
-    embedding: v.optional(v.array(v.float64())),
   })
     .index("by_family", ["familyKey"])
     .index("by_category", ["category"])
     .searchIndex("search_text", {
       searchField: "searchText",
       filterFields: ["category", "brand"],
-    })
+    }),
+
+  // Vectors live apart from products so catalog reads stay small (a 1536-float vector is about 12 KB).
+  productEmbeddings: defineTable({
+    productId: v.id("products"),
+    category: v.string(),
+    model: v.string(),
+    embedding: v.array(v.float64()),
+  })
+    .index("by_productId", ["productId"])
     .vectorIndex("by_embedding", {
       vectorField: "embedding",
       dimensions: 1536,
@@ -63,6 +71,7 @@ export default defineSchema({
     source: observationSourceValidator,
     provider: v.optional(v.string()),
     url: v.optional(v.string()),
+    deviceId: v.optional(v.string()),
   })
     .index("by_product_and_observedAt", ["productId", "observedAt"])
     .index("by_product_and_retailerSlug_and_observedAt", [
