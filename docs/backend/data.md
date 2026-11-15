@@ -20,7 +20,7 @@
 
 ## Providers
 
-- Real-data adapters (SerpApi, Keepa, Best Buy), their env vars, costs, and what is verified: [data providers](data-providers.md).
+- Real-data sources (SerpApi, Wayback, Best Buy; Keepa unused), their env vars, costs, and what is verified: [data providers](data-providers.md).
 
 ## Rules
 
