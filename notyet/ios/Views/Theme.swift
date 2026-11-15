@@ -69,13 +69,11 @@ struct VerdictStyle {
     let word: String
     let color: Color
 
+    // Old entry point, kept for callers; the words and colors come from the shared Verdict table.
     init(_ verdict: String?) {
-        switch verdict {
-        case "BUY_NOW": word = "Buy"; color = Theme.buy
-        case "WAIT": word = "Wait"; color = Theme.wait
-        case "FAKE_DEAL": word = "Fake deal"; color = Theme.fake
-        default: word = "Checking"; color = Theme.slate
-        }
+        let v = Verdict(verdict)
+        word = v.word
+        color = v == .unknown ? Theme.slate : v.color
     }
 }
 
