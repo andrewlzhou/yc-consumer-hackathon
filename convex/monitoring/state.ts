@@ -48,6 +48,7 @@ export const commit = internalMutation({
     candidates: v.array(v.object({ trigger: triggerV, fact: v.string() })),
     blockedBy: v.optional(v.string()),
     chosen: v.optional(v.object({ trigger: triggerV, judge: v.string(), why: v.string() })),
+    declinedWhy: v.optional(v.string()),
     title: v.string(),
     body: v.string(),
     simulated: v.boolean(),
@@ -95,7 +96,7 @@ export const commit = internalMutation({
       return { status: "suppressed" as const, by: args.blockedBy };
     }
     if (!args.chosen) {
-      await log(first, "suppressed", "judge", "judge", "judge declined every candidate");
+      await log(first, "suppressed", "judge", "judge", args.declinedWhy ?? "judge declined every candidate");
       return { status: "suppressed" as const, by: "judge" };
     }
     const candidate = args.candidates.find((c) => c.trigger === args.chosen!.trigger) ?? first;

@@ -46,7 +46,13 @@ export async function evaluate(ctx: ActionCtx, args: EvaluateArgs): Promise<{ de
       checkGuardrails({ candidate: c, snap, state, sent, key: dedupeKey(item.deviceId, item.productId, c.trigger, snap.currentPrice), now: Date.now(), allowSimulated: simulated }),
     );
     const open = candidates.filter((_, i) => !blocks[i]);
-    const decision = open.length ? await judge({ title: args.title, snap, state, candidates: open }) : undefined;
+    // A target price is the user's own explicit ask, so crossing it notifies without the LLM's veto.
+    const target = open.find((c) => c.trigger === "target_hit");
+    const decision = target
+      ? { notify: true, trigger: target.trigger, judge: "target", why: target.fact }
+      : open.length
+        ? await judge({ title: args.title, snap, state, candidates: open })
+        : undefined;
     const chosen = decision?.notify && decision.trigger ? { trigger: decision.trigger, judge: decision.judge, why: decision.why } : undefined;
     const label = chosen ? TRIGGER_LABEL[chosen.trigger] : TRIGGER_LABEL[candidates[0]?.trigger ?? "new_low"];
     const result = await ctx.runMutation(internal.monitoring.state.commit, {
@@ -55,6 +61,7 @@ export async function evaluate(ctx: ActionCtx, args: EvaluateArgs): Promise<{ de
       candidates: open.length ? open : candidates,
       blockedBy: open.length ? undefined : blocks[0],
       chosen,
+      declinedWhy: decision && !chosen ? decision.why : undefined,
       title: (simulated ? "[Simulated] " : "") + args.title + " - " + label,
       body: snap.reason,
       simulated,

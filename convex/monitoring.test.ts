@@ -191,3 +191,22 @@ test("the sweep asks for a price refresh on the first products only", async () =
   const jobs = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
   expect(jobs.map((j) => (j.args[0] as { refresh: boolean }).refresh).sort()).toEqual([false, true]);
 });
+
+test("a target price crossing notifies even when the LLM judge would decline; other declines keep the judge's reason", async () => {
+  vi.stubEnv("OPENAI_API_KEY", "k");
+  vi.stubGlobal("fetch", async () => new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify({ notify: false, why: "not compelling" }) } }] })));
+  try {
+    const { check, log } = await setup({ targetPrice: 95 });
+    await check({ currentPrice: 100 });
+    await check({ currentPrice: 94, priorLow: 99 });
+    const rows = await log();
+    expect(rows.find((r) => r.status === "sent")).toMatchObject({ trigger: "target_hit", judge: "target" });
+
+    const other = await setup();
+    await other.check({ currentPrice: 100 });
+    await other.check({ currentPrice: 90 });
+    expect((await other.log())[0]).toMatchObject({ status: "suppressed", suppressedBy: "judge", judgeWhy: "not compelling" });
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});

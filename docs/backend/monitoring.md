@@ -30,7 +30,7 @@
 - `monitoring/ports.ts` is the only file touching the data and agent threads. Current price = cheapest latest row per retailer that is in stock and fresh (api 72h, scan 24h), real rows before seed rows. No fresh price means no check.
 - Previous low and typical price use real (non-seed) rows only. If any seed row is in the window, or the agent's analysis says isSampleData, the verdict counts as sample-derived and BUY_NOW-flip and better-alternative notifications are blocked.
 - Per device: code lists candidate events, applies guardrails, then the judge picks. The first real check is a baseline and never notifies.
-- Judge: OpenAI when `OPENAI_API_KEY` is set (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini), else a deterministic rules judge. It only picks a listed candidate. Body is the agent's reason line.
+- A crossed target price notifies without the judge (the user asked for it). Judge for the rest: OpenAI when `OPENAI_API_KEY` is set (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini), else a deterministic rules judge. It only picks a listed candidate. Body is the agent's reason line.
 - Guardrails (policy.ts), re-checked inside the commit mutation: seed or unlabeled simulated price, sample-derived verdict, prefs, dedupe on device+product+trigger+price, 24h cooldown per device+product (a further 10% drop overrides), minimum drop max($0.50, 1%).
 
 ## Delivery
