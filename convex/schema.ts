@@ -1,6 +1,7 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { observationSourceValidator } from "./lib/contract";
+import { watchlistTables } from "./watchlist/tables";
 
 const specValue = v.union(v.string(), v.number(), v.boolean());
 
@@ -84,4 +85,7 @@ export default defineSchema({
     observationCount: v.number(),
     isSampleData: v.boolean(),
   }).index("by_productId", ["productId"]),
+
+  // ---- Watchlist & monitoring (convex/watchlist, convex/monitoring) ----
+  ...watchlistTables,
 });
