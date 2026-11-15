@@ -1,0 +1,241 @@
+{
+ "about": "Catalog matching eval (2026-11-15): scanned-style titles against the shared demo catalog. expect null = must not match anything. Run: npx convex run data/matchEval:run",
+ "cases": [
+  {
+   "group": "clean",
+   "title": "SONY WH1000XM5/B Wireless Industry Leading Noise Canceling Headphones",
+   "expect": {
+    "familyKey": "sony-wh-1000xm5"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Sony WH-1000XM6 Noise Canceling Wireless Headphones Black",
+   "expect": {
+    "familyKey": "sony-wh-1000xm6"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Bose QC Ultra Headphones 2nd Gen Black",
+   "expect": {
+    "familyKey": "bose-qc-ultra-headphones-2"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Bose QuietComfort Ultra Headphones II Wireless",
+   "expect": {
+    "familyKey": "bose-qc-ultra-headphones-2"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Apple AirPods Pro 3 MFHP4LL/A",
+   "expect": {
+    "familyKey": "apple-airpods-pro-3"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "AirPods Pro (3rd generation) with heart rate sensing",
+   "expect": {
+    "familyKey": "apple-airpods-pro-3"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Apple iPad 11-inch Wi-Fi 128GB Blue (A16)",
+   "expect": {
+    "familyKey": "apple-ipad-11-a16-wifi",
+    "variant": {
+     "storage": "128GB"
+    }
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Apple 11\" iPad (A16 chip) 256GB - Pink",
+   "expect": {
+    "familyKey": "apple-ipad-11-a16-wifi",
+    "variant": {
+     "storage": "256GB"
+    }
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Ninja 4qt Air Fryer AF101",
+   "expect": {
+    "familyKey": "ninja-af101"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Ember Mug 2, 10 oz, Black - Temperature Control Smart Mug",
+   "expect": {
+    "familyKey": "ember-mug-2",
+    "variant": {
+     "capacity": "10oz"
+    }
+   }
+  },
+  {
+   "group": "clean",
+   "title": "PlayStation 5 Console Slim Disc Edition",
+   "expect": {
+    "familyKey": "sony-ps5-slim-disc"
+   }
+  },
+  {
+   "group": "clean",
+   "title": "Sony PS5 Slim 1TB Disc Console",
+   "expect": {
+    "familyKey": "sony-ps5-slim-disc"
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "S0NY WH-1OOOXM5 Headphones",
+   "expect": {
+    "familyKey": "sony-wh-1000xm5"
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "Sony WH1000 XM6 Wireless NC Headphone",
+   "expect": {
+    "familyKey": "sony-wh-1000xm6"
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "B0SE QuietC0mfort Ultra Headph0nes (2nd Gen)",
+   "expect": {
+    "familyKey": "bose-qc-ultra-headphones-2"
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "Apple AirP0ds Pr0 3",
+   "expect": {
+    "familyKey": "apple-airpods-pro-3"
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "iPad A16 256 GB WiFi Silver 2025",
+   "expect": {
+    "familyKey": "apple-ipad-11-a16-wifi",
+    "variant": {
+     "storage": "256GB"
+    }
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "NINJA AF1O1 Air Fryer 4 Quart Black/Gray",
+   "expect": {
+    "familyKey": "ninja-af101"
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "Ember Temperature Control Smart Mug² 10oz",
+   "expect": {
+    "familyKey": "ember-mug-2",
+    "variant": {
+     "capacity": "10oz"
+    }
+   }
+  },
+  {
+   "group": "mangled",
+   "title": "PS5 Slim",
+   "expect": {
+    "familyKey": "sony-ps5-slim-disc"
+   }
+  },
+  {
+   "group": "semantic",
+   "title": "noise cancelling over ear headphones by sony, model xm5",
+   "expect": {
+    "familyKey": "sony-wh-1000xm5"
+   }
+  },
+  {
+   "group": "semantic",
+   "title": "apple wireless earbuds pro third gen",
+   "expect": {
+    "familyKey": "apple-airpods-pro-3"
+   }
+  },
+  {
+   "group": "semantic",
+   "title": "Ninja Air Fryer that Crisps, Roasts, Reheats, & Dehydrates, 4 Quart",
+   "expect": {
+    "familyKey": "ninja-af101"
+   }
+  },
+  {
+   "group": "semantic",
+   "title": "heated coffee mug that keeps temperature, 10 ounce",
+   "expect": {
+    "familyKey": "ember-mug-2",
+    "variant": {
+     "capacity": "10oz"
+    }
+   }
+  },
+  {
+   "group": "near-duplicate",
+   "title": "Sony WH-1000XM4 Wireless Noise Canceling Headphones",
+   "expect": null
+  },
+  {
+   "group": "near-duplicate",
+   "title": "Apple AirPods Pro 2 with MagSafe Case USB-C",
+   "expect": null
+  },
+  {
+   "group": "near-duplicate",
+   "title": "Bose QuietComfort Ultra Earbuds 2nd Gen",
+   "expect": null
+  },
+  {
+   "group": "near-duplicate",
+   "title": "Apple iPad Air 11-inch M3 128GB",
+   "expect": null
+  },
+  {
+   "group": "near-duplicate",
+   "title": "Ninja AF161 Max XL Air Fryer 5.5 Quart",
+   "expect": null
+  },
+  {
+   "group": "near-duplicate",
+   "title": "Ember Mug 2 14 oz",
+   "expect": null
+  },
+  {
+   "group": "near-duplicate",
+   "title": "PlayStation 5 Digital Edition Slim",
+   "expect": null
+  },
+  {
+   "group": "unknown",
+   "title": "Xbox Series X 1TB Console",
+   "expect": null
+  },
+  {
+   "group": "unknown",
+   "title": "Kindle Paperwhite 16GB",
+   "expect": null
+  },
+  {
+   "group": "unknown",
+   "title": "Sony WH-1000XM5 Replacement Ear Pads",
+   "expect": null
+  }
+ ]
+}

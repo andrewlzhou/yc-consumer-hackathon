@@ -3,9 +3,21 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "convex dev"
+    "dev": "convex dev",
+    "test": "vitest run",
+    "test:live": "LIVE_TESTS=1 vitest run judge.live",
+    "typecheck": "tsc --noEmit -p convex",
+    "seed": "convex run seed/run:all"
   },
   "dependencies": {
+    "@convex-dev/rate-limiter": "^0.4.3",
     "convex": "^1.48.0"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^5.0.0",
+    "@types/node": "^26.6.6",
+    "convex-test": "^0.0.71",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
   }
 }

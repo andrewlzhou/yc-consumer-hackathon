@@ -23,3 +23,4 @@ data/
 .vscode/
 CLAUDE.local.md
 .claude/settings.local.json
+!convex/data/

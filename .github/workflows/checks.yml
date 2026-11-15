@@ -20,12 +20,15 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: python3 scripts/check_docs.py --base "$BASE_REF"
 
-  # Add one job per module for its own lint and tests, for example:
-  # app:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v7.0.1
-  #     - name: Lint
-  #       run: <lint command>
-  #     - name: Test
-  #       run: <test command>
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test

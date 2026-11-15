@@ -22,7 +22,10 @@ An AI shopping assistant that tells you whether a product is worth buying right 
 
 ## What exists today
 
-- Product idea chosen 2026-11-15. Everything above is the plan; no product features are built yet. The Convex backend is set up and empty.
+- The backend works on branch `ruhaan_backend`: a product title or supported store link returns a verdict card, with a price chart and detailed report available separately.
+- A small electronics demo uses real online price history; gaps use clearly labeled sample data. Broader store coverage is still being verified.
+- Watchlists, target prices and a notification inbox work. Real iPhone push delivery still needs Apple credentials and a device.
+- There is no iOS app yet. [Try the backend now](docs/backend/try-now.md) from a terminal; no app API key is needed for the Convex-authorized internal demo.
 
 ## Where this goes
 
@@ -30,7 +33,7 @@ An AI shopping assistant that tells you whether a product is worth buying right 
 
 ## Find your way
 
-- `convex/` — the backend (Convex). Set up, but nothing built yet.
+- `convex/` — the backend: price data, shopping analysis, watchlists and monitoring.
 - [Docs](docs/README.md) — setup, module guides, and current decisions.
 - [Agent rules](AGENTS.md) — how Codex, Claude, and other contributors should work here.
 - [Change history](docs/changes/README.md) — short session notes; full code history lives in Git.

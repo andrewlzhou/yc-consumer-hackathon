@@ -1,0 +1,399 @@
+{
+"_note": "Real google_shopping results fetched 2026-11-15 (queries: Sony WH-1000XM5/XM6, Bose QC Ultra 2nd Gen), trimmed.",
+"xm5": {
+"shopping_results": [
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones",
+"source": "Best Buy",
+"product_id": "17755277695162489284",
+"extracted_price": 198.0,
+"extracted_old_price": 398
+},
+{
+"title": "Sony WH-1000XM5 Wireless Headphones",
+"source": "Walmart - Secondipity",
+"product_id": "4815469244780238856",
+"extracted_price": 159.99
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Cancelling Headphones",
+"source": "Walmart - Texas Depot",
+"product_id": "6884924529506505289",
+"extracted_price": 297.99,
+"extracted_old_price": 352
+},
+{
+"title": "Sony WH-1000XM5 Noise-Canceling Wireless Over-Ear Headphones",
+"source": "Lowe's",
+"product_id": "15388125741562851526",
+"extracted_price": 281.99
+},
+{
+"title": "Sony - WH-1000XM5 Wireless Noise Canceling Over-Ear - Silver",
+"source": "Best Buy",
+"product_id": "10145275590262490454",
+"extracted_price": 298.0
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones Pro Stand Kit",
+"source": "Target",
+"product_id": "162213450686589812",
+"extracted_price": 339.99,
+"extracted_old_price": 400
+},
+{
+"title": "Sony WH 1000XM5 Noise Canceling Wireless Over Ear Headphones Black 2 Year Product Repair and Replace Under 500.00 | WH-1000XM5BLK-3K",
+"source": "Lowe's",
+"product_id": "10459958274446477733",
+"extracted_price": 299.99
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones with USB Port and Stand",
+"source": "Best Buy",
+"product_id": "3482982892087570077",
+"extracted_price": 298.0
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones with Truly Wireless Earbuds Bundle",
+"source": "Macy's",
+"product_id": "8228552220699199009",
+"extracted_price": 399.99
+},
+{
+"title": "Sony WH-1000XM5 Noise-Canceling Wireless Over-Ear Headphones (Silver)",
+"source": "Newegg.com - Bolt Electronics",
+"product_id": "4274160697129540437",
+"extracted_price": 262.0
+},
+{
+"title": "Sony Wh 1000xm5 Wireless Noise Canceling Over Ear Silver Headphones Bundle",
+"source": "Best Buy",
+"product_id": "13956220208398568261",
+"extracted_price": 299.99
+},
+{
+"title": "Sony WH-1000XM5 Noise-Canceling Wireless Over-Ear Headphones + JBL T110 in Ear Headphones",
+"source": "Lowe's",
+"product_id": "2716735250472720844",
+"extracted_price": 281.99
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones Bundle",
+"source": "Walmart - Focus Camera",
+"product_id": "1936029669289916187",
+"extracted_price": 298.0,
+"extracted_old_price": 149
+},
+{
+"title": "Sony WH-1000XM5 The Best Wireless Noise Canceling Headphones with Auto Noise Canceling Optimizer, Crystal Clear Hands-Free Calling, and Alexa Voice",
+"source": "Macy's",
+"product_id": "2367535182146437844",
+"extracted_price": 326.11,
+"extracted_old_price": 398
+},
+{
+"title": "Sony WH-1000XM5 Noise Cancelling Wireless Headphones",
+"source": "Entrepreneur",
+"product_id": "13127014286083544157",
+"extracted_price": 184.99
+},
+{
+"title": "Bundle - Sony - WH-1000XM5 Noise-Canceling Wireless Over-Ear Headphones - Blue",
+"source": "Best Buy",
+"product_id": "2263351286591621231",
+"extracted_price": 398.0
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones Silver",
+"source": "Focus Camera",
+"product_id": "2467467909373265491",
+"extracted_price": 289.95
+},
+{
+"title": "Sony WH 1000XM5 Noise Canceling Wireless Over Ear Headphones Silver 2 Year Repair and Replace Protection Plan | WH-1000XM5SVR-3K",
+"source": "Lowe's",
+"product_id": "6501052005487285417",
+"extracted_price": 299.99
+},
+{
+"title": "Sony Wh-1000XM5 wireless noise canceling Closed-Back Over-Ear headphones White with Power Bank",
+"source": "Adorama",
+"product_id": "1179290057775761038",
+"extracted_price": 298.0,
+"extracted_old_price": 398
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones with Auto Noise Canceling Optimizer, Crystal Clear Hands-Free Calling, and Voice Control",
+"source": "Walmart - AVC Photo & Video Specialty",
+"product_id": "1641555511596844484",
+"extracted_price": 398.0
+}
+]
+},
+"xm6": {
+"shopping_results": [
+{
+"title": "Sony WH-1000XM6 Wireless Noise Canceling Headphones",
+"source": "Best Buy",
+"product_id": "5636327565946258541",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+},
+{
+"title": "Sony WH-1000XM6 Best Wireless Noise Canceling Headphones",
+"source": "Target",
+"product_id": "15472347998554749414",
+"extracted_price": 391.49,
+"extracted_old_price": 450
+},
+{
+"title": "Sony Wh-1000xm6 Black Wireless Noise-Canceling Headphones Bundle with Truly Wireless",
+"source": "Lowe's",
+"product_id": "8904096043550928905",
+"extracted_price": 383.99,
+"extracted_old_price": 399
+},
+{
+"title": "Sony WH-1000XM6 Noise-Canceling Headphones Audio Transmitter",
+"source": "Best Buy",
+"product_id": "16582089807795184365",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+},
+{
+"title": "Sony Wh-1000xm6 Wireless Noise Canceling Headphones with Air Tracker Tag",
+"source": "Walmart - Focus Camera",
+"product_id": "14650660910395170110",
+"extracted_price": 378.0
+},
+{
+"title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones",
+"source": "Best Buy",
+"product_id": "17755277695162489284",
+"extracted_price": 198.0,
+"extracted_old_price": 398
+},
+{
+"title": "Sony WH 1000XM6 Wireless Noise Canceling Headphones Silver Wireless In Ear Headphones Black | WH1000XM6-SVR-1K",
+"source": "Lowe's",
+"product_id": "15561677395470456133",
+"extracted_price": 383.99,
+"extracted_old_price": 192
+},
+{
+"title": "Sony Wh-1000XM6 Wireless Noise Canceling Closed Back Over-Ear Headphones",
+"source": "Macy's",
+"product_id": "13625540268421106944",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+},
+{
+"title": "Sony WH-1000XM6 Wireless Noise-Cancelling Headphones with QN3 Processor Bundle with Bluetooth Audio Transmitter",
+"source": "Best Buy",
+"product_id": "2324648799398884917",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+},
+{
+"title": "Sony Best Noise Canceling Headphones",
+"source": "BuyDig.com",
+"product_id": "15964730559226022446",
+"extracted_price": 378.0
+},
+{
+"title": "Sony WH 1000XM6 Wireless Noise Canceling Headphones Black 2 Year Repair and Replace Protection Plan | WH1000XM6-BLK-4K",
+"source": "Lowe's",
+"product_id": "3906902878967156865",
+"extracted_price": 388.99
+},
+{
+"title": "Sony WH-1000XM6 Wireless Noise-Canceling Headphones with Accessories",
+"source": "Best Buy",
+"product_id": "6463790812318897318",
+"extracted_price": 378.0,
+"extracted_old_price": 398
+},
+{
+"title": "Sony WH-1000XM6-BLACK Wireless Noise Cancelling Headphones with a 2 Year Amber Protection Plan",
+"source": "Walmart - Walts TV",
+"product_id": "7666082592893530022",
+"extracted_price": 378.0,
+"extracted_old_price": 398
+},
+{
+"title": "Sony Wh-1000xm6 Wireless Noise-Canceling Headphones with Acces",
+"source": "Focus Camera",
+"product_id": "11025631615292346446",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+},
+{
+"title": "Sony Wh-1000xm6 Wireless Noise-Canceling Headphones with Speaker Bundle",
+"source": "Best Buy",
+"product_id": "4170206503985012091",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+},
+{
+"title": "Sony WH-1000XM6 Best Wireless Noise Canceling Headphones Exclusive CPS",
+"source": "Lowe's",
+"product_id": "5670271859978097931",
+"extracted_price": 388.99
+},
+{
+"title": "Sony Wh-1000xm6 Wireless Noise Cancelling Over Ear Headphone Bundle with gSport Case",
+"source": "SKY by Gramophone",
+"product_id": "14416623436774905564",
+"extracted_price": 378.0,
+"extracted_old_price": 485
+},
+{
+"title": "Sony WH-1000XM6 Wireless Noise-Canceling Headphones with QN3 Processor",
+"source": "ItsWorthMore",
+"product_id": "5145942900073147886",
+"extracted_price": 279.99
+},
+{
+"title": "Sony Wh-1000XM6-black Wireless Noise Cancelling Headphones with a 3 Year Amber Protection Plan",
+"source": "Best Buy",
+"product_id": "16822409847659917548",
+"extracted_price": 409.99,
+"extracted_old_price": 490
+},
+{
+"title": "Sony WH-1000XM6 Wireless Noise-Canceling Headphones Bundle with Rechargeable Clip-On Light",
+"source": "Walmart - Focus Camera",
+"product_id": "14660182471909622461",
+"extracted_price": 378.0,
+"extracted_old_price": 458
+}
+]
+},
+"bose": {
+"shopping_results": [
+{
+"title": "Bose QuietComfort Ultra Wireless Headphones",
+"source": "Best Buy",
+"product_id": "18005777686068683712",
+"extracted_price": 339.99,
+"extracted_old_price": 449
+},
+{
+"title": "Bose QuietComfort Ultra Headphones (2nd Gen) - Refurbished - Black",
+"source": "Bose",
+"product_id": "4343241150111385997",
+"extracted_price": 279.0
+},
+{
+"title": "Bose QuietComfort Ultra Headphones",
+"source": "Bose",
+"product_id": "1653831153294424008",
+"extracted_price": 199.0
+},
+{
+"title": "Bose QuietComfort Headphones Noise",
+"source": "Kohl's",
+"product_id": "6091794317383124759",
+"extracted_price": 330.79,
+"extracted_old_price": 359
+},
+{
+"title": "Bose QuietComfort Ultra 2nd Gen Noise Cancelling Headphones with Accessory",
+"source": "Best Buy",
+"product_id": "11949366327734088522",
+"extracted_price": 455.0
+},
+{
+"title": "Bose QuietComfort Ultra Wireless Noise Cancelling Earbuds",
+"source": "Walmart",
+"product_id": "17452493350315801047",
+"extracted_price": 299.0
+},
+{
+"title": "Bose QuietComfort 2nd Gen Wireless ANC Over-Ear Headphones Stand & Wall Charger",
+"source": "Best Buy",
+"product_id": "9729666374854646710",
+"extracted_price": 364.0,
+"extracted_old_price": 393
+},
+{
+"title": "New QuietComfort Ultra Bluetooth Headphones (2nd Gen), Wireless Headphones with Spatial Audio, Over Ear Noise Cancelling with Mic, Up to 30 Hours of",
+"source": "Walmart - Seller",
+"product_id": "11039210783674985483",
+"extracted_price": 21.09
+},
+{
+"title": "QuietComfort Ultra Bluetooth Headphones (2nd Gen) Bundle with Fast Charger, Wireless Headphones with Spatial Audio, Over Ear Noise Cancelling with Mic",
+"source": "Best Buy",
+"product_id": "16867282399903819643",
+"extracted_price": 452.99
+},
+{
+"title": "Black QuietComfort Ultra Headphones",
+"source": "Unclaimed Baggage",
+"product_id": "14695720574978576903",
+"extracted_price": 199.99
+},
+{
+"title": "Bose - QuietComfort Ultra 2nd Gen Headphones (White Smoke) with Audio Adapter",
+"source": "Best Buy",
+"product_id": "17839204350689493499",
+"extracted_price": 455.0
+},
+{
+"title": "Bose QuietComfort Ultra 2nd Gen Noise Cancelling Headphones with Accessory",
+"source": "Focus Camera",
+"product_id": "12660742392908162644",
+"extracted_price": 455.0
+},
+{
+"title": "Bose QuietComfort Ultra Bluetooth Headphones Bundle with Fast Charger Wireless Headphones",
+"source": "Best Buy",
+"product_id": "10019945524750315029",
+"extracted_price": 452.99
+},
+{
+"title": "Black QuietComfort Ultra Noise Cancelling Headphones With White Earpads",
+"source": "Unclaimed Baggage",
+"product_id": "17082286867944604213",
+"extracted_price": 199.99
+},
+{
+"title": "Bose - QuietComfort Ultra 2nd Gen Headphones (Midnight Violet) with Audio Adapter",
+"source": "Best Buy",
+"product_id": "8245107372111567128",
+"extracted_price": 455.0
+},
+{
+"title": "Bose QuietComfort Ultra Wireless Headphones with Kanto Living Headphone Stand (2nd Gen, Desert Gold)",
+"source": "bhphotovideo.com",
+"product_id": "13947524479846784676",
+"extracted_price": 483.99
+},
+{
+"title": "Bose QuietComfort Ultra Wireless Headphones Bundle",
+"source": "Best Buy",
+"product_id": "5238364806178153438",
+"extracted_price": 454.0
+},
+{
+"title": "Bose QuietComfort Ultra Bluetooth Headphones (2nd Gen) Bundle with Fast Charger, Wireless Headphones, Over Ear Noise Cancelling with Mic, Up to 30 Hou",
+"source": "Best Buy",
+"product_id": "1031531479261653770",
+"extracted_price": 452.99
+},
+{
+"title": "Bose \u00d7 KidSuper QuietComfort Ultra Headphones",
+"source": "KidSuper",
+"product_id": "16850725538404227665",
+"extracted_price": 499.0
+},
+{
+"title": "Bose - QuietComfort Ultra 2nd Gen Headphones (White Smoke) with AirTag 2nd Gen",
+"source": "Best Buy",
+"product_id": "3199977837770013419",
+"extracted_price": 455.0
+}
+]
+}
+}
