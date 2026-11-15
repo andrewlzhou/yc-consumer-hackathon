@@ -3,8 +3,9 @@
 // (`CheckingWords` in Shared/CheckAttributes.swift). Decided: the same wisps in the
 // verdict's hue, the verdict word, and a very short reason, all centred, in Hiragino Sans.
 // Deliberately absent (owner, 2026-11-15): store, product name, clock or other icon, logo.
-// The compact leading and minimal slots are empty, kept for a future logo.
-// The Dynamic Island's outer pill is always black, so the art sits inside its regions.
+// The compact leading and minimal slots show only the wisps, kept for a future logo.
+// The wisps fill every island region edge to edge (content margins 0); only the camera cutout
+// stays black.
 import ActivityKit
 import SwiftUI
 import WidgetKit
@@ -62,15 +63,36 @@ private struct LockScreenView: View {
     }
 }
 
-// Expanded island: a rounded wisp card under the camera, words centred on it.
-private struct ExpandedCard: View {
+// One wisp field for the whole island. Every region draws the same canvas, placed at the same
+// spot on screen (offset by the region's own position), so where regions meet or overlap the
+// art lines up and they read as one continuous field. Only the camera cutout stays black.
+private struct IslandField: View {
     let state: CheckAttributes.ContentState
+    let canvas: CGSize
 
     var body: some View {
-        VerdictStack(state: state)
-            .frame(height: state.isChecking ? 64 : 84)
-            .background { WispField(palette: state.palette, phase: state.phase) }
-            .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        GeometryReader { proxy in
+            let origin = proxy.frame(in: .global).origin
+            WispField(palette: state.palette, phase: state.phase)
+                .frame(width: canvas.width, height: canvas.height)
+                .offset(x: -origin.x, y: -origin.y)
+        }
+    }
+}
+
+// Canvas sizes in screen points, from the top-left of the screen; wider than any iPhone so
+// every region finds its slice. The island's top sits about 11 pt down.
+private enum Canvas {
+    static let compact = CGSize(width: 480, height: 52)
+    static func expanded(_ state: CheckAttributes.ContentState) -> CGSize {
+        CGSize(width: 480, height: state.isChecking ? 130 : 160)
+    }
+}
+
+private extension View {
+    func islandField(_ state: CheckAttributes.ContentState, _ canvas: CGSize) -> some View {
+        frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background { IslandField(state: state, canvas: canvas) }
     }
 }
 
@@ -82,26 +104,40 @@ struct CheckLiveActivity: Widget {
                 .activitySystemActionForegroundColor(Color.white.opacity(0.94))
         } dynamicIsland: { context in
             let s = context.state
+            let big = Canvas.expanded(s)
             return DynamicIsland {
+                // Leading, trailing and centre carry only the field (the leading slot is kept
+                // for a future logo); the words sit centred in the bottom region.
+                DynamicIslandExpandedRegion(.leading) { Color.clear.islandField(s, big) }
+                DynamicIslandExpandedRegion(.trailing) { Color.clear.islandField(s, big) }
+                DynamicIslandExpandedRegion(.center) { Color.clear.islandField(s, big) }
                 DynamicIslandExpandedRegion(.bottom) {
-                    ExpandedCard(state: s)
+                    VerdictStack(state: s)
+                        .padding(.vertical, 8)
+                        .islandField(s, big)
                 }
             } compactLeading: {
-                EmptyView()
+                // Field only: reserved for a future logo, and it balances the word on the right.
+                Color.clear.islandField(s, Canvas.compact)
             } compactTrailing: {
                 Text(s.word)
                     .font(IslandType.word(13))
-                    .foregroundStyle(s.palette.ink)
+                    .foregroundStyle(Color.white.opacity(0.96))
                     .lineLimit(1)
                     // The longest word ("Markdownmusing") is about 125 pt at 13 pt; cap the slot
                     // and let it shrink rather than widen the island.
                     .minimumScaleFactor(0.75)
                     .frame(maxWidth: 100)
+                    .padding(.horizontal, 8)
                     .contentTransition(.opacity)
+                    .islandField(s, Canvas.compact)
             } minimal: {
-                EmptyView()
+                Color.clear.islandField(s, Canvas.compact)
             }
-            .contentMargins(.all, 10, for: .expanded)
+            .contentMargins(.all, 0, for: .expanded)
+            .contentMargins(.all, 0, for: .compactLeading)
+            .contentMargins(.all, 0, for: .compactTrailing)
+            .contentMargins(.all, 0, for: .minimal)
             .keylineTint(s.palette.rim)
         }
     }

@@ -2,32 +2,35 @@
 // ios/Widget/, the shared state in ios/Shared/CheckAttributes.swift.
 //
 // Demo for simulators and cloud devices: launch with `-demoLiveActivity YES` (optionally
-// `-demoVerdict wait|buy|alternative|investigate`, default wait). It shows a playful checking
-// word (a new one each update, from `CheckingWords`) with the wisps moving every 1.5 seconds,
-// then the verdict at 6 seconds. iOS hides an app's own pop-up while that app is open, so swipe
+// `-demoVerdict wait|buy|alternative|investigate`, default wait; `-demoCheckingSeconds N`, default
+// 6; `-demoHoldChecking YES` to never decide). It shows a playful checking word (a new one each
+// update, from `CheckingWords`) with the wisps moving every 1.5 seconds, then the verdict. iOS hides an app's own pop-up while that app is open, so swipe
 // home right after launch to see the Dynamic Island.
 import ActivityKit
 import UIKit
 
 @MainActor
 enum CheckActivity {
-    // Checking for `duration` seconds in four wisp poses, then the verdict with an alert, which
-    // expands the island and lights the Lock Screen.
-    static func play(verdict: Verdict, reason: String, over duration: TimeInterval) async {
+    // Checking for `duration` seconds (a new wisp pose and word every 1.5 s), then the verdict
+    // with an alert, which expands the island and lights the Lock Screen. `hold` never decides.
+    static func play(verdict: Verdict, reason: String, over duration: TimeInterval, hold: Bool = false) async {
         // Keep going after the user swipes home, or the verdict waits for the next launch.
         let task = UIApplication.shared.beginBackgroundTask(withName: "checkActivity")
         defer { UIApplication.shared.endBackgroundTask(task) }
 
         guard let activity = await start() else { return }
-        let step = duration / 4
+        let steps = max(2, Int((duration / 1.5).rounded()))
+        let step = duration / Double(steps)
         let wordStart = activity.content.state.wordStart
-        for phase in 1...3 {
+        var phase = 0
+        while hold || phase < steps - 1 {
             try? await Task.sleep(for: .seconds(step))
+            phase += 1
             await activity.update(ActivityContent(
                 state: .init(stage: .checking, phase: phase, wordStart: wordStart), staleDate: nil))
         }
         try? await Task.sleep(for: .seconds(step))
-        await decide(activity, verdict: verdict, reason: reason, phase: 4)
+        await decide(activity, verdict: verdict, reason: reason, phase: phase + 1)
     }
 
     // Ends any earlier pop-up (starting a second one can fail), then starts one in `checking`.
@@ -59,7 +62,11 @@ enum CheckActivity {
         let defaults = UserDefaults.standard
         guard defaults.bool(forKey: "demoLiveActivity") else { return }
         let (verdict, reason) = demoVerdict(defaults.string(forKey: "demoVerdict") ?? "wait")
-        await play(verdict: verdict, reason: reason, over: 6)
+        // `-demoCheckingSeconds N` (default 6) holds the checking stage longer for screenshots;
+        // `-demoHoldChecking YES` never decides.
+        let seconds = defaults.double(forKey: "demoCheckingSeconds")
+        await play(verdict: verdict, reason: reason, over: seconds > 0 ? seconds : 6,
+                   hold: defaults.bool(forKey: "demoHoldChecking"))
     }
 
     // A few words each.
