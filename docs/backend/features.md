@@ -19,7 +19,7 @@
 | 4 | Was-price vs history, misleading flag, why | live | stats.wasPrice, discount section | inflated-was eval |
 | 4 | Price raised before a sale | live (sample only) | insights.discountAuthenticity.preSaleHikes | report test (Ninja seed) |
 | 4 | Repeated discounts | live | discountAuthenticity, sale_price_is_normal_price | report |
-| 5 | One of four verdicts with confidence | live | agent/analyze.ts, prompt.ts | evals 10/10, 9/9; real demo 8/9, 6/7 |
+| 5 | One of four verdicts with confidence | live | agent/analyze.ts, prompt.ts | evals 10/10, 9/9; real demo 9/9, 7/7 |
 | 6 | Watchlist, target prices, preferences | live | watchlist [YCCO-5] | monitoring.md |
 | 6 | Keep monitoring prices, judge changes | live | monitoring cron, judge [YCCO-5] | monitoring.md |
 | 6 | Push notifications | partial | APNs sender, inbox fallback [YCCO-5] | APNs reachable; no device yet |
@@ -45,5 +45,4 @@
   and pre-sale-hike stories are sample-only. Ninja AF101 has no first-party Google offers. Text match picks a PS5
   for "Xbox Series X" (score 0.63); the agent's model pick is the only guard there.
 - YCCO-8: resolver supports Nike, AE, lululemon, Apple and the four retailers; store demo backfills in progress.
-- Agent (open): Bose real case recommends the XM5 over expected BUY_NOW (alternative-first rule; needs a call).
 - Agent (open): no streaming; a value-for-money score beyond price gap and spec match.

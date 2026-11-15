@@ -29,7 +29,8 @@
   AGENT_FULL_MODEL, AGENT_*_REASONING.
 - Verified (4cecf5f): no-write real demo leaves app rows unchanged; URL-only /analyze on Apple and Walmart links
   identifies from the slug in 0.17-0.33 s with no page fetch; resolver runs in the background.
-- Next: decide Bose expectation vs alternative-first rule; add YCCO-8 store products to run-cases-demo.json.
+- Real demo after the Bose decision (alternative-first at a year low): 9/9 live, 7/7 full (4ad60c7).
+- Next: add YCCO-8's store products to eval/run-cases-demo.json.
 - Gotchas: deploy only from a clean origin/ruhaan_backend tip. HTTP probes on the shared deployment record real scan
   rows; clean them up. Tests that hit /analyze need `rateLimiterTest.register(t)`.
 

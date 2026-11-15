@@ -13,9 +13,11 @@
 
 - Original cases after the changes: 10/10 matches, 10/10 acceptable live verdicts, 9/9 full verdicts and grounded
   reports (`full-4`). The unknown product correctly gets no full run in this no-write eval.
-- Real demo (`demo-2`): 9/9 matches; 8/9 live and 6/7 full verdicts match the expected set. All full reports are
-  grounded. The miss is Bose: the fixture expects BUY_NOW at $339.99, but the agent prefers the comparable Sony
-  XM5 at $198 (41.8% less). This follows the prompt's alternative-first rule; the mismatch remains visible.
+- Real demo (`demo-2`): 9/9 matches, 8/9 live and 6/7 full; the miss was Bose, expected BUY_NOW at its $339.99
+  year low while the agent chose the Sony XM5 at $198 (41.8% less). Captain decision (2026-11-15): better value
+  wins, so the case now expects CONSIDER_ALTERNATIVE; rationale and history are kept in the case file.
+- After that decision and a prompt fix (`demo-3`): 9/9 matches, 9/9 live, 7/7 full, all grounded. A live Bose report
+  names its year low and the trade-offs (Sony: LDAC, older; Bose: spatial and lossless USB-C audio).
 - The real demo caught a bug: competitor price used the last retailer observed (XM5 at Target, $399.99) instead
   of the cheapest current retailer (Best Buy, $198). Fixed in b1d9b44; XM6 now recommends the XM5 as intended.
 - Inflated-was full-tier miss (INVESTIGATE on a scan above stored prices) is fixed: the prompt treats a higher
