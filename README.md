@@ -17,6 +17,7 @@
 ## Find your way
 
 - <!-- TODO: one bullet per top-level folder once code exists. -->
+- `convex/` — the backend (Convex). Set up, but nothing built yet.
 - [Docs](docs/README.md) — setup, module guides, and current decisions.
 - [Agent rules](AGENTS.md) — how Codex, Claude, and other contributors should work here.
 - [Change history](docs/changes/README.md) — short session notes; full code history lives in Git.
@@ -24,4 +25,5 @@
 ## Start locally
 
 - <!-- TODO: link each module's setup doc. -->
+- [Backend setup](docs/backend/README.md) — install packages, then run `npm run dev` once to log in to Convex.
 - New agents should start with [AGENTS.md](AGENTS.md). Keep this README current as the premise evolves.

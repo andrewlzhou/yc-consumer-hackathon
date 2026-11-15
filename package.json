@@ -1,0 +1,11 @@
+{
+  "name": "yc-consumer-hackathon",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "convex dev"
+  },
+  "dependencies": {
+    "convex": "^1.48.0"
+  }
+}
