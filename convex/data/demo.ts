@@ -7,13 +7,15 @@ import { deleteSeedObservations } from "../seed/run";
 import { refreshDigestFor } from "./digests";
 import { embedProducts } from "./embeddings";
 import { refreshProduct } from "./sources/serpapi";
+import { STORE_DEMO_PRODUCTS } from "./sources/stores/products";
 import { ingestWayback } from "./sources/wayback";
 import { buildSearchText } from "./text";
 
 // The real-data demo set, picked 2026-11-15 by how much real history exists (docs/backend/data-demo.md).
 // History comes from Google's per-store price history via SerpApi, archived product pages (Wayback), and the
 // daily SerpApi refresh. These products carry no seed points: turning one real deletes its seeded history.
-type DemoProduct = SeedProduct & { googleProductId?: string; wayback?: { retailer: string; url: string }[] };
+// serpapi: false skips SerpApi for products whose store Google Shopping does not list (saves searches).
+export type DemoProduct = SeedProduct & { googleProductId?: string; serpapi?: boolean; wayback?: { retailer: string; url: string; prefix?: boolean }[] };
 
 const fromSeed = (key: string, extra: Omit<DemoProduct, keyof SeedProduct>): DemoProduct => ({
   ...SEED_PRODUCTS.find((p) => p.key === key)!,
@@ -34,6 +36,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     googleProductId: "2327420681279440941",
     wayback: [
       { retailer: "bestbuy", url: "https://www.bestbuy.com/product/apple-airpods-pro-3-wireless-active-noise-cancelling-earbuds-with-heart-rate-sensing-feature-white/JJGCQLYK5F" },
+      { retailer: "apple", url: "https://www.apple.com/shop/buy-airpods/airpods-pro-3" },
     ],
   }),
   {
@@ -48,6 +51,7 @@ export const DEMO_PRODUCTS: DemoProduct[] = [
     specs: { storageGb: 1024, discDrive: true, releaseDate: "2023-11-10" },
     googleProductId: "4709235825987841660",
   },
+  ...STORE_DEMO_PRODUCTS,
 ];
 
 const sameVariant = (a?: Record<string, string>, b?: Record<string, string>) => JSON.stringify(a ?? {}) === JSON.stringify(b ?? {});
@@ -96,10 +100,10 @@ export const ingest = internalAction({
     if (!p) throw new Error("unknown demo product " + args.key);
     const ensured: { productId: Id<"products">; deletedSeedPoints: number } = await ctx.runMutation(internal.data.demo.ensureDemoProduct, { key: p.key });
     await embedProducts(ctx, [ensured.productId]);
-    const serpapi = await refreshProduct(ctx, ensured.productId);
+    const serpapi = p.serpapi === false ? { status: "skipped" as const, recorded: 0 } : await refreshProduct(ctx, ensured.productId);
     const wayback = [];
     for (const w of args.wayback === false ? [] : (p.wayback ?? [])) {
-      wayback.push({ retailer: w.retailer, ...(await ingestWayback(ctx, { productId: ensured.productId, retailer: w.retailer, url: w.url })) });
+      wayback.push({ retailer: w.retailer, ...(await ingestWayback(ctx, { productId: ensured.productId, retailer: w.retailer, url: w.url, prefix: w.prefix })) });
     }
     await ctx.runMutation(internal.data.demo.finishDemoProduct, { productId: ensured.productId });
     return { productId: ensured.productId, deletedSeedPoints: ensured.deletedSeedPoints, serpapi, wayback };
@@ -107,10 +111,11 @@ export const ingest = internalAction({
 });
 
 export const demoProductIds = internalQuery({
-  args: {},
-  handler: async (ctx) => {
+  args: { serpapiOnly: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
     const ids: Id<"products">[] = [];
     for (const p of DEMO_PRODUCTS) {
+      if (args.serpapiOnly && p.serpapi === false) continue;
       const family = await ctx.db.query("products").withIndex("by_family", (q) => q.eq("familyKey", p.familyKey)).take(20);
       const row = family.find((x) => !x.isSample && sameVariant(x.variant, p.variant));
       if (row) ids.push(row._id);
@@ -119,11 +124,11 @@ export const demoProductIds = internalQuery({
   },
 });
 
-// Daily cron: one SerpApi search per demo product that has been ingested (5 a day, inside the free 250/month).
+// Daily cron: one SerpApi search per demo product that has been ingested and uses SerpApi (6 a day, inside the free 250/month).
 export const refreshDaily = internalAction({
   args: {},
   handler: async (ctx) => {
-    const ids: Id<"products">[] = await ctx.runQuery(internal.data.demo.demoProductIds, {});
+    const ids: Id<"products">[] = await ctx.runQuery(internal.data.demo.demoProductIds, { serpapiOnly: true });
     const results = [];
     for (const productId of ids) {
       const r = await refreshProduct(ctx, productId);

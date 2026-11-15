@@ -32,7 +32,8 @@
 - `data/sources/wayback:ingest` uses the same reader and writes through `recordBatch`: source `scrape`, provider `wayback`.
 - Optional `prefix:true` includes tracking-query copies, but only for the same product path. Writes remain daily/idempotent.
 - Google offers/history use the existing SerpApi adapter and its existing provenance fields; no parallel ingestion system.
-- Planned demo additions: AE Baggy Jean (Black 33×32), lululemon Align 25-inch, Nike Zenvy leggings.
+- Demo definitions: AE Baggy Jean (Black 33×32), lululemon Align 25-inch, Nike Zenvy leggings;
+  load each with `npx convex run data/demo:ingest '{"key":"ae-baggy-jean"}'` (replace the key for the other two).
 - The leggings are genuine cross-brand alternatives, not interchangeable models. AE's older archived color is not merged into its Google product.
 - AE is eligible for the existing daily SerpApi refresh. The two leggings products skip SerpApi until an exact matching Google product is verified.
 - Apple adds archive points to the existing AirPods Pro 3 demo rather than introducing another product.

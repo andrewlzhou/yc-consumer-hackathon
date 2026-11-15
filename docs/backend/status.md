@@ -51,6 +51,6 @@
 
 ## More stores
 
-- Registered stores: 7ab91ff. Generic reader, background URL resolver, 18-store survey: see data-stores.md.
-- Local: reader/resolver tests and typecheck pass; no fetch is added to the live analysis path. Mixed variant prices are refused.
-- Next: add three real-data demo products, deploy a clean origin/ruhaan_backend tip, then verify the shared deployment.
+- Reader/resolver: c6ad7ea. Three demo additions are connected: AE Baggy Jean, lululemon Align 25-inch, Nike Zenvy.
+- Local: full suite 166 passed, two live tests skipped; AE real-response ingestion test and typecheck pass.
+- Next: deploy a clean origin/ruhaan_backend tip, ingest the three products, then verify rows, URL resolution and competitors.
