@@ -15,6 +15,6 @@
 - Changed: real demo set in `convex/data/demo.ts` (SerpApi Google price history + Wayback), daily `refresh demo prices` cron in `convex/crons.ts` (monitoring's file, one line), Google change points expanded to daily steps, Amazon pages no longer read template text as out of stock; seeding skips products that are real.
 - Changed: tighter SerpApi offer matching (model-shape conflict, earbuds vs headphones, bundles/kits, 40-200% MSRP band) after YCCO-5 saw a $148 XM6 match; tested on real shopping results.
 - Changed: `eval/cases-match.json` + `data/matchEval:run` (text vs hybrid with the agent's decision rules), `data/demo:removeObservationsAt` operator cleanup, demo ingest embeds the product.
-- Changed: catalog scoring halves candidates with a sibling model number (XM4 scanned vs XM5 stored), shared `modelConflict` in text.ts.
-- Changed: `variantConflict` (sibling model, line words like Air/Digital, earbuds, accessory words) halves text scores and drops hybrid candidates.
-- Next: real-data ingestion (Keepa, SerpApi insights, Best Buy live), hybrid vector search, unknown-product ingest, docs.
+- Changed: catalog scoring: `variantConflict` (sibling model like XM4 vs XM5, line words like Air/Digital, earbuds, accessory words) halves text scores and drops hybrid candidates.
+- Checks: demo set ingested on scintillating-caterpillar-190 (XM5 720 points, XM6 706, Bose 366, AirPods Pro 3 393, PS5 1); two wrong XM6 rows ($148, $249) from the old matcher removed; match eval text 32/34, hybrid 31/34. See [data-demo](../../../backend/data-demo.md).
+- Loose ends: no real WAIT-for-Black-Friday or never-charged was-price case exists today; Ninja has no first-party offers; brand products from YCCO-8 not folded in yet.

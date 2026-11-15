@@ -1,7 +1,7 @@
 # Data and retrieval
 
 - Owned by the data thread. Built from Ruhaan's spec 03 (2026-11-15); this page tracks what actually exists.
-- Status: tables defined in `convex/schema.ts`. Retrieval functions, seed data, and source research are in progress.
+- Status: retrieval, seed and real-data ingestion work; the real demo set is in [data-demo.md](data-demo.md).
 
 ## Tables
 
@@ -9,7 +9,7 @@
 - `products`: the catalog. Title, brand, model, category, specs, aliases, and `searchText` for full-text search.
   - `familyKey` groups variants of one model; `variant` holds what changes price (storage, size, pack).
   - `isSample` marks seeded products; `provisional` marks products created from an unmatched scan.
-  - Optional `embedding` (1536 floats) for vector search once an embedding key exists.
+- `productEmbeddings`: one 1536-float vector per product (OpenAI text-embedding-3-small) for hybrid search.
 - `priceObservations`: one observed price per row.
   - `observedAt` is when the price was true, separate from `_creationTime`, so history can be backfilled.
   - `originalPrice` is the retailer's claimed "was" price, kept apart from `price` for discount checks.
