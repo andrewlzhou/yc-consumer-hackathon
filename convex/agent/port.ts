@@ -1,6 +1,7 @@
 import { internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { hybridSearch } from "../data/embeddings";
 
 const DAY = 86_400_000;
 const isDateKey = (k: string) => /At$/.test(k) || k === "from" || k === "to";
@@ -40,6 +41,7 @@ export function dataPort(ctx: ActionCtx, now: number) {
     now,
     sampleDataSeen: () => sample,
     matchProduct: (title: string, limit = 6) => ctx.runQuery(internal.data.catalog.matchProduct, { title, limit }),
+    hybridMatch: (title: string) => hybridSearch(ctx, title, { limit: 6 }),
     searchCatalog: async (query: string) => present(await ctx.runQuery(internal.data.catalog.matchProduct, { title: query, limit: 6 })),
     product: (productId: string) => ctx.runQuery(internal.data.catalog.getProduct, { productId: id(productId) }),
     stats: async (productId: string, o: { retailer?: string; days?: number; currentPrice?: number; originalPrice?: number }) =>
@@ -56,9 +58,9 @@ export function dataPort(ctx: ActionCtx, now: number) {
     calendar: async (days: number) => present(await ctx.runQuery(internal.data.calendar.getSaleCalendar, { from: now, to: now + days * DAY })),
     digest: async (productId: string) => present(await ctx.runQuery(internal.data.digests.getDigest, { productId: id(productId) })),
     comparables: async (productId: string, limit = 5) => {
-      const rows = await ctx.runQuery(internal.data.catalog.findComparables, { productId: id(productId), limit });
+      const similar = await ctx.runAction(internal.data.embeddings.findSimilarProducts, { productId: id(productId), limit });
       return Promise.all(
-        rows.map(async (p) => {
+        similar.products.map(async ({ product: p, similarity }) => {
           const s = track(await ctx.runQuery(internal.data.prices.getPriceStats, { productId: p._id, now, windowDays: 90 }));
           const prices = s.overall.prices;
           return {
@@ -67,6 +69,7 @@ export function dataPort(ctx: ActionCtx, now: number) {
             brand: p.brand,
             specs: p.specs,
             isSample: p.isSample,
+            similarity,
             last90Days: { observationCount: s.overall.observationCount, latestPrice: prices?.latest.price ?? null, latestRetailer: prices?.latest.retailerSlug ?? null, median: prices?.median ?? null, min: prices?.min ?? null },
           };
         }),

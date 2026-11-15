@@ -52,7 +52,7 @@ export function registerAgentRoutes(http: HttpRouter) {
         return json(
           { productId: r.productId, matchedTitle: r.matchedTitle, verdict: r.verdict, reason: r.reason, confidence: r.confidence, isSampleData: r.isSampleData, reportStatus: r.reportStatus },
           200,
-          { "server-timing": `agent;dur=${r.latencyMs};desc="${r.path}"` },
+          { "server-timing": [`agent;dur=${r.latencyMs};desc="${r.path}"`, ...Object.entries(r.timings).map(([k, ms]) => `${k};dur=${ms}`)].join(", ") },
         );
       } catch {
         return json({ error: "analysis failed" }, 500);

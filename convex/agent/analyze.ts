@@ -7,7 +7,7 @@ import { normalizeRetailer } from "../data/retailers";
 import { checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
 import { heuristicAnalysis, isThin } from "./heuristic";
-import { decideMatch, type MatchCandidate } from "./identify";
+import { decideMatch, hybridViable, type MatchCandidate } from "./identify";
 import type { LlmProvider } from "./llm";
 import { runAgent } from "./loop";
 import { openAiProvider } from "./openai";
@@ -151,6 +151,7 @@ export type ScanResult = {
   reportStatus: "ready" | "pending" | "none";
   path: "cache" | "live" | "heuristic" | "unknown";
   latencyMs: number;
+  timings: Record<string, number>;
 };
 
 // The live path: identify, record the price, then return a fresh stored analysis or run one fast model pass.
@@ -177,19 +178,30 @@ export const analyzeScan = internalAction({
     const title = args.title?.trim() || args.ocrLines?.join(" ").trim() || null;
     const scan: Scan = { title, retailer: normalizeRetailer(args.retailer) ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
     const ledger = new EvidenceLedger();
-    const finish = async (result: Omit<ScanResult, "latencyMs">): Promise<ScanResult> => {
+    const timings: Record<string, number> = {};
+    let mark = started;
+    const lap = (name: string) => {
+      const t = Date.now();
+      timings[name] = t - mark;
+      mark = t;
+    };
+    const finish = async (result: Omit<ScanResult, "latencyMs" | "timings">): Promise<ScanResult> => {
       const latencyMs = Date.now() - started;
       await ctx.runMutation(internal.agent.store.logScan, { productId: result.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: result.verdict, path: result.path, latencyMs, at: started });
-      return { ...result, latencyMs };
+      return { ...result, latencyMs, timings };
     };
 
     let match: MatchCandidate | null = null;
     if (title) {
-      const candidates = await data.matchProduct(title);
-      const decision = decideMatch(candidates);
+      const decision = decideMatch(await data.matchProduct(title));
       if (decision.kind === "match") match = decision.candidate;
-      else if (decision.kind === "ambiguous") match = await pickCandidate(config.provider, config.fast.model, title, decision.candidates);
+      else {
+        const hybrid = await data.hybridMatch(title);
+        const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates) : decision.kind === "ambiguous" ? decision.candidates : [];
+        if (viable.length) match = await pickCandidate(config.provider, config.fast.model, title, viable);
+      }
     }
+    lap("identify");
 
     if (!match) {
       if (!title) return finish({ verdict: "INVESTIGATE", reason: "We couldn't read a product name from the screen.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
@@ -204,6 +216,7 @@ export const analyzeScan = internalAction({
     const [{ live, full }] = await Promise.all([ctx.runQuery(internal.agent.store.latestAnalyses, { productId }), evaluation ? null : recordPrice(ctx, productId, scan, args.url, now, args.capturedAt)]);
     const fresh = (a: typeof live, maxAge: number) =>
       !!a && Math.abs(now - a.createdAt) < maxAge && (scan.currentPrice === null || a.scanPrice === undefined || Math.abs(a.scanPrice - scan.currentPrice) / scan.currentPrice <= PRICE_TOLERANCE);
+    lap("cacheAndRecord");
     const fullFresh = fresh(full, FULL_CACHE_MS);
     const cached = evaluation ? null : fullFresh ? full : fresh(live, LIVE_CACHE_MS) ? live : null;
     if (cached) {
@@ -213,8 +226,10 @@ export const analyzeScan = internalAction({
 
     ledger.add("scan", { retailer: scan.retailer }, { title: scan.title, retailer: scan.retailer, currentPrice: scan.currentPrice, claimedOriginalPrice: scan.originalPrice });
     const ev = await standardEvidence(data, ledger, productId, scan);
+    lap("evidence");
     const prompt = [scanPrompt(scan, productId, match.product.title), "This is the fast pass: all evidence is below and there are no tools. One sentence per text field.", ...ledger.items.map(evidenceBlock)].join("\n");
     const run = await runAgent({ provider: config.provider, model: config.fast.model, reasoning: config.fast.reasoning, system: systemPrompt(), prompt, tools: [], ledger, maxRepairs: 1, deadlineMs: LIVE_DEADLINE_MS, competitorTools: COMPETITOR_TOOLS });
+    lap("model");
     const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
     const isSampleData = data.sampleDataSeen() || match.product.isSample;
     const reason = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);

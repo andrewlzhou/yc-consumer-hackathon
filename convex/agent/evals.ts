@@ -29,7 +29,7 @@ export const productKeys = internalQuery({
 
 type TierResult = { verdict: Verdict; confidence: number; reason: string; source: string; latencyMs: number; groundingIssues: string[] } | null;
 type Score = { verdictOk: boolean; confidenceOk: boolean; grounded: boolean; usedModel: boolean } | null;
-export type EvalResult = { id: string; matchOk: boolean; matchedFamily: string | null; live: TierResult; liveScore: Score; full: TierResult; fullScore: Score };
+export type EvalResult = { id: string; timings: Record<string, number>; matchOk: boolean; matchedFamily: string | null; live: TierResult; liveScore: Score; full: TierResult; fullScore: Score };
 
 // Runs each eval case through the live pass and the full run without recording prices or touching the cache,
 // and scores identification, verdict, confidence ceiling, and grounding. Wording is left for a human to judge.
@@ -65,7 +65,7 @@ export const run = internalAction({
           grounded: t.source === "heuristic" ? !t.groundingIssues.some((i) => i.startsWith("heuristic:")) : t.groundingIssues.length === 0,
           usedModel: t.source === "model" || t.source === "cache" || t.source === "live",
         };
-      results.push({ id: c.id, matchOk, matchedFamily: matched?.familyKey ?? null, live: liveTier, liveScore: score(liveTier), full: fullTier, fullScore: score(fullTier) });
+      results.push({ id: c.id, timings: live.timings, matchOk, matchedFamily: matched?.familyKey ?? null, live: liveTier, liveScore: score(liveTier), full: fullTier, fullScore: score(fullTier) });
     }
     return results;
   },

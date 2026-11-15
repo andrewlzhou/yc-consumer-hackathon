@@ -35,6 +35,7 @@ export function keyFacts(scanRetailer: string, stats: Evidence, promo: Evidence,
     lowestPrice: o.prices.min,
     lowestPriceLastSeen: o.prices.minLastSeenAt,
     currentMinusLowest: round2(current - o.prices.min),
+    withinThreePercentOfLowest: current <= o.prices.min * 1.03,
     claimedWasPrice: s.wasPrice && {
       wasPrice: s.wasPrice.originalPrice,
       chargedAtOrAboveSharePercent: s.wasPrice.shareChargedAtOrAbovePercent,
@@ -48,11 +49,11 @@ export function keyFacts(scanRetailer: string, stats: Evidence, promo: Evidence,
       .filter((e) => e.pastSales.length > 0)
       .map((e) => {
         const low = Math.min(...e.pastSales.map((x) => x.minPrice));
-        return { name: e.name, startsAt: e.startsAt, daysAway: e.daysAway, lowestPriceAtPastEditions: low, ...saving(low) };
+        return { name: e.name, startsAt: e.startsAt, daysAway: e.daysAway, lowestPriceAtPastEditions: low, ...saving(low), pastEditionsBeatTodayBy5Percent: low <= current * 0.95 };
       }),
     cheapestRetailerNow: cheapestNow && { retailer: cheapestNow.retailerSlug, price: cheapestNow.prices!.latest.price, seenAt: cheapestNow.prices!.latest.observedAt, ...saving(cheapestNow.prices!.latest.price) },
     comparablesFromCatalog: c
       .filter((x) => x.last90Days.latestPrice !== null)
-      .map((x) => ({ productId: x.productId, title: x.title, latestPrice: x.last90Days.latestPrice!, retailer: x.last90Days.latestRetailer, ...saving(x.last90Days.latestPrice!) })),
+      .map((x) => ({ productId: x.productId, title: x.title, latestPrice: x.last90Days.latestPrice!, retailer: x.last90Days.latestRetailer, ...saving(x.last90Days.latestPrice!), atLeast20PercentCheaper: x.last90Days.latestPrice! <= current * 0.8 })),
   };
 }

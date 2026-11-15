@@ -24,7 +24,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   const row = (t, s) => (t ? `${t.verdict.padEnd(20)} ${s.verdictOk ? "ok " : "BAD"} c=${t.confidence.toFixed(2)}${s.confidenceOk ? "" : "!"} ${s.grounded ? "grounded" : "UNGROUNDED"} ${t.source} ${t.latencyMs}ms` : "-");
   for (const r of results) {
     console.log(`${r.id.padEnd(28)} match ${r.matchOk ? "ok " : "BAD"} | live ${row(r.live, r.liveScore)}${r.full ? " | full " + row(r.full, r.fullScore) : ""}`);
-    console.log(`   live: ${r.live.reason}`);
+    console.log(`   live: ${r.live.reason}  [${Object.entries(r.timings).map(([k, v]) => k + " " + v).join(", ")}]`);
     if (r.full) console.log(`   full: ${r.full.reason}`);
   }
   if (outAt > 0) {

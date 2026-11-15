@@ -1,7 +1,16 @@
-import type { FunctionReturnType } from "convex/server";
-import type { internal } from "../_generated/api";
+import type { scoreCandidate } from "../data/catalog";
 
-export type MatchCandidate = FunctionReturnType<typeof internal.data.catalog.matchProduct>[number];
+export type MatchCandidate = ReturnType<typeof scoreCandidate>;
+
+export type HybridCandidate = MatchCandidate & { vectorScore: number | null };
+
+const VECTOR_VIABLE = 0.5;
+
+// After an unclear text match: hybrid candidates without a size conflict that either share enough tokens or are
+// semantically close (OCR-mangled titles), for the model to choose from.
+export function hybridViable(candidates: HybridCandidate[]): HybridCandidate[] {
+  return candidates.filter((c) => !c.sizeConflict && (c.score >= VIABLE_SCORE || (c.vectorScore ?? 0) >= VECTOR_VIABLE)).slice(0, 5);
+}
 
 export type MatchDecision =
   | { kind: "match"; candidate: MatchCandidate }
