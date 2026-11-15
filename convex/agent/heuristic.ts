@@ -5,7 +5,7 @@ import type { AgentOutput, Verdict } from "./output";
 // Presented shapes (see port.ts present()): dates are ISO strings, fractions are percents.
 type Summary = {
   observationCount: number;
-  prices: { median: number; mean: number; min: number; spanDays: number; minLastSeenAt: string; latest: { price: number; retailerSlug: string } } | null;
+  prices: { median: number; mean: number; min: number; spanDays: number; minLastSeenAt: string; latest: { price: number; retailerSlug: string; observedAt?: string } } | null;
   current: { price: number; percentileRankPercent: number; vsMedianPercent: number; vsMinPercent: number; atOrBelowLow: boolean } | null;
 };
 type Stats = {
@@ -27,6 +27,7 @@ export type HeuristicInput = {
   promo?: Evidence;
   competitors?: Evidence;
   today: string;
+  scanPrice?: number | null;
 };
 
 const usd = (n: number) => `$${n.toFixed(2)}`;
@@ -39,6 +40,16 @@ export const MIN_SPAN_DAYS = 30;
 export function isThin(stats: unknown): boolean {
   const o = (stats as Stats | undefined)?.overall;
   return !o?.prices || !o.current || o.observationCount < MIN_OBSERVATIONS || o.prices.spanDays < MIN_SPAN_DAYS;
+}
+
+export const MAX_STORED_PRICE_AGE_DAYS = 14;
+
+// With no price on the scan, the newest stored price stands in for today's. Older than two weeks, it is not a
+// current price, so there is nothing to judge.
+export function staleStoredPrice(stats: unknown, scanPrice: number | null | undefined, today: string): string | null {
+  const seen = (stats as Stats | undefined)?.overall.prices?.latest.observedAt;
+  if (scanPrice !== null || !seen) return null;
+  return (Date.parse(today) - Date.parse(seen)) / 86_400_000 > MAX_STORED_PRICE_AGE_DAYS ? seen : null;
 }
 
 // Deterministic analyst over the same evidence the model sees. It backs the fake provider and is the fallback
@@ -66,6 +77,11 @@ export function heuristicAnalysis(input: HeuristicInput): AgentOutput {
     const n = stats?.overall.observationCount ?? 0;
     const why = `We have only ${n} price observations for this product, too few to judge this price.`;
     return { ...base, reason: why, reasonEvidenceIds: ids(input.stats), recommendation: { reasoning: `${why} We'll keep tracking it.`, evidenceIds: ids(input.stats) } };
+  }
+  const staleSince = staleStoredPrice(stats, input.scanPrice, input.today);
+  if (staleSince) {
+    const why = `Our newest price for this product is ${usd(stats.overall.prices!.latest.price)} from ${staleSince}, so we can't tell today's price.`;
+    return { ...base, reason: why, reasonEvidenceIds: ids(input.stats), recommendation: { reasoning: `${why} Scan the price on the page to get a verdict.`, evidenceIds: ids(input.stats) } };
   }
   const o = stats.overall;
   const prices = o.prices!;

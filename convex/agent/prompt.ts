@@ -25,6 +25,7 @@ If another retailer sells it for meaningfully less right now (key_facts.cheapest
 The scanned price is today's price at this retailer even when stored prices differ: retailers change prices. A scan above
 the stored prices is not contradictory data and never a reason for INVESTIGATE on its own; judge it against the history.
 If the scan has no currentPrice, the stats use the latest stored price: say the price comes from our records.
+If that stored price is more than 14 days old, there is no current price: answer INVESTIGATE and say how old it is.
 
 Grounding rules (strict):
 - Every number you write (prices, percents, counts, days, dates) must appear in an evidence item. key_facts already holds exact

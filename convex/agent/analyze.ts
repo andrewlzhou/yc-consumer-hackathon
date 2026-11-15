@@ -8,7 +8,7 @@ import { parseUrl } from "../data/sources/stores/url";
 import { rateLimiter } from "./limits";
 import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
-import { heuristicAnalysis, isThin } from "./heuristic";
+import { heuristicAnalysis, isThin, staleStoredPrice } from "./heuristic";
 import { decideMatch, hybridViable, type MatchCandidate } from "./identify";
 import type { LlmProvider, Usage } from "./llm";
 import { reportSpec, runAgent, type OutputSpec } from "./loop";
@@ -121,7 +121,7 @@ const cardSpec: OutputSpec<AgentCard> = { name: "purchase_card", schema: CARD_SC
 // The live record's report: the model's card on top of the deterministic analyst's factual sections. The full run
 // replaces it with a report the larger model writes itself.
 function withReport(card: AgentCard, productId: string, scan: Scan, ev: StandardEvidence, now: number): AgentOutput {
-  const facts = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors, today: isoDay(now) });
+  const facts = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors, today: isoDay(now), scanPrice: scan.currentPrice });
   return { ...facts, ...card, recommendation: { reasoning: card.reason, evidenceIds: card.reasonEvidenceIds } };
 }
 
@@ -132,8 +132,9 @@ function finalize(productId: string, scan: Scan, ledger: EvidenceLedger, model: 
   let output = model.output;
   let source: "model" | "heuristic" = "model";
   if (output && isThin(ev.stats.result) && output.verdict !== "INVESTIGATE") issues.push(`guardrail: thin history, model said ${output.verdict}`);
+  if (output && staleStoredPrice(ev.stats.result, scan.currentPrice, isoDay(now)) && output.verdict !== "INVESTIGATE") issues.push(`guardrail: no current price, model said ${output.verdict}`);
   if (!output || issues.length > 0) {
-    output = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors, today: isoDay(now) });
+    output = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors, today: isoDay(now), scanPrice: scan.currentPrice });
     source = "heuristic";
     issues.push(...checkGrounding(output, ledger, COMPETITOR_TOOLS).map((i) => `heuristic: ${i}`));
   }
@@ -248,7 +249,7 @@ export const analyzeScan = internalAction({
     const productId = match.product._id;
     const [{ live, full }] = await Promise.all([ctx.runQuery(internal.agent.store.latestAnalyses, { productId }), evaluation ? null : recordPrice(ctx, productId, scan, args.url, now, args.capturedAt)]);
     const fresh = (a: typeof live, maxAge: number) =>
-      !!a && Math.abs(now - a.createdAt) < maxAge && (scan.currentPrice === null || a.scanPrice === undefined || Math.abs(a.scanPrice - scan.currentPrice) / scan.currentPrice <= PRICE_TOLERANCE);
+      !!a && Math.abs(now - a.createdAt) < maxAge && (scan.currentPrice === null || (a.scanPrice !== undefined && Math.abs(a.scanPrice - scan.currentPrice) / scan.currentPrice <= PRICE_TOLERANCE));
     lap("cacheAndRecord");
     const fullFresh = fresh(full, FULL_CACHE_MS);
     const cached = evaluation ? null : fullFresh ? full : fresh(live, LIVE_CACHE_MS) ? live : null;
