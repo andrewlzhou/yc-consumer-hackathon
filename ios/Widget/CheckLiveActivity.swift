@@ -1,5 +1,6 @@
 // Target membership: widget extension only.
-// The check's pop-up. Checking: deep blue wisps and "Checking". Decided: the same wisps in the
+// The check's pop-up. Checking: deep blue wisps and a playful word that changes on each update
+// (`CheckingWords` in Shared/CheckAttributes.swift). Decided: the same wisps in the
 // verdict's hue, the verdict word, and a very short reason, all centred, in Hiragino Sans.
 // Deliberately absent (owner, 2026-11-15): store, product name, clock or other icon, logo.
 // The compact leading and minimal slots are empty, kept for a future logo.
@@ -10,7 +11,8 @@ import WidgetKit
 
 private extension CheckAttributes.ContentState {
     var isChecking: Bool { stage == .checking || verdict == nil }
-    var word: String { isChecking ? "Checking" : verdict?.word ?? "Checking" }
+    var checkingWord: String { CheckingWords.word(start: wordStart, phase: phase) }
+    var word: String { isChecking ? checkingWord : verdict?.word ?? checkingWord }
     var palette: WispPalette { isChecking ? .checking : verdict.map(WispPalette.decided) ?? .checking }
     var shownReason: String? { isChecking ? nil : reason }
 }
@@ -91,6 +93,10 @@ struct CheckLiveActivity: Widget {
                     .font(IslandType.word(13))
                     .foregroundStyle(s.palette.ink)
                     .lineLimit(1)
+                    // The longest word ("Markdownmusing") is about 125 pt at 13 pt; cap the slot
+                    // and let it shrink rather than widen the island.
+                    .minimumScaleFactor(0.75)
+                    .frame(maxWidth: 100)
                     .contentTransition(.opacity)
             } minimal: {
                 EmptyView()
