@@ -16,4 +16,5 @@
 - Changed: tighter SerpApi offer matching (model-shape conflict, earbuds vs headphones, bundles/kits, 40-200% MSRP band) after YCCO-5 saw a $148 XM6 match; tested on real shopping results.
 - Changed: `eval/cases-match.json` + `data/matchEval:run` (text vs hybrid with the agent's decision rules), `data/demo:removeObservationsAt` operator cleanup, demo ingest embeds the product.
 - Changed: catalog scoring halves candidates with a sibling model number (XM4 scanned vs XM5 stored), shared `modelConflict` in text.ts.
+- Changed: `variantConflict` (sibling model, line words like Air/Digital, earbuds, accessory words) halves text scores and drops hybrid candidates.
 - Next: real-data ingestion (Keepa, SerpApi insights, Best Buy live), hybrid vector search, unknown-product ingest, docs.

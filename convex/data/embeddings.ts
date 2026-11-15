@@ -148,7 +148,8 @@ export async function hybridSearch(ctx: ActionCtx, title: string, opts: { catego
   });
   const docs: Doc<"products">[] = await ctx.runQuery(internal.data.embeddings.productsForHits, { ids: hits.map((h) => h._id) });
   const vector = docs.map((product, i) => ({ product, score: hits[i]._score }));
-  return { mode: "hybrid", candidates: fuse(text, vector.filter((x) => !x.product.provisional), tokenize(title)).slice(0, limit) };
+  const fused = fuse(text, vector.filter((x) => !x.product.provisional), tokenize(title));
+  return { mode: "hybrid", candidates: fused.filter((c) => !c.variantConflict).slice(0, limit) };
 }
 
 // Best catalog matches for a messy scanned title: full-text plus vector search when embeddings exist.

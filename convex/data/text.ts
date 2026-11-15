@@ -55,6 +55,14 @@ export function modelConflict(queryTokens: string[], productTokens: Set<string>)
   return queryTokens.some((t) => isModel(t) && !productTokens.has(t) && productShapes.has(shape(t)));
 }
 
+// Words that name a different product when the scan has them and the catalog entry does not: a line or form
+// (iPad Air vs iPad, PS5 Digital vs Disc, earbuds vs headphones) or an accessory for the product (ear pads).
+const DISTINGUISHING_WORDS = ["air", "pro", "max", "mini", "plus", "ultra", "lite", "digital", "earbuds", "replacement", "pads", "cushions", "protector", "skin", "strap", "cover"];
+
+export function variantConflict(queryTokens: string[], productTokens: Set<string>): boolean {
+  return modelConflict(queryTokens, productTokens) || DISTINGUISHING_WORDS.some((w) => queryTokens.includes(w) && !productTokens.has(w));
+}
+
 export function buildSearchText(parts: (string | undefined)[]): string {
   return [...new Set(parts.filter(Boolean).flatMap((p) => tokenize(p!)))].join(" ");
 }
