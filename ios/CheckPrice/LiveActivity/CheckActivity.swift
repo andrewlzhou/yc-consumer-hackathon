@@ -57,13 +57,13 @@ enum CheckActivity {
         await play(verdict: verdict, reason: reason, over: 6)
     }
 
-    // Short reasons from the demo products where one exists; sample text otherwise.
+    // A few words each.
     private static func demoVerdict(_ key: String) -> (Verdict, String) {
         switch key.lowercased() {
-        case "buy": (.buyNow, Demo.saved[0].summary)
-        case "alternative": (.alternative, "A similar model costs less.")
-        case "investigate": (.investigate, "Too little price history yet.")
-        default: (.wait, Demo.headphones.summary)
+        case "buy": (.buyNow, "Near its lowest price")
+        case "alternative": (.alternative, "A similar model costs less")
+        case "investigate": (.investigate, "Little price history yet")
+        default: (.wait, "~$40 less by Cyber Monday")
         }
     }
 }

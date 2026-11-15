@@ -17,7 +17,7 @@
 ## Live Activity (Dynamic Island)
 
 - Two stages: `checking` (Worldscape's deep blue wisps, word "Checking") and `decided` (the same wisps re-hued to the verdict, the verdict word, a reason of about 8 words at most). Words: Buy Now, Buy Later (yellow), Look Around, Check First. Never a "don't buy" (owner, 2026-11-15).
-- Show nothing else: no store, product name, clock or other icon, no logo yet. The compact leading slot holds only a small wisp glow, kept free for a future logo. Everything is centred; the reason uses New York, Apple's built-in serif (`.system(design: .serif)`), standing in for Granola's serif.
+- Show nothing else: no store, product name, clock or other icon, no logo yet. The compact leading and minimal slots are empty (`EmptyView()`), kept for a future logo. Everything is centred, in Hiragino Sans, the Worldscape font: `HiraginoSans-W6` for the verdict word, `HiraginoSans-W3` for the reason. No serif, rounded or system fonts (owner, 2026-11-15).
 - Colours: checking copies Worldscape's input bar (`InputBarSurface`: `#0E0FA2 → #1121BE → #0833C4`, top `#010428`, bottom light `#2A4FE6`/`#3F64F2`, fog `#DDE6FF`); each verdict has a hand-picked set in `Widget/WispField.swift`. The owner will tune these.
 - Platform limits: the island's outer pill is always black, so the art sits inside it; no Metal, TimelineView or looping animation. Motion comes from bumping `phase` in each update (iOS animates up to about 2 s between states).
 

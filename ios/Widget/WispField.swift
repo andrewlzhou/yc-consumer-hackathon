@@ -138,19 +138,3 @@ struct WispField: View {
             .position(x: size.width * (0.5 + 0.05 * sin(Double(phase) * 0.9)), y: size.height * 1.02)
     }
 }
-
-// The small glow in the compact and minimal views: the same art in a circle. A logo can take
-// this slot later.
-struct WispOrb: View {
-    let palette: WispPalette
-    let phase: Int
-    var diameter: CGFloat = 20
-
-    var body: some View {
-        WispField(palette: palette, phase: phase)
-            .frame(width: diameter, height: diameter)
-            .clipShape(Circle())
-            .overlay(Circle().strokeBorder(palette.rim.opacity(0.6), lineWidth: 0.5))
-            .accessibilityHidden(true)
-    }
-}

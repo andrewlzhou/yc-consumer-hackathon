@@ -1,8 +1,8 @@
 // Target membership: widget extension only.
 // The check's pop-up. Checking: deep blue wisps and "Checking". Decided: the same wisps in the
-// verdict's hue, the verdict word, and a very short reason in a serif, all centred.
+// verdict's hue, the verdict word, and a very short reason, all centred, in Hiragino Sans.
 // Deliberately absent (owner, 2026-11-15): store, product name, clock or other icon, logo.
-// The leading slot holds only a small wisp glow, so a logo can replace it later.
+// The compact leading and minimal slots are empty, kept for a future logo.
 // The Dynamic Island's outer pill is always black, so the art sits inside its regions.
 import ActivityKit
 import SwiftUI
@@ -15,11 +15,10 @@ private extension CheckAttributes.ContentState {
     var shownReason: String? { isChecking ? nil : reason }
 }
 
+// Hiragino Sans, the Worldscape font (the widget can't see the app's DesignSystem).
 private enum IslandType {
-    // Hiragino Sans W6, the app's title face; iOS falls back to the system font if it's missing.
     static func word(_ size: CGFloat) -> Font { .custom("HiraginoSans-W6", size: size) }
-    // New York, Apple's built-in serif, standing in for the serif Granola uses.
-    static func reason(_ size: CGFloat) -> Font { .system(size: size, weight: .regular, design: .serif) }
+    static func reason(_ size: CGFloat) -> Font { .custom("HiraginoSans-W3", size: size) }
 }
 
 // Word over reason, centred, white on the wisps.
@@ -70,10 +69,6 @@ private struct ExpandedCard: View {
             .frame(height: state.isChecking ? 64 : 84)
             .background { WispField(palette: state.palette, phase: state.phase) }
             .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .strokeBorder(state.palette.rim.opacity(0.35), lineWidth: 0.5)
-            }
     }
 }
 
@@ -90,7 +85,7 @@ struct CheckLiveActivity: Widget {
                     ExpandedCard(state: s)
                 }
             } compactLeading: {
-                WispOrb(palette: s.palette, phase: s.phase)
+                EmptyView()
             } compactTrailing: {
                 Text(s.word)
                     .font(IslandType.word(13))
@@ -98,7 +93,7 @@ struct CheckLiveActivity: Widget {
                     .lineLimit(1)
                     .contentTransition(.opacity)
             } minimal: {
-                WispOrb(palette: s.palette, phase: s.phase, diameter: 18)
+                EmptyView()
             }
             .contentMargins(.all, 10, for: .expanded)
             .keylineTint(s.palette.rim)
