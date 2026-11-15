@@ -83,6 +83,23 @@ export function repairCitations(output: AgentOutput, ledger: EvidenceLedger): Ag
   };
 }
 
+// The live card has one text field: its numbers must appear in cited evidence (citations repaired first).
+export function checkCard<T extends { reason: string; reasonEvidenceIds: string[] }>(card: T, ledger: EvidenceLedger): { value: T; issues: string[] } {
+  const ids = [...card.reasonEvidenceIds];
+  const cited = () => ids.map((id) => ledger.get(id)).filter((e): e is Evidence => !!e);
+  for (const n of textIsGrounded(card.reason, cited())) {
+    const source = ledger.items.find((e) => numbersInValue(e.result).some((k) => numberMatches(n, k)));
+    if (source && !ids.includes(source.id)) ids.push(source.id);
+  }
+  const unknown = ids.filter((id) => !ledger.get(id));
+  const ungrounded = textIsGrounded(card.reason, cited());
+  const issues = [
+    ...(unknown.length ? [`reason: cites unknown evidence ${unknown.join(", ")}`] : []),
+    ...(ungrounded.length ? [`reason: numbers ${ungrounded.join(", ")} not found in any evidence`] : []),
+  ];
+  return { value: { ...card, reasonEvidenceIds: ids.filter((id) => ledger.get(id)) }, issues };
+}
+
 // Returns grounding problems: unknown citations, numbers no cited tool result contains, invented competitors.
 export function checkGrounding(output: AgentOutput, ledger: EvidenceLedger, competitorTools: string[]): string[] {
   const issues: string[] = [];

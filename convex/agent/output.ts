@@ -1,7 +1,7 @@
 import type { JsonSchema } from "./llm";
+import { VERDICTS, type Verdict } from "../lib/contract";
 
-export const VERDICTS = ["BUY_NOW", "WAIT", "CONSIDER_ALTERNATIVE", "INVESTIGATE"] as const;
-export type Verdict = (typeof VERDICTS)[number];
+export type { Verdict };
 
 export const DISCOUNT_STATUSES = ["genuine", "misleading", "no_discount_claimed", "unclear"] as const;
 export const DISCOUNT_SIGNALS = [
@@ -62,6 +62,15 @@ export const AGENT_OUTPUT_SCHEMA: JsonSchema = obj({
   recommendation: obj({ reasoning: str, evidenceIds: ids }),
 });
 
+// The live pass answers with just the phone card, so the fast model writes ~60 tokens instead of a full report.
+export type AgentCard = Pick<AgentOutput, "verdict" | "confidence" | "reason" | "reasonEvidenceIds">;
+export const CARD_SCHEMA: JsonSchema = obj({
+  verdict: { type: "string", enum: [...VERDICTS] },
+  confidence: num,
+  reason: str,
+  reasonEvidenceIds: ids,
+});
+
 function typeOf(value: unknown): string {
   if (value === null) return "null";
   if (Array.isArray(value)) return "array";
@@ -87,17 +96,22 @@ export function validateSchema(schema: JsonSchema, value: unknown, path = "$"): 
   return errors;
 }
 
-export function parseAgentOutput(text: string): { ok: true; value: AgentOutput } | { ok: false; errors: string[] } {
+type Parsed<T> = { ok: true; value: T } | { ok: false; errors: string[] };
+
+function parseWith<T>(schema: JsonSchema, text: string, confidences: (value: T) => [string, number][]): Parsed<T> {
   let value: unknown;
   try {
     value = JSON.parse(text);
   } catch {
     return { ok: false, errors: ["output is not valid JSON"] };
   }
-  const errors = validateSchema(AGENT_OUTPUT_SCHEMA, value);
+  const errors = validateSchema(schema, value);
   if (errors.length > 0) return { ok: false, errors };
-  const output = value as AgentOutput;
-  for (const [field, c] of [["confidence", output.confidence], ["match.confidence", output.match.confidence], ["forecast.confidence", output.forecast.confidence]] as const)
-    if (c < 0 || c > 1) errors.push(`${field} must be between 0 and 1`);
-  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: output };
+  for (const [field, c] of confidences(value as T)) if (c < 0 || c > 1) errors.push(`${field} must be between 0 and 1`);
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: value as T };
 }
+
+export const parseAgentOutput = (text: string) =>
+  parseWith<AgentOutput>(AGENT_OUTPUT_SCHEMA, text, (o) => [["confidence", o.confidence], ["match.confidence", o.match.confidence], ["forecast.confidence", o.forecast.confidence]]);
+
+export const parseCard = (text: string) => parseWith<AgentCard>(CARD_SCHEMA, text, (o) => [["confidence", o.confidence]]);

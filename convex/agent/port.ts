@@ -2,6 +2,9 @@ import { internal } from "../_generated/api";
 import type { ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { hybridSearch } from "../data/embeddings";
+import type { productView } from "../data/catalog";
+
+type ProductView = ReturnType<typeof productView>;
 
 const DAY = 86_400_000;
 const isDateKey = (k: string) => /At$/.test(k) || k === "from" || k === "to";
@@ -43,7 +46,7 @@ export function dataPort(ctx: ActionCtx, now: number) {
     matchProduct: (title: string, limit = 6) => ctx.runQuery(internal.data.catalog.matchProduct, { title, limit }),
     hybridMatch: (title: string) => hybridSearch(ctx, title, { limit: 6 }),
     searchCatalog: async (query: string) => present(await ctx.runQuery(internal.data.catalog.matchProduct, { title: query, limit: 6 })),
-    product: (productId: string) => ctx.runQuery(internal.data.catalog.getProduct, { productId: id(productId) }),
+    product: (productId: string): Promise<ProductView | null> => ctx.runQuery(internal.data.catalog.getProduct, { productId: id(productId) }),
     stats: async (productId: string, o: { retailer?: string; days?: number; currentPrice?: number; originalPrice?: number }) =>
       present(track(await ctx.runQuery(internal.data.prices.getPriceStats, { productId: id(productId), now, windowDays: o.days ?? 365, retailerSlug: o.retailer, currentPrice: o.currentPrice, originalPrice: o.originalPrice }))),
     promo: async (productId: string, retailer?: string) =>

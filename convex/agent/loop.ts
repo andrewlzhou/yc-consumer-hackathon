@@ -1,30 +1,49 @@
-import type { ConversationItem, LlmProvider, ToolSpec, Usage } from "./llm";
+import type { ConversationItem, JsonSchema, LlmProvider, ToolSpec, Usage } from "./llm";
 import { AGENT_OUTPUT_SCHEMA, parseAgentOutput, type AgentOutput } from "./output";
 import { checkGrounding, EvidenceLedger, repairCitations } from "./evidence";
 
 export type AgentTool = ToolSpec & { run: (args: Record<string, unknown>) => Promise<unknown> };
 
-export type RunOptions = {
+// What the model must answer with, how to parse it, and how to check its grounding against the ledger.
+export type OutputSpec<T> = {
+  name: string;
+  schema: JsonSchema;
+  parse: (text: string) => { ok: true; value: T } | { ok: false; errors: string[] };
+  check: (value: T, ledger: EvidenceLedger) => { value: T; issues: string[] };
+};
+
+export const reportSpec = (competitorTools: string[]): OutputSpec<AgentOutput> => ({
+  name: "purchase_analysis",
+  schema: AGENT_OUTPUT_SCHEMA,
+  parse: parseAgentOutput,
+  check: (value, ledger) => {
+    const repaired = repairCitations(value, ledger);
+    return { value: repaired, issues: checkGrounding(repaired, ledger, competitorTools) };
+  },
+});
+
+export type RunOptions<T> = {
   provider: LlmProvider;
   model: string;
   reasoning?: "none" | "minimal" | "low" | "medium" | "high";
   system: string;
   prompt: string;
   tools: AgentTool[];
+  output: OutputSpec<T>;
   ledger?: EvidenceLedger;
   maxToolTurns?: number;
   maxRepairs?: number;
+  maxOutputTokens?: number;
   deadlineMs?: number;
-  competitorTools?: string[];
 };
 
-export type RunResult =
-  | { ok: true; output: AgentOutput; ledger: EvidenceLedger; usage: Usage; turns: number; repairs: number; groundingIssues: string[] }
+export type RunResult<T> =
+  | { ok: true; output: T; ledger: EvidenceLedger; usage: Usage; turns: number; repairs: number; groundingIssues: string[] }
   | { ok: false; error: string; ledger: EvidenceLedger; usage: Usage; turns: number };
 
 // Runs one tool-use loop: the model calls tools until it answers; the answer is schema-checked and grounding-checked,
 // and problems are sent back for a bounded number of repairs.
-export async function runAgent(options: RunOptions): Promise<RunResult> {
+export async function runAgent<T>(options: RunOptions<T>): Promise<RunResult<T>> {
   const ledger = options.ledger ?? new EvidenceLedger();
   const items: ConversationItem[] = [{ kind: "user", text: options.prompt }];
   const usage = { inputTokens: 0, outputTokens: 0 };
@@ -34,7 +53,6 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
   let toolTurns = 0;
   let repairs = 0;
   let turns = 0;
-  let lastIssues: string[] = [];
   for (;;) {
     turns++;
     const remaining = options.deadlineMs ? options.deadlineMs - (Date.now() - started) : undefined;
@@ -47,7 +65,8 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
         items,
         tools: options.tools,
         toolChoice: toolTurns >= maxToolTurns ? "none" : "auto",
-        output: { name: "purchase_analysis", schema: AGENT_OUTPUT_SCHEMA },
+        output: { name: options.output.name, schema: options.output.schema },
+        maxOutputTokens: options.maxOutputTokens,
         timeoutMs: remaining,
       });
     } catch (error) {
@@ -62,18 +81,17 @@ export async function runAgent(options: RunOptions): Promise<RunResult> {
       result.calls.forEach((call, i) => items.push({ kind: "toolResult", callId: call.id, output: outputs[i] }));
       continue;
     }
-    const parsed = parseAgentOutput(result.text);
-    if (parsed.ok) parsed.value = repairCitations(parsed.value, ledger);
-    const issues = parsed.ok ? checkGrounding(parsed.value, ledger, options.competitorTools ?? []) : parsed.errors;
+    const parsed = options.output.parse(result.text);
+    const checked = parsed.ok ? options.output.check(parsed.value, ledger) : null;
+    const issues = checked ? checked.issues : parsed.ok ? [] : parsed.errors;
     const outOfTime = options.deadlineMs !== undefined && Date.now() - started > options.deadlineMs * 0.6;
     if (issues.length === 0 || repairs >= maxRepairs || outOfTime) {
-      if (!parsed.ok) return { ok: false, error: `invalid output: ${issues.join("; ")}`, ledger, usage, turns };
-      return { ok: true, output: parsed.value, ledger, usage, turns, repairs, groundingIssues: issues };
+      if (!checked) return { ok: false, error: `invalid output: ${issues.join("; ")}`, ledger, usage, turns };
+      return { ok: true, output: checked.value, ledger, usage, turns, repairs, groundingIssues: issues };
     }
     repairs++;
-    lastIssues = issues;
     items.push({ kind: "assistant", text: result.text });
-    items.push({ kind: "user", text: `Your answer failed validation. Fix these problems and answer again (call tools or the calculate tool if you need numbers):\n- ${lastIssues.join("\n- ")}` });
+    items.push({ kind: "user", text: `Your answer failed validation. Fix these problems and answer again (call tools or the calculate tool if you need numbers):\n- ${issues.join("\n- ")}` });
   }
 }
 

@@ -53,7 +53,8 @@ export function fakeProvider(): LlmProvider {
       }
       const ev = evidenceByTool(request.items);
       const output = heuristicAnalysis({ productId: scan.productId, retailer: scan.retailer, stats: ev.get("get_price_stats"), promo: ev.get("get_promo_patterns"), competitors: ev.get("find_competitors") });
-      return { kind: "final", text: JSON.stringify(output), usage };
+      const card = { verdict: output.verdict, confidence: output.confidence, reason: output.reason, reasonEvidenceIds: output.reasonEvidenceIds };
+      return { kind: "final", text: JSON.stringify(request.output.name === "purchase_card" ? card : output), usage };
     },
   };
 }

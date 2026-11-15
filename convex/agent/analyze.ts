@@ -4,14 +4,14 @@ import { internalAction, type ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import type { Verdict } from "../lib/contract";
 import { normalizeRetailer } from "../data/retailers";
-import { checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
+import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
 import { heuristicAnalysis, isThin } from "./heuristic";
 import { decideMatch, hybridViable, type MatchCandidate } from "./identify";
 import type { LlmProvider } from "./llm";
-import { runAgent } from "./loop";
+import { reportSpec, runAgent, type OutputSpec } from "./loop";
 import { openAiProvider } from "./openai";
-import type { AgentOutput } from "./output";
+import { CARD_SCHEMA, parseCard, type AgentCard, type AgentOutput } from "./output";
 import { dataPort, type DataPort } from "./port";
 import { keyFacts } from "./facts";
 import { systemPrompt } from "./prompt";
@@ -72,10 +72,16 @@ The shopper is looking at "${scan.title ?? productTitle}" at ${scan.retailer}${s
 
 // The evidence every verdict rests on. Reused from the ledger when the model already fetched it.
 async function standardEvidence(data: DataPort, ledger: EvidenceLedger, productId: string, scan: Scan) {
-  const find = (tool: string) => [...ledger.items].reverse().find((e) => e.tool === tool && (e.args as { productId?: string }).productId === productId && (tool !== "get_price_stats" || (e.args as { retailer?: unknown }).retailer === null));
+  const find = (tool: string) =>
+    [...ledger.items].reverse().find((e) => {
+      const args = e.args as { productId?: string; retailer?: unknown; days?: unknown };
+      return e.tool === tool && args.productId === productId && (tool !== "get_price_stats" || (args.retailer === null && args.days === 365));
+    });
   const statsArgs = { productId, retailer: null, days: 365, currentPrice: scan.currentPrice, originalPrice: scan.originalPrice };
-  const [stats, promo, competitors] = await Promise.all([
+  const recentArgs = { productId, retailer: null, days: 90, currentPrice: scan.currentPrice, originalPrice: null };
+  const [stats, recent, promo, competitors] = await Promise.all([
     find("get_price_stats") ?? data.stats(productId, { days: 365, currentPrice: orUndefined(scan.currentPrice), originalPrice: orUndefined(scan.originalPrice) }),
+    data.stats(productId, { days: 90, currentPrice: orUndefined(scan.currentPrice) }),
     find("get_promo_patterns") ?? data.promo(productId),
     find("find_competitors") ?? data.comparables(productId),
   ]);
@@ -85,7 +91,8 @@ async function standardEvidence(data: DataPort, ledger: EvidenceLedger, productI
     promo: asEvidence("get_promo_patterns", { productId, retailer: null }, promo),
     competitors: asEvidence("find_competitors", { productId }, competitors),
   };
-  const facts = find("key_facts") ?? ledger.add("key_facts", { productId, retailer: scan.retailer }, keyFacts(scan.retailer, ev.stats, ev.promo, ev.competitors));
+  const recentStats = ledger.add("get_price_stats", recentArgs, recent);
+  const facts = ledger.add("key_facts", { productId, retailer: scan.retailer }, keyFacts(scan.retailer, ev.stats, recentStats, ev.promo, ev.competitors));
   return { ...ev, facts };
 }
 
@@ -94,6 +101,15 @@ function evidenceBlock(e: Evidence): string {
   if (e.tool !== "get_promo_patterns") return `<evidence id="${e.id}" tool="${e.tool}">${JSON.stringify(e.result)}</evidence>`;
   const { episodes, ...rest } = e.result as { episodes?: unknown[] };
   return `<evidence id="${e.id}" tool="${e.tool}">${JSON.stringify({ ...rest, recentEpisodes: (episodes ?? []).slice(-6) })}</evidence>`;
+}
+
+const cardSpec: OutputSpec<AgentCard> = { name: "purchase_card", schema: CARD_SCHEMA, parse: parseCard, check: checkCard };
+
+// The live record's report: the model's card on top of the deterministic analyst's factual sections. The full run
+// replaces it with a report the larger model writes itself.
+function withReport(card: AgentCard, productId: string, scan: Scan, ev: Awaited<ReturnType<typeof standardEvidence>>): AgentOutput {
+  const facts = heuristicAnalysis({ productId, retailer: scan.retailer, stats: ev.stats, promo: ev.promo, competitors: ev.competitors });
+  return { ...facts, ...card, recommendation: { reasoning: card.reason, evidenceIds: card.reasonEvidenceIds } };
 }
 
 // Guardrails after the model: invalid or ungrounded answers and confident verdicts on thin data fall back to the
@@ -227,10 +243,10 @@ export const analyzeScan = internalAction({
     ledger.add("scan", { retailer: scan.retailer }, { title: scan.title, retailer: scan.retailer, currentPrice: scan.currentPrice, claimedOriginalPrice: scan.originalPrice });
     const ev = await standardEvidence(data, ledger, productId, scan);
     lap("evidence");
-    const prompt = [scanPrompt(scan, productId, match.product.title), "This is the fast pass: all evidence is below and there are no tools. One sentence per text field.", ...ledger.items.map(evidenceBlock)].join("\n");
-    const run = await runAgent({ provider: config.provider, model: config.fast.model, reasoning: config.fast.reasoning, system: systemPrompt(), prompt, tools: [], ledger, maxRepairs: 1, deadlineMs: LIVE_DEADLINE_MS, competitorTools: COMPETITOR_TOOLS });
+    const prompt = [scanPrompt(scan, productId, match.product.title), "This is the fast pass for the phone card: all evidence is below and there are no tools. Answer with verdict, confidence, reason and the evidence ids behind the reason.", ...ledger.items.map(evidenceBlock)].join("\n");
+    const run = await runAgent({ provider: config.provider, model: config.fast.model, reasoning: config.fast.reasoning, system: systemPrompt(), prompt, tools: [], output: cardSpec, ledger, maxRepairs: 1, maxOutputTokens: 300, deadlineMs: LIVE_DEADLINE_MS });
     lap("model");
-    const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
+    const final = finalize(productId, scan, ledger, run.ok ? { output: withReport(run.output, productId, scan, ev), issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
     const isSampleData = data.sampleDataSeen() || match.product.isSample;
     const reason = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);
     const pending = !evaluation && !fullFresh && (await queueFullRun(ctx, productId, scan, now));
@@ -248,7 +264,7 @@ async function recordPrice(ctx: ActionCtx, productId: Id<"products">, scan: Scan
 // The background path: the full tool-use loop with the larger model, stored as the product's detailed report.
 export const runFullAnalysis = internalAction({
   args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()) },
-  handler: async (ctx, { productId, jobId, scan, now: nowArg }) => {
+  handler: async (ctx, { productId, jobId, scan, now: nowArg }): Promise<{ verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number }> => {
     const started = Date.now();
     const now = nowArg ?? started;
     if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "running" });
@@ -267,7 +283,7 @@ export const runFullAnalysis = internalAction({
         "The core evidence is below. Use tools to dig deeper where it matters (history, per-retailer stats, compare_products for a competitor, calculate for any arithmetic), then answer with a full report.",
         ...ledger.items.map(evidenceBlock),
       ].join("\n");
-      const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: buildTools(data), ledger, maxToolTurns: 6, maxRepairs: 2, competitorTools: COMPETITOR_TOOLS });
+      const run = await runAgent({ provider: config.provider, model: config.full.model, reasoning: config.full.reasoning, system: systemPrompt(), prompt, tools: buildTools(data), output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 6, maxRepairs: 2 });
       const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev);
       await save(ctx, productId, "full", config.full.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "done" });

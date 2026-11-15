@@ -14,8 +14,9 @@ type Competitor = { productId: string; title: string; brand: string; last90Days:
 
 // The comparisons a shopper cares about, computed exactly from the other evidence, so a small model can cite
 // savings and gaps instead of doing arithmetic.
-export function keyFacts(scanRetailer: string, stats: Evidence, promo: Evidence, competitors: Evidence) {
+export function keyFacts(scanRetailer: string, stats: Evidence, recentStats: Evidence, promo: Evidence, competitors: Evidence) {
   const s = stats.result as Stats;
+  const recent = (recentStats.result as Stats).overall.prices;
   const p = promo.result as Promo;
   const c = (competitors.result as Competitor[]) ?? [];
   const o = s.overall;
@@ -30,8 +31,11 @@ export function keyFacts(scanRetailer: string, stats: Evidence, promo: Evidence,
     observationCount: o.observationCount,
     spanDays: o.prices.spanDays,
     currentPrice: current,
-    typicalPrice: o.prices.median,
-    currentMinusTypical: round2(current - o.prices.median),
+    typicalPrice12Months: o.prices.median,
+    currentMinusTypical12Months: round2(current - o.prices.median),
+    typicalPrice90Days: recent?.median ?? null,
+    currentMinusTypical90Days: recent ? round2(current - recent.median) : null,
+    lowestPrice90Days: recent?.min ?? null,
     lowestPrice: o.prices.min,
     lowestPriceLastSeen: o.prices.minLastSeenAt,
     currentMinusLowest: round2(current - o.prices.min),
