@@ -34,6 +34,7 @@ function withWas(read: StructuredRead, extra: { price: number; was: number } | n
 
 export function readStorePage(retailer: string, html: string, url?: string): StoreRead {
   const read = readStructured(html, url);
+  if (read.price === null && url && /[?&](?:color|sz|size|skuId|variant)=/i.test(url)) return { ...read, blocked: false };
   if (retailer === "nike") withWas(read, nikePrices(html, url ? parseUrl(url)?.productCode : undefined), "nike.prices");
   if (retailer === "ae") withWas(read, aeListPrice(html, read.price), "ae.sku");
   // Archived bot-wall stubs are tiny; a real product page is hundreds of KB.

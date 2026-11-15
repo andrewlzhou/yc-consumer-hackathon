@@ -75,7 +75,7 @@ function offerCandidates(product: Json, inheritedKeys: string): Candidate[] {
       price,
       was: was !== null && was > price ? was : null,
       inStock: /InStock|LimitedAvailability|OnlineOnly|PreOrder/i.test(availability) ? true : /OutOfStock|SoldOut|Discontinued/i.test(availability) ? false : null,
-      keys: [keys, offer.url, offer.sku].filter(Boolean).join(" "),
+      keys: [keys, offer.url, "sku:" + offer.sku, "size:" + product.size, "color:" + product.color].filter(Boolean).join(" "),
     });
   }
   return out;
@@ -105,6 +105,19 @@ function pickCandidate(all: Candidate[], url: string | undefined): { c: Candidat
       pool = hits;
       narrowed = true;
       break;
+    }
+  }
+  if (url) {
+    const params = new URL(url).searchParams;
+    for (const [key, value] of params) {
+      if (!/^(color|sz|size|skuId|variant)$/i.test(key)) continue;
+      const escaped = value.replace(/[.*+?^$()|[\]\\]/g, "\\$&");
+      const field = /^(sz|size)$/i.test(key) ? "size" : /^skuId$/i.test(key) ? "sku" : key;
+      const queryMatch = new RegExp("[?&]" + key + "=" + escaped + "(?=[&#\\s]|$)", "i");
+      const fieldMatch = new RegExp("\\b" + field + ":" + escaped + "(?=\\s|$)", "i");
+      pool = pool.filter((c) => queryMatch.test(c.keys) || fieldMatch.test(c.keys));
+      if (!pool.length) return null;
+      narrowed = true;
     }
   }
   const inStock = pool.filter((c) => c.inStock !== false);
@@ -144,6 +157,9 @@ export function readStructured(html: string, url?: string): StructuredRead {
   const picked = pickCandidate(candidates, url);
   if (picked) {
     return { title, brand, price: picked.c.price, originalPrice: picked.c.was, inStock: picked.c.inStock ?? true, pattern: picked.narrowed ? "ldjson.variant" : "ldjson" };
+  }
+  if (candidates.length || (url && /[?&](?:color|sz|size|skuId|variant)=/i.test(url))) {
+    return { title, brand, price: null, originalPrice: null, inStock: null, pattern: null };
   }
   const currency = metaContent(html, ["product:price:currency", "og:price:currency"]);
   const metaPrice = currency && currency !== "USD" ? null : num(metaContent(html, ["product:sale_price:amount", "product:price:amount", "og:price:amount", "price"]));

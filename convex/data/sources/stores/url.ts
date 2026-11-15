@@ -60,6 +60,10 @@ export function parseUrl(raw: string): ParsedUrl | null {
   const productCode = m ? (m.slice(1).find(Boolean) ?? undefined) : undefined;
   let titleHint = deslug(rule.slug(u.pathname.split("/").filter(Boolean)));
   if (titleHint && rule.brand && !titleHint.toLowerCase().includes(rule.brand.toLowerCase())) titleHint = rule.brand + " " + titleHint;
-  const canonical = rule.retailer === "amazon" && productCode ? "https://www.amazon.com/dp/" + productCode : "https://" + host + u.pathname;
+  for (const key of [...u.searchParams.keys()]) if (/^(utm_.+|athbdg|gclid|fbclid|ref|ref_|tag|cp|menu)$/i.test(key)) u.searchParams.delete(key);
+  u.searchParams.sort();
+  const query = u.searchParams.toString();
+  const path = rule.retailer === "amazon" && productCode ? "https://www.amazon.com/dp/" + productCode : "https://" + host + u.pathname;
+  const canonical = path + (query ? "?" + query : "");
   return { retailer: rule.retailer, productCode, titleHint, url: canonical };
 }

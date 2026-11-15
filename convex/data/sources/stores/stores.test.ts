@@ -46,6 +46,7 @@ describe("parseUrl (no network)", () => {
     expect(parseUrl(PEG42)).toEqual({ retailer: "nike", productCode: "II7210-100", titleHint: "Nike pegasus 42 mens road running shoes", url: PEG42 });
     expect(parseUrl(AE + "?menu=cat4840004")).toMatchObject({ retailer: "ae", productCode: "1114_7364_914", url: AE });
     expect(parseUrl("https://shop.lululemon.com/p/womens-leggings/Align-Pant-2/_/prod2020012?color=0001")).toMatchObject({ retailer: "lululemon", productCode: "prod2020012" });
+    expect(parseUrl("https://shop.lululemon.com/p/womens-leggings/Align-Pant-2/_/prod2020012?sz=4&color=0001&utm_source=share")?.url).toBe("https://shop.lululemon.com/p/womens-leggings/Align-Pant-2/_/prod2020012?color=0001&sz=4");
     expect(parseUrl("https://www.apple.com/shop/buy-airpods/airpods-pro-3")).toMatchObject({ retailer: "apple", titleHint: "Apple airpods pro 3" });
     expect(parseUrl("https://www.amazon.com/Sony-WH-1000XM5-Headphones/dp/B09XS7JWHH/ref=sr_1_1")).toMatchObject({ retailer: "amazon", productCode: "B09XS7JWHH", url: "https://www.amazon.com/dp/B09XS7JWHH" });
     expect(parseUrl("https://www.bestbuy.com/site/apple-airpods-pro-3/6376563.p?skuId=6376563")).toMatchObject({ retailer: "bestbuy", productCode: "6376563", titleHint: "apple airpods pro 3" });
@@ -70,5 +71,12 @@ describe("parseUrl (no network)", () => {
     const variants = '<script type="application/ld+json">{"@type":"ProductGroup","hasVariant":[{"@type":"Product","sku":"AA1234","offers":{"price":20}},{"@type":"Product","sku":"BB5678","offers":{"price":40}}]}</script>';
     expect(readStructured(variants).price).toBeNull();
     expect(readStructured(variants, "https://www.nike.com/t/shoe/AA1234").price).toBe(20);
+  });
+
+  test("lululemon color and size select one offer, and unknown variants never use meta fallback", () => {
+    const url = "https://shop.lululemon.com/p/womens-leggings/Align-Pant-2/_/prod2020012";
+    expect(readStructured(real.lululemonAlign, url + "?color=0001&sz=10")).toMatchObject({ price: 98 });
+    expect(readStructured(real.lululemonAlign + '<meta property="product:price:amount" content="98">', url + "?color=unseen&sz=10").price).toBeNull();
+    expect(readStructured(real.lululemonAlign, url + "?color=0001&sz=unseen").price).toBeNull();
   });
 });

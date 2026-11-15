@@ -23,6 +23,7 @@
 - Supported hosts: the four stores above plus Amazon, Walmart, Target and Best Buy. Unsupported hosts/paths return null.
 - The host is taken from the URL, not a caller's retailer hint. Userinfo, custom ports and arbitrary subdomains are refused.
 - Store redirects are not followed into arbitrary sites. Failed pages are not catalog evidence.
+- Variant query fields survive canonicalization; unresolved color/size/SKU selections never fall back to another offer.
 - Old snapshot prices are stored at the snapshot timestamp, never passed back as today's price (three-day freshness bound).
 - Plain `parseUrl(url)` in `stores/url.ts` uses no network and returns the store slug, product code and optional title hint.
 - The agent calls resolution only in its scheduled background job. No page fetch was added to live `/analyze`.

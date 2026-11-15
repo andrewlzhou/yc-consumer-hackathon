@@ -52,5 +52,5 @@
 ## More stores
 
 - Reader/resolver: c6ad7ea. Three demo additions are connected: AE Baggy Jean, lululemon Align 25-inch, Nike Zenvy.
-- Local: full suite 166 passed, two live tests skipped; AE real-response ingestion test and typecheck pass.
+- Local: full suite 166 passed, two live tests skipped; targeted tests also cover AE ingestion and variant-preserving URLs.
 - Next: deploy a clean origin/ruhaan_backend tip, ingest the three products, then verify rows, URL resolution and competitors.

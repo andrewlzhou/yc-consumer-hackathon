@@ -87,6 +87,8 @@ export async function resolveStoreUrl(ctx: ActionCtx, args: { url: string; title
   let title = read?.title ?? args.title ?? (loaded ? parsed.titleHint : undefined);
   if (title && brand && !title.toLowerCase().includes(brand.toLowerCase())) title = brand + " " + title;
   if (!title) return { retailer: parsed.retailer, matched: "parsed" };
+  const variants = [...new URL(parsed.url).searchParams].filter(([key]) => /^(color|sz|size|skuId|variant)$/i.test(key));
+  if (variants.length) title += " " + variants.map(([key, value]) => key + " " + value).join(" ");
   const fresh = loaded && Date.now() - loaded.page.observedAt < CURRENT_WINDOW_MS;
   const price = read?.inStock === false ? undefined : (read?.price ?? undefined);
   const result: NonNullable<ResolvedUrl> = {
@@ -99,10 +101,10 @@ export async function resolveStoreUrl(ctx: ActionCtx, args: { url: string; title
     observedAt: loaded?.page.observedAt,
   };
   const decision = decideMatch(await ctx.runQuery(internal.data.catalog.matchProduct, { title, limit: 6 }));
-  const variantMatches = decision.kind === "match" && (
+  const variantMatches = decision.kind === "match" && (variants.length ? decision.candidate.product.title === title : (
     decision.candidate.product.model === parsed.productCode ||
     Object.values(decision.candidate.product.variant ?? {}).every((part) => title!.toLowerCase().includes(part.toLowerCase()))
-  );
+  ));
   if (decision.kind === "match" && variantMatches) {
     result.productId = decision.candidate.product._id;
     result.matched = "catalog";
