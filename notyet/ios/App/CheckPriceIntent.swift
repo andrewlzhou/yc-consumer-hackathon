@@ -20,9 +20,12 @@ struct CheckPriceIntent: LiveActivityIntent {
 
         let scanKey = UUID().uuidString
         let start = Date()
+        // The bar fills over the longest the quick check may take, so it never reads "done" while
+        // the phone is still waiting. An answer that comes sooner simply replaces it.
+        let quickTimeout: TimeInterval = 25
         let working = ScanAttributes.ContentState(
             stage: "working", headline: "Finding the product…", productName: nil,
-            verdict: nil, scanKey: scanKey, etaEnd: start.addingTimeInterval(14))
+            verdict: nil, scanKey: scanKey, etaEnd: start.addingTimeInterval(quickTimeout))
         let activity = try? Activity<ScanAttributes>.request(
             attributes: ScanAttributes(startedAt: start),
             content: ActivityContent(state: working, staleDate: nil),
@@ -32,7 +35,7 @@ struct CheckPriceIntent: LiveActivityIntent {
 
         do {
             // The quick pass. The deep report keeps running on Convex after this returns.
-            let quick = try await ScanAPI.submit(imageData: jpeg, scanKey: scanKey, timeout: 25)
+            let quick = try await ScanAPI.submit(imageData: jpeg, scanKey: scanKey, timeout: quickTimeout)
             let ready = ScanAttributes.ContentState(
                 stage: "ready", headline: quick.oneLiner, productName: quick.productName,
                 verdict: quick.verdict, scanKey: scanKey, etaEnd: Date(), retailer: quick.retailer)
@@ -44,8 +47,11 @@ struct CheckPriceIntent: LiveActivityIntent {
                     body: LocalizedStringResource(stringLiteral: quick.oneLiner),
                     sound: .default))
         } catch {
+            // A timeout means the server may still finish; anything else means it probably won't.
+            let timedOut = (error as? URLError)?.code == .timedOut
             let failed = ScanAttributes.ContentState(
-                stage: "failed", headline: "Still digging. Tap to see your verdict.",
+                stage: "failed",
+                headline: timedOut ? "Still checking. Tap to follow it in the app." : "Couldn't check this one. Tap to open the app.",
                 productName: nil, verdict: nil, scanKey: scanKey, etaEnd: Date())
             await activity?.update(ActivityContent(state: failed, staleDate: nil))
         }
