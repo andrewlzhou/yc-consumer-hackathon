@@ -26,6 +26,8 @@
   `@convex-dev/agent`: analyses are one-shot, with no conversation history to persist. See [agent](../backend/agent.md).
 - 2026-11-15 (Ruhaan): keep the phone side light. Live path = cached analysis or one fast small-model call;
   the detailed report is a separate on-demand endpoint.
+- 2026-11-15: full reports start alongside the live card and use one prefetched model pass; exact report sections
+  and a chart are available before the full narrative. Product-page fetching stays off the live path.
 
 ## Open questions
 

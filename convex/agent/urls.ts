@@ -1,4 +1,3 @@
-import { makeFunctionReference } from "convex/server";
 import { v } from "convex/values";
 import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
@@ -13,7 +12,6 @@ type Resolved = { productId?: Id<"products">; title?: string; retailer?: string;
 
 // The store-page resolver owned by the stores thread (YCCO-8). Referenced by name so this code deploys before it
 // lands; a missing or failing resolver falls back to the extract's own fields.
-const resolveUrl = makeFunctionReference<"action", { url: string; title?: string; retailer?: string }, Resolved>("data/sources/stores/resolve:resolveUrl");
 
 // Host plus path, lowercased host, no query, fragment, or trailing slash, so tracking parameters share one row.
 export function normalizeUrl(raw: string): string | null {
@@ -82,7 +80,7 @@ export const resolveInBackground = internalAction({
     let resolved: Resolved = null;
     let error: string | undefined;
     try {
-      resolved = await ctx.runAction(resolveUrl, { url: args.url, title: args.title, retailer: args.retailer });
+      resolved = await ctx.runAction(internal.data.sources.stores.resolve.resolveUrl, { url: args.url, title: args.title, retailer: args.retailer });
     } catch (e) {
       error = `resolver: ${String(e).slice(0, 200)}`;
     }

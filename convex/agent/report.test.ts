@@ -15,6 +15,7 @@ let ids: Record<string, Id<"products">>;
 
 beforeEach(async () => {
   vi.stubEnv("AGENT_PROVIDER", "fake");
+  vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   // The stores resolver fetches product pages; tests never touch the network.
   vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
@@ -25,6 +26,7 @@ beforeEach(async () => {
 afterEach(() => {
   vi.useRealTimers();
   vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
   vi.unstubAllGlobals();
 });
 
@@ -111,11 +113,34 @@ describe("product links", () => {
   });
 
   test("a link alone returns a quick pending card, and an unresolvable one says so", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
     const first = await scan({ url: "https://www.target.com/p/mystery-thing/-/A-999" });
     expect(first).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "pending" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
     const again = await scan({ url: "https://www.target.com/p/mystery-thing/-/A-999" });
     expect(again).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "none" });
+  });
+
+  test("a URL slug identifies a clear catalog product without a page fetch on the live path", async () => {
+    const fetchMock = vi.fn(async () => new Response("", { status: 404 }));
+    vi.stubGlobal("fetch", fetchMock);
+    const card = await scan({ url: "https://www.apple.com/shop/buy-airpods/airpods-pro-3" });
+    expect(card.productId).toBe(ids["airpods-pro-3"]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("a code-only link resolves a real page in the background and serves the report", async () => {
+    const fetchMock = vi.fn(async () => new Response('<script type="application/ld+json">{"@type":"Product","name":"Apple AirPods Pro 3 Wireless Earbuds","offers":{"@type":"Offer","price":179.99,"priceCurrency":"USD","availability":"https://schema.org/InStock"}}</script>'));
+    vi.stubGlobal("fetch", fetchMock);
+    const url = "https://www.amazon.com/dp/B0TEST1234";
+    const first = await scan({ deviceId: "url-test", url });
+    expect(first).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "pending" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    await t.finishAllScheduledFunctions(vi.runAllTimers);
+    const next = await scan({ url });
+    expect(next.productId).toBe(ids["airpods-pro-3"]);
+    const report = await t.query(internal.agent.store.report, { productId: ids["airpods-pro-3"], now: SEED_NOW });
+    expect(report!.analysis!.tier).toBe("full");
   });
 
   test("POST /analyze accepts a link without a title and rejects a non-link", async () => {

@@ -4,6 +4,7 @@ import { internalAction, type ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { analyzeResponseValidator, productExtractValidator, type AnalyzeResponse, type Verdict } from "../lib/contract";
 import { KNOWN_RETAILERS, normalizeRetailer } from "../data/retailers";
+import { parseUrl } from "../data/sources/stores/url";
 import { rateLimiter } from "./limits";
 import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
@@ -200,8 +201,10 @@ export const analyzeScan = internalAction({
     const now = args.now ?? started;
     const config = agentConfig();
     const data = dataPort(ctx, now);
-    const title = args.title?.trim() || args.ocrLines?.join(" ").trim() || null;
-    const scan: Scan = { title, retailer: normalizeRetailer(args.retailer) ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
+    const parsedUrl = args.url ? parseUrl(args.url) : null;
+    const extractedTitle = args.title?.trim() || args.ocrLines?.join(" ").trim() || null;
+    const title = extractedTitle ?? parsedUrl?.titleHint ?? null;
+    const scan: Scan = { title, retailer: normalizeRetailer(args.retailer) ?? parsedUrl?.retailer ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
     const ledger = new EvidenceLedger();
     const timings: Record<string, number> = {};
     let mark = started;
@@ -226,7 +229,7 @@ export const analyzeScan = internalAction({
     }
     if (!match && title) match = await identify(data, config, title);
     if (args.url && !link && !evaluation)
-      await ctx.scheduler.runAfter(0, internal.agent.urls.resolveInBackground, { url: args.url, title: orUndefined(title), retailer: args.retailer, deviceId: args.deviceId, currentPrice: args.currentPrice, originalPrice: args.originalPrice, now, startFullRun: !match });
+      await ctx.scheduler.runAfter(0, internal.agent.urls.resolveInBackground, { url: args.url, title: orUndefined(extractedTitle), retailer: args.retailer ?? parsedUrl?.retailer, deviceId: args.deviceId, currentPrice: args.currentPrice, originalPrice: args.originalPrice, now, startFullRun: !match });
     lap("identify");
 
     if (!match) {
