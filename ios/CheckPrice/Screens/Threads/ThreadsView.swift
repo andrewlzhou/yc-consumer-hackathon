@@ -90,7 +90,7 @@ struct ThreadsView: View {
     }
 
     private func saveLabel(_ thread: ShoppingThread) -> some View {
-        Label(thread.isSaved ? "Stop watching price" : "Save and watch price", systemImage: thread.isSaved ? "bookmark.slash" : "bookmark")
+        Label(thread.isSaved ? "Unsave" : "Save", systemImage: thread.isSaved ? "bookmark.slash" : "bookmark")
     }
 
     // Under a Hearted or Saved filter the row leaves the list, so the change animates.
@@ -102,22 +102,17 @@ struct ThreadsView: View {
         withAnimation(Motion.rise) { store.toggleSave(thread.id) }
     }
 
-    // Worldscape's empty list: a 22pt light symbol in tertiary and one caption line, 72pt down.
+    // Worldscape's empty list: a 22pt light symbol in tertiary, 72pt down.
     private var emptyState: some View {
-        VStack(spacing: 10) {
-            Image(systemName: filter.emptySymbol)
-                .font(.system(size: 22, weight: .light))
-                .foregroundStyle(Palette.textTertiary)
-            Text(filter.emptyLine)
-                .textStyle(.caption)
-                .foregroundStyle(Palette.textSecondary)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, 72)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
-        .transition(.opacity)
+        Image(systemName: filter.emptySymbol)
+            .font(.hiragino(.w3, size: 22))
+            .foregroundStyle(Palette.textTertiary)
+            .accessibilityLabel("None")
+            .frame(maxWidth: .infinity)
+            .padding(.top, 72)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .transition(.opacity)
     }
 }
 

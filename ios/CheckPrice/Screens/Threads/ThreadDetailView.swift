@@ -1,6 +1,6 @@
-// One thread: the full report about the purchase, then a chat about it, with the input bar pinned
-// to the bottom. Heart and save sit in a header row in the content (not the navigation bar), so
-// they show both when the detail is pushed from Threads and when Home presents it as a sheet.
+// One thread: the report about the purchase, a row with the check's time plus heart and save, then
+// the chat, with the input bar pinned to the bottom. Heart and save sit in the content (not the
+// navigation bar), so they show both when pushed from Threads and when Home presents it as a sheet.
 import SwiftUI
 
 struct ThreadDetailView: View {
@@ -31,20 +31,16 @@ struct ThreadDetailView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    ThreadDetailHeader(thread: thread,
-                                       onHeart: { store.toggleHeart(thread.id) },
-                                       onSave: { store.toggleSave(thread.id) })
-                        .modifier(ThreadDetailArrive(index: 0, revealed: revealed, reduceMotion: reduceMotion))
                     ThreadDetailReport(product: thread.product, revealed: revealed)
-                    ThreadDetailSection(title: "Chat") {
-                        ChatColumn(
-                            messages: thread.messages,
-                            isReplying: isReplying,
-                            suggestions: ChatColumn.suggestions(for: thread.product.verdict),
-                            onAsk: { store.send($0, in: thread.id) },
-                            onGrow: { proxy.scrollTo(Self.bottomID, anchor: .bottom) }
-                        )
-                    }
+                    ThreadDetailActions(thread: thread,
+                                        onHeart: { store.toggleHeart(thread.id) },
+                                        onSave: { store.toggleSave(thread.id) })
+                        .modifier(ThreadDetailArrive(index: 4, revealed: revealed, reduceMotion: reduceMotion))
+                    ChatColumn(
+                        messages: thread.messages,
+                        isReplying: isReplying,
+                        onGrow: { proxy.scrollTo(Self.bottomID, anchor: .bottom) }
+                    )
                     .modifier(ThreadDetailArrive(index: 5, revealed: revealed, reduceMotion: reduceMotion))
                     Color.clear.frame(height: 1).id(Self.bottomID)
                 }
@@ -80,7 +76,7 @@ struct ThreadDetailView: View {
     private var missing: some View {
         VStack(spacing: 10) {
             Image(systemName: "bubble.left.and.text.bubble.right")
-                .font(.system(size: 22, weight: .light))
+                .font(.hiragino(.w3, size: 22))
                 .foregroundStyle(Palette.textTertiary)
             Text("This thread is no longer here.")
                 .textStyle(.caption)
@@ -91,22 +87,18 @@ struct ThreadDetailView: View {
     }
 }
 
-// Where and when the check happened, then heart (a favourite) and save (watch the price and alert).
-private struct ThreadDetailHeader: View {
+// When the check happened, then heart (a favourite) and save.
+private struct ThreadDetailActions: View {
     let thread: ShoppingThread
     let onHeart: () -> Void
     let onSave: () -> Void
 
     var body: some View {
         HStack(spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(thread.product.retailer)
-                    .textStyle(.item)
-                    .foregroundStyle(Palette.textPrimary)
-                Text("Checked \(thread.startedAt, format: .relative(presentation: .named))")
-                    .textStyle(.footnote)
-                    .foregroundStyle(Palette.textTertiary)
-            }
+            Text(thread.startedAt.formatted(.dateTime.month(.abbreviated).day().hour().minute()))
+                .textStyle(.footnote)
+                .monospacedDigit()
+                .foregroundStyle(Palette.textTertiary)
             Spacer(minLength: 8)
             heartButton
             saveButton
@@ -116,7 +108,7 @@ private struct ThreadDetailHeader: View {
     private var heartButton: some View {
         Button(action: onHeart) {
             Image(systemName: thread.isHearted ? "heart.fill" : "heart")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.hiragino(.w6, size: 15))
                 .foregroundStyle(.white.opacity(thread.isHearted ? 0.94 : 0.6))
                 .contentTransition(.symbolEffect(.replace))
                 .symbolEffect(.bounce, value: thread.isHearted)
@@ -136,11 +128,11 @@ private struct ThreadDetailHeader: View {
     private var saveButton: some View {
         Button(action: onSave) {
             HStack(spacing: 6) {
-                Image(systemName: thread.isSaved ? "bell.fill" : "bell")
-                    .font(.system(size: 12, weight: .semibold))
+                Image(systemName: thread.isSaved ? "bookmark.fill" : "bookmark")
+                    .font(.hiragino(.w6, size: 12))
                     .contentTransition(.symbolEffect(.replace))
                     .symbolEffect(.bounce, value: thread.isSaved)
-                Text(thread.isSaved ? "Watching price" : "Save & alert me")
+                Text(thread.isSaved ? "Saved" : "Save")
                     .textStyle(.smallButton)
                     .lineLimit(1)
                     .contentTransition(.opacity)
@@ -156,6 +148,6 @@ private struct ThreadDetailHeader: View {
         .buttonStyle(IconPressStyle())
         .animation(Motion.appear, value: thread.isSaved)
         .sensoryFeedback(.success, trigger: thread.isSaved) { _, new in new }
-        .accessibilityLabel(thread.isSaved ? "Watching price. Stop watching" : "Save and alert me when the price drops")
+        .accessibilityLabel(thread.isSaved ? "Unsave" : "Save")
     }
 }

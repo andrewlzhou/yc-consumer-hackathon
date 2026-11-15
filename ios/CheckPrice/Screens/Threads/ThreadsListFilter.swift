@@ -1,5 +1,5 @@
 // The Threads tab's filter chips (All / Hearted / Saved), how each sorts threads into Today /
-// This week / Earlier, and what each shows when it is empty. There is no search by design: the
+// This week / Earlier, and the symbol each shows when it is empty. There is no search by design: the
 // owner wants search left to a general agent.
 import SwiftUI
 
@@ -29,14 +29,6 @@ enum ThreadsListFilter: CaseIterable, Identifiable {
         case .all: "bubble.left.and.bubble.right"
         case .hearted: "heart"
         case .saved: "bookmark"
-        }
-    }
-
-    var emptyLine: String {
-        switch self {
-        case .all: "Check a price while shopping and it lands here."
-        case .hearted: "Heart a thread to keep it close."
-        case .saved: "Save a thread to watch its price."
         }
     }
 }

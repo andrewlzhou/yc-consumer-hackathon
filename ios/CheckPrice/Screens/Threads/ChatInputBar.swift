@@ -10,7 +10,7 @@ struct ChatInputBar: View {
     @FocusState private var focused: Bool
 
     private static let font = Font.hiragino(.w4, size: 17, relativeTo: .body)
-    private static let prompt = "Ask about this price"
+    private static let prompt = "Ask…"
 
     private var canSend: Bool {
         !isReplying && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -53,7 +53,7 @@ struct ChatInputBar: View {
     private var sendButton: some View {
         Button(action: send) {
             Image(systemName: "arrow.up")
-                .font(.system(size: 19, weight: .semibold))
+                .font(.hiragino(.w6, size: 19))
                 .foregroundStyle(.white.opacity(canSend ? 1 : 0.6))
                 .dropShadow(Shadows.sendArrow)
                 .frame(width: ControlHeight.minTouch, height: ControlHeight.minTouch)

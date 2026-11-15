@@ -1,7 +1,6 @@
 // The numbers behind a thread's report: today's price and the predicted low read from the demo
-// `Product` strings, plus a made-up year of price history for the chart. The history is demo data,
-// built from the product's own numbers and seeded by its name, so a thread shows the same chart
-// every time it opens. Replace `ThreadDetailDemoHistory` when a backend sends real history.
+// `Product` strings, plus a demo year of price history for the chart, built from the product's own
+// numbers and seeded by its name, so a thread shows the same chart every time it opens. Replace `ThreadDetailDemoHistory` when a backend sends real history.
 import Foundation
 
 struct ThreadDetailFigures {
@@ -10,11 +9,10 @@ struct ThreadDetailFigures {
     let predictedLow: ClosedRange<Double>
     // When the predicted low is expected, if the product says.
     let predictedDate: Date?
-    // What it usually sells for, and the lowest price of the past year with the sale it came in.
+    // What it usually sells for, and the lowest price of the past year.
     let typical: Double
     let low: Double
     let lowDate: Date
-    let lowSaleName: String?
     // Chart inputs.
     let history: [PricePoint]
     let sales: [SaleWindow]
@@ -88,7 +86,6 @@ enum ThreadDetailDemoHistory {
             typical: typical,
             low: low,
             lowDate: lowDate,
-            lowSaleName: blackFriday?.name,
             history: steps.map { PricePoint(date: dayString($0.date), price: $0.price, retailer: product.retailer) },
             sales: windows.map { SaleWindow(name: $0.name, startsAt: dayString($0.start), endsAt: dayString($0.end)) }
         )

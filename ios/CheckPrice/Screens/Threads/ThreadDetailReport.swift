@@ -1,7 +1,6 @@
-// A thread's report: the prototype's report content in Not Yet's report style
-// (notyet/ios/Views/ProductReportView.swift). Top to bottom: the verdict on glass over blue light,
-// today's price against the predicted low, the last 12 months of prices, and the signal (what to do
-// and why). The price history is demo data (ThreadDetailHistory.swift).
+// A thread's report in Not Yet's report style (notyet/ios/Views/ProductReportView.swift). Top to
+// bottom: the verdict and its reason on glass over blue light, today's price against the expected
+// price, and the last 12 months of prices (demo history from ThreadDetailHistory.swift).
 import SwiftUI
 
 struct ThreadDetailReport: View {
@@ -27,139 +26,64 @@ struct ThreadDetailReport: View {
                 .modifier(ThreadDetailArrive(index: 2, revealed: revealed, reduceMotion: reduceMotion))
             chartSection
                 .modifier(ThreadDetailArrive(index: 3, revealed: revealed, reduceMotion: reduceMotion))
-            signalSection
-                .modifier(ThreadDetailArrive(index: 4, revealed: revealed, reduceMotion: reduceMotion))
         }
     }
 
-    // MARK: Today against the predicted low
+    // MARK: Today against the expected price
 
     private var priceSection: some View {
-        ThreadDetailSection(title: "Price") {
-            FlatCard {
-                VStack(spacing: 0) {
-                    HStack(alignment: .firstTextBaseline) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Today at \(product.retailer)")
-                                .textStyle(.item)
-                                .foregroundStyle(Palette.textSecondary)
-                            Text(usualDetail)
-                                .textStyle(.footnote)
-                                .foregroundStyle(Palette.textTertiary)
-                        }
-                        Spacer(minLength: 12)
-                        Text(product.price)
-                            .textStyle(.wordmark(size: 34))
-                            .monospacedDigit()
-                            .foregroundStyle(Palette.textPrimary)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 14)
-                    .accessibilityElement(children: .combine)
-                    Hairline()
-                    PriceRow(label: "Predicted low", detail: predictedDetail, value: product.projectedLow, valueColor: verdict.color)
+        FlatCard {
+            VStack(spacing: 0) {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Today at \(product.retailer)")
+                        .textStyle(.item)
+                        .foregroundStyle(Palette.textSecondary)
+                    Spacer(minLength: 12)
+                    Text(product.price)
+                        .textStyle(.wordmark(size: 34))
+                        .monospacedDigit()
+                        .foregroundStyle(Palette.textPrimary)
                 }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .accessibilityElement(children: .combine)
+                Hairline()
+                PriceRow(label: "Expected", detail: expectedDate, value: product.projectedLow, valueColor: verdict.color)
             }
         }
     }
 
-    // "$30 under usual (8%)" / "The usual price" / "$10 above usual (3%)".
-    private var usualDetail: String {
-        let diff = figures.current - figures.typical
-        let percent = Int((abs(diff) / max(figures.typical, 1) * 100).rounded())
-        if abs(diff) < 1 { return "The usual price" }
-        return diff < 0 ? "\(money(-diff)) under usual (\(percent)%)" : "\(money(diff)) above usual (\(percent)%)"
-    }
-
-    // "by Nov 30 · save up to $40".
-    private var predictedDetail: String? {
-        var parts: [String] = []
-        if let date = figures.predictedDate {
-            parts.append("by \(date.formatted(.dateTime.month(.abbreviated).day()))")
-        }
-        let save = figures.current - figures.predictedLow.lowerBound
-        if save >= 1 { parts.append("save up to \(money(save))") }
-        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    // "Nov 30", when the summary names a time.
+    private var expectedDate: String? {
+        figures.predictedDate?.formatted(.dateTime.month(.abbreviated).day())
     }
 
     // MARK: Chart
 
     private var chartSection: some View {
-        ThreadDetailSection(title: "Last 12 months") {
-            PriceChartView(
-                history: figures.history,
-                current: figures.current,
-                // A Buy needs no line pointing lower.
-                projected: verdict == .buyNow ? nil : figures.predictedMid,
-                projectedDate: figures.predictedDate,
-                accent: verdict.color,
-                typicalPrice: figures.typical,
-                lowest: figures.lowest,
-                saleEvents: figures.sales
-            )
-            .padding(.horizontal, 12)
-            .padding(.top, 16)
-            .padding(.bottom, 10)
-            .background {
-                RoundedRectangle(cornerRadius: Radius.listCard, style: .continuous)
-                    .fill(Palette.fillCard)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: Radius.listCard, style: .continuous)
-                            .strokeBorder(Palette.divider, lineWidth: 1)
-                    }
-            }
+        PriceChartView(
+            history: figures.history,
+            current: figures.current,
+            // A Buy needs no line pointing lower.
+            projected: verdict == .buyNow ? nil : figures.predictedMid,
+            projectedDate: figures.predictedDate,
+            accent: verdict.color,
+            typicalPrice: figures.typical,
+            lowest: figures.lowest,
+            saleEvents: figures.sales
+        )
+        .padding(.horizontal, 12)
+        .padding(.top, 16)
+        .padding(.bottom, 10)
+        .background {
+            RoundedRectangle(cornerRadius: Radius.listCard, style: .continuous)
+                .fill(Palette.fillCard)
+                .overlay {
+                    RoundedRectangle(cornerRadius: Radius.listCard, style: .continuous)
+                        .strokeBorder(Palette.divider, lineWidth: 1)
+                }
         }
     }
-
-    // MARK: The signal
-
-    private var signalSection: some View {
-        ThreadDetailSection(title: "The signal") {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(signalHeadline)
-                    .textStyle(.statement(size: 24))
-                    .lineSpacing(6)
-                    .foregroundStyle(Palette.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text(signalReason)
-                    .textStyle(.body)
-                    .lineSpacing(6)
-                    .foregroundStyle(Palette.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                Text("Price history here is sample data. Saving is a prototype for now: no alerts are sent yet.")
-                    .textStyle(.footnote)
-                    .lineSpacing(3)
-                    .foregroundStyle(Palette.textTertiary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, 4)
-            }
-        }
-    }
-
-    private var signalHeadline: String {
-        switch verdict {
-        case .buyNow: "Buy at \(product.price)."
-        case .wait: "Wait for \(product.projectedLow)."
-        case .alternative: "Compare before you buy."
-        case .investigate: "Check the listing first."
-        }
-    }
-
-    private var signalReason: String {
-        let lowWhen = figures.lowSaleName.map { " during \($0)" } ?? ""
-        switch verdict {
-        case .buyNow:
-            return "Today’s price is within \(money(figures.current - figures.low)) of its lowest this year (\(money(figures.low))\(lowWhen)) and under its usual \(money(figures.typical)). A much better price is unlikely soon."
-        case .wait:
-            return "It fell to \(money(figures.low))\(lowWhen) and usually sells for about \(money(figures.typical)). Today’s price is not close to its usual low."
-        case .alternative:
-            return "Similar products often sell for less than this one. Its lowest this year was \(money(figures.low)); compare a few options before paying \(product.price)."
-        case .investigate:
-            return "There isn’t enough clean price history to call this one. Check the seller, the model number and the return policy before buying."
-        }
-    }
-
-    private func money(_ value: Double) -> String { ChartFormat.money(value) }
 }
 
 // MARK: - Verdict hero
@@ -174,20 +98,18 @@ private struct ThreadDetailHero: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: 8) {
                 Image(systemName: product.icon)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.hiragino(.w6, size: 13, relativeTo: .caption))
                     .accessibilityHidden(true)
                 Text(product.name)
                     .textStyle(.caption)
                     .lineLimit(2)
-                Spacer(minLength: 8)
-                SampleDataTag()
             }
             .foregroundStyle(Color.white.opacity(0.82))
 
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 12) {
                     Image(systemName: product.verdict.symbol)
-                        .font(.system(size: 34, weight: .semibold))
+                        .font(.hiragino(.w6, size: 34, relativeTo: .largeTitle))
                         .foregroundStyle(product.verdict.color)
                         .symbolEffect(.bounce, value: popped)
                         .accessibilityHidden(true)
@@ -251,28 +173,6 @@ private struct HeroLight: View {
 }
 
 // MARK: - Pieces
-
-// A small heading over one part of the report.
-struct ThreadDetailSection<Content: View>: View {
-    let title: String
-    let content: Content
-
-    init(title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text(title)
-                .textStyle(.section)
-                .foregroundStyle(Palette.textTertiary)
-                .accessibilityAddTraits(.isHeader)
-            content
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
 
 // "Label / detail ............ value" inside a flat card.
 private struct PriceRow: View {
