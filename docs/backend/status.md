@@ -53,6 +53,7 @@
 
 ## More stores
 
-- Reader/resolver: c6ad7ea. Three demo additions are connected: AE Baggy Jean, lululemon Align 25-inch, Nike Zenvy.
-- Local: full suite 166 passed, two live tests skipped; targeted tests also cover AE ingestion and variant-preserving URLs.
-- Shared dev: AE has 361 expanded history points plus a current offer; leggings backfills are running. Final checks pending.
+- Works (c6ad7ea, 36fea79, ead4129): generic reader and variant-safe background URL resolver; 18-store survey.
+- Shared dev: AE has 361 daily history points + a current offer; Align has 10 archive points; Zenvy has 9 + a current page.
+- Real AE eval: live/full both WAIT, grounded, 1.08s/8.51s. Limits and ids: data-stores-live.md. Only AE refreshes daily.
+- Verified: 174 tests, typecheck/docs; clean-tip deploys. Align's $98 evidence is stale, not a current competitor price.

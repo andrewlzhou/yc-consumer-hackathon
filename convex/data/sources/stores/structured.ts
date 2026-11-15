@@ -67,7 +67,9 @@ function offerCandidates(product: Json, inheritedKeys: string): Candidate[] {
     if (currency && currency !== "USD") continue;
     const listSpec = specs.find((s) => /ListPrice|StrikethroughPrice|MSRP/i.test(String(s.priceType ?? "")));
     const saleSpec = specs.find((s) => !/ListPrice|StrikethroughPrice|MSRP/i.test(String(s.priceType ?? "")) && num(s.price) !== null);
-    const price = num(offer.price) ?? num(offer.lowPrice) ?? num(saleSpec?.price);
+    const low = num(offer.lowPrice);
+    const high = num(offer.highPrice);
+    const price = num(offer.price) ?? (low !== null && (high === null || high === low) ? low : null) ?? num(saleSpec?.price);
     if (price === null) continue;
     const was = num(listSpec?.price);
     const availability = String(offer.availability ?? "");

@@ -38,4 +38,4 @@
 - The leggings are genuine cross-brand alternatives, not interchangeable models. AE's older archived color is not merged into its Google product.
 - AE is eligible for the existing daily SerpApi refresh. The two leggings products skip SerpApi until an exact matching Google product is verified.
 - Apple adds archive points to the existing AirPods Pro 3 demo rather than introducing another product.
-- Deployment ingestion and final row counts are pending; do not present these additions as live yet.
+- Live verification and row counts: [store deployment evidence](data-stores-live.md).
