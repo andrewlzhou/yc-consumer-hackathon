@@ -18,6 +18,10 @@
 - `saleEvents`: the sale calendar. National events and retailer sales, with `dateConfidence` confirmed or estimated.
 - `priceDigests`: a short text summary plus counts per product, so the agent reads a paragraph, not raw points.
 
+## Providers
+
+- Real-data adapters (SerpApi, Keepa, Best Buy), their env vars, costs, and what is verified: [data providers](data-providers.md).
+
 ## Rules
 
 - Read history in bounded windows only, never unbounded.

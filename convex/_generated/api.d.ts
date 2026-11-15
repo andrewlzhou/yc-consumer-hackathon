@@ -32,6 +32,8 @@ import type * as data_digests from "../data/digests.js";
 import type * as data_embeddings from "../data/embeddings.js";
 import type * as data_prices from "../data/prices.js";
 import type * as data_retailers from "../data/retailers.js";
+import type * as data_sources_bestbuy from "../data/sources/bestbuy.js";
+import type * as data_sources_keepa from "../data/sources/keepa.js";
 import type * as data_sources_serpapi from "../data/sources/serpapi.js";
 import type * as data_stats from "../data/stats.js";
 import type * as data_text from "../data/text.js";
@@ -87,6 +89,8 @@ declare const fullApi: ApiFromModules<{
   "data/embeddings": typeof data_embeddings;
   "data/prices": typeof data_prices;
   "data/retailers": typeof data_retailers;
+  "data/sources/bestbuy": typeof data_sources_bestbuy;
+  "data/sources/keepa": typeof data_sources_keepa;
   "data/sources/serpapi": typeof data_sources_serpapi;
   "data/stats": typeof data_stats;
   "data/text": typeof data_text;
