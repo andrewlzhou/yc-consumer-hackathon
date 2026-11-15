@@ -107,3 +107,23 @@ export const report = internalQuery({
     };
   },
 });
+
+// Operator cleanup after latency probes or manual tests on a shared deployment: deletes scan-source observations
+// and stored analyses created at or after `since` (epoch ms). Run with npx convex run; never called by the app.
+export const deleteTestArtifacts = internalMutation({
+  args: { since: v.number() },
+  handler: async (ctx, { since }) => {
+    let observations = 0;
+    let analyses = 0;
+    for await (const row of ctx.db.query("priceObservations").withIndex("by_creation_time", (q) => q.gte("_creationTime", since))) {
+      if (row.source !== "scan") continue;
+      await ctx.db.delete(row._id);
+      observations++;
+    }
+    for await (const row of ctx.db.query("analyses").withIndex("by_creation_time", (q) => q.gte("_creationTime", since))) {
+      await ctx.db.delete(row._id);
+      analyses++;
+    }
+    return { observations, analyses };
+  },
+});
