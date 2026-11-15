@@ -3,12 +3,11 @@ import { internal } from "../_generated/api";
 import { internalAction, internalQuery } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { verdictValidator, type Verdict } from "../lib/contract";
-import type { FunctionReturnType } from "convex/server";
 import type { ScanResult } from "./analyze";
+import { normalizeRetailer } from "../data/retailers";
 
-type Stored = FunctionReturnType<typeof internal.agent.store.analysisById>;
 type Keys = { familyKey: string; variant: Record<string, string> | null; provisional: boolean } | null;
-type FullRun = { analysisId: Id<"analyses">; verdict: Verdict; source: string; latencyMs: number; issues: string[] };
+type FullRun = { verdict: Verdict; confidence: number; reason: string; usage: { inputTokens: number; outputTokens: number }; source: string; latencyMs: number; issues: string[] };
 
 export const caseValidator = v.object({
   id: v.string(),
@@ -44,21 +43,17 @@ export const run = internalAction({
       const matched: Keys = keys && !keys.provisional ? keys : null;
       const matchOk: boolean =
         c.expectFamily === null ? matched === null : matched?.familyKey === c.expectFamily && Object.entries(c.expectVariant ?? {}).every(([k, val]) => matched?.variant?.[k] === val);
-      // Read back the exact rows this run wrote; other scans on a shared deployment may have newer ones.
-      const stored: Stored = live.analysisId ? await ctx.runQuery(internal.agent.store.analysisById, { analysisId: live.analysisId }) : null;
-      const liveTier: TierResult = stored
-        ? { ...stored, latencyMs: live.latencyMs }
-        : { verdict: live.response.verdict, confidence: live.response.confidence, reason: live.response.reason, source: live.path, latencyMs: live.latencyMs, groundingIssues: [], usage: null };
+      const liveTier: TierResult = { verdict: live.response.verdict, confidence: live.response.confidence, reason: live.response.reason, source: live.evaluation?.source ?? live.path, latencyMs: live.latencyMs, groundingIssues: live.evaluation?.groundingIssues ?? [], usage: live.evaluation?.usage ?? null };
       let fullTier: TierResult = null;
       if (full && matched && productId) {
         const r: FullRun = await ctx.runAction(internal.agent.analyze.runFullAnalysis, {
           productId,
           now,
           modelOverride: fullModel,
-          scan: { title: c.extract.title ?? null, retailer: c.extract.retailer ?? "unknown", currentPrice: c.extract.currentPrice ?? null, originalPrice: c.extract.originalPrice ?? null },
+          evaluation: true,
+          scan: { title: c.extract.title ?? null, retailer: normalizeRetailer(c.extract.retailer) ?? "unknown", currentPrice: c.extract.currentPrice ?? null, originalPrice: c.extract.originalPrice ?? null },
         });
-        const full: Stored = await ctx.runQuery(internal.agent.store.analysisById, { analysisId: r.analysisId });
-        fullTier = { ...full!, latencyMs: r.latencyMs, groundingIssues: r.issues };
+        fullTier = { verdict: r.verdict, confidence: r.confidence, reason: r.reason, source: r.source, usage: r.usage, latencyMs: r.latencyMs, groundingIssues: r.issues };
       }
       const score = (t: TierResult): Score =>
         t && {

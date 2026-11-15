@@ -9,7 +9,7 @@ import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evid
 import { fakeProvider } from "./fake";
 import { heuristicAnalysis, isThin } from "./heuristic";
 import { decideMatch, hybridViable, type MatchCandidate } from "./identify";
-import type { LlmProvider } from "./llm";
+import type { LlmProvider, Usage } from "./llm";
 import { reportSpec, runAgent, type OutputSpec } from "./loop";
 import { openAiProvider } from "./openai";
 import { CARD_SCHEMA, parseCard, type AgentCard, type AgentOutput } from "./output";
@@ -59,11 +59,11 @@ async function pickCandidate(provider: LlmProvider, model: string, title: string
       maxOutputTokens: 60,
       timeoutMs: 2500,
     });
-    if (result.kind !== "final") return candidates[0];
+    if (result.kind !== "final") return null;
     const id = (JSON.parse(result.text) as { productId: string | null }).productId;
     return candidates.find((c) => c.product._id === id) ?? null;
   } catch {
-    return candidates[0];
+    return null;
   }
 }
 
@@ -141,8 +141,9 @@ function finalize(productId: string, scan: Scan, ledger: EvidenceLedger, model: 
 
 type Run = { output: AgentOutput; source: "model" | "heuristic"; issues: string[] };
 
-async function save(ctx: ActionCtx, productId: Id<"products">, tier: "live" | "full", model: string, scan: Scan, run: Run, usage: { inputTokens: number; outputTokens: number }, ledger: EvidenceLedger, latencyMs: number, isSampleData: boolean, now: number) {
+async function save(ctx: ActionCtx, productId: Id<"products">, tier: "live" | "full", model: string, scan: Scan, run: Run, usage: Usage, ledger: EvidenceLedger, latencyMs: number, isSampleData: boolean, now: number, persist = true) {
   const reason = isSampleData && !run.output.reason.endsWith(SAMPLE_NOTE) ? run.output.reason + SAMPLE_NOTE : run.output.reason;
+  if (!persist) return { analysisId: undefined, reason };
   const analysisId: Id<"analyses"> = await ctx.runMutation(internal.agent.store.saveAnalysis, {
     productId,
     tier,
@@ -166,7 +167,7 @@ async function save(ctx: ActionCtx, productId: Id<"products">, tier: "live" | "f
 async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Scan, now: number) {
   const jobId = await ctx.runMutation(internal.agent.store.claimJob, { productId, now: Date.now() });
   if (jobId) await ctx.scheduler.runAfter(0, internal.agent.analyze.runFullAnalysis, { productId, jobId, scan, now });
-  return jobId !== null;
+  return true;
 }
 
 // A clear catalog match by title, or the fast model's pick among close full-text or hybrid candidates.
@@ -179,9 +180,11 @@ async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, 
 }
 
 const pathValidator = v.union(v.literal("cache"), v.literal("live"), v.literal("heuristic"), v.literal("unknown"));
-export const scanResultValidator = v.object({ response: analyzeResponseValidator, path: pathValidator, latencyMs: v.number(), timings: v.record(v.string(), v.number()), analysisId: v.optional(v.id("analyses")) });
-export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number>; analysisId?: Id<"analyses"> };
-type Card = AnalyzeResponse & { path: ScanResult["path"]; analysisId?: Id<"analyses"> };
+const evaluationValidator = v.object({ source: v.union(v.literal("model"), v.literal("heuristic")), groundingIssues: v.array(v.string()), usage: v.object({ inputTokens: v.number(), outputTokens: v.number() }) });
+type Evaluation = { source: "model" | "heuristic"; groundingIssues: string[]; usage: Usage };
+export const scanResultValidator = v.object({ response: analyzeResponseValidator, path: pathValidator, latencyMs: v.number(), timings: v.record(v.string(), v.number()), analysisId: v.optional(v.id("analyses")), evaluation: v.optional(evaluationValidator) });
+export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number>; analysisId?: Id<"analyses">; evaluation?: Evaluation };
+type Card = AnalyzeResponse & { path: ScanResult["path"]; analysisId?: Id<"analyses">; evaluation?: Evaluation };
 const NO_HISTORY = "We don't have price history for this product yet, so we can't judge this price.";
 
 // The live path: identify, record the price, then return a fresh stored analysis or run one fast model pass.
@@ -207,15 +210,15 @@ export const analyzeScan = internalAction({
       timings[name] = t - mark;
       mark = t;
     };
-    const finish = async ({ path, analysisId, ...response }: Card): Promise<ScanResult> => {
+    const finish = async ({ path, analysisId, evaluation: diagnostics, ...response }: Card): Promise<ScanResult> => {
       const latencyMs = Date.now() - started;
-      await ctx.runMutation(internal.agent.store.logScan, { productId: response.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: response.verdict, path, latencyMs, at: started });
-      return { response, path, latencyMs, timings, analysisId };
+      if (!evaluation) await ctx.runMutation(internal.agent.store.logScan, { productId: response.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: response.verdict, path, latencyMs, at: started });
+      return { response, path, latencyMs, timings, analysisId, evaluation: diagnostics };
     };
 
     // A product link resolved earlier identifies the product exactly; a new link is resolved in the background
     // (it may fetch the page), so it never slows this request.
-    const link = args.url ? await ctx.runQuery(internal.agent.urls.lookup, { url: args.url }) : null;
+    const link = args.url ? await ctx.runQuery(internal.agent.urls.lookup, { url: args.url, now: started }) : null;
     let match: MatchCandidate | null = null;
     if (link?.productId) {
       const product = await data.product(link.productId);
@@ -260,8 +263,8 @@ export const analyzeScan = internalAction({
     addInsights(ledger, ev, productId, match.product.specs, now);
     const final = finalize(productId, scan, ledger, run.ok ? { output: withReport(run.output, productId, scan, ev, now), issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev, now);
     const isSampleData = data.sampleDataSeen() || match.product.isSample;
-    const { analysisId, reason } = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now);
-    return finish({ productId, matchedTitle: match.product.title, verdict: final.output.verdict, reason, confidence: final.output.confidence, isSampleData, reportStatus: pending ? "pending" : "ready", path: final.source === "model" ? "live" : "heuristic", analysisId });
+    const { analysisId, reason } = await save(ctx, productId, "live", config.fast.model, scan, final, run.usage, ledger, Date.now() - started, isSampleData, now, !evaluation);
+    return finish({ productId, matchedTitle: match.product.title, verdict: final.output.verdict, reason, confidence: final.output.confidence, isSampleData, reportStatus: pending ? "pending" : "ready", path: final.source === "model" ? "live" : "heuristic", analysisId, evaluation: evaluation ? { source: final.source, groundingIssues: final.issues, usage: run.usage } : undefined });
   },
 });
 
@@ -286,9 +289,10 @@ async function lookUpRealData(ctx: ActionCtx, productId: Id<"products">): Promis
 // in one pass with no tool turns, stored as the product's detailed report.
 // modelOverride lets evals compare full-tier models without changing the deployment's env.
 export const runFullAnalysis = internalAction({
-  args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()), modelOverride: v.optional(v.object({ model: v.string(), reasoning: reasoningValidator })) },
-  handler: async (ctx, { productId, jobId, scan, now: nowArg, modelOverride }): Promise<{ analysisId: Id<"analyses">; verdict: Verdict; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number; timings: Record<string, number> }> => {
+  args: { productId: v.id("products"), jobId: v.optional(v.id("analysisJobs")), scan: scanValidator, now: v.optional(v.number()), modelOverride: v.optional(v.object({ model: v.string(), reasoning: reasoningValidator })), evaluation: v.optional(v.boolean()) },
+  handler: async (ctx, { productId, jobId: requestedJobId, scan, now: nowArg, modelOverride, evaluation }): Promise<{ analysisId?: Id<"analyses">; verdict: Verdict; confidence: number; reason: string; usage: Usage; source: "model" | "heuristic"; latencyMs: number; issues: string[]; turns: number; timings: Record<string, number> }> => {
     const started = Date.now();
+    const jobId = evaluation ? undefined : requestedJobId;
     const now = nowArg ?? started;
     const timings: Record<string, number> = {};
     let mark = started;
@@ -304,7 +308,7 @@ export const runFullAnalysis = internalAction({
       const data = dataPort(ctx, now);
       const product = await data.product(productId);
       if (!product) throw new Error("product not found");
-      const lookup = product.provisional ? await lookUpRealData(ctx, productId) : null;
+      const lookup = product.provisional && !evaluation ? await lookUpRealData(ctx, productId) : null;
       lap("realDataLookup");
       const ledger = new EvidenceLedger();
       ledger.add("scan", { retailer: scan.retailer }, { title: scan.title, retailer: scan.retailer, currentPrice: scan.currentPrice, claimedOriginalPrice: scan.originalPrice });
@@ -322,10 +326,10 @@ export const runFullAnalysis = internalAction({
       const run = await runAgent({ provider: config.provider, model: model.model, reasoning: model.reasoning, system: systemPrompt(), prompt, tools: [], output: reportSpec(COMPETITOR_TOOLS), ledger, maxToolTurns: 0, maxRepairs: 1 });
       lap("model");
       const final = finalize(productId, scan, ledger, run.ok ? { output: run.output, issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev, now);
-      const { analysisId } = await save(ctx, productId, "full", model.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now);
+      const { analysisId, reason } = await save(ctx, productId, "full", model.model, scan, final, run.usage, ledger, Date.now() - started, data.sampleDataSeen() || product.isSample, now, !evaluation);
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "done" });
       lap("save");
-      return { analysisId, verdict: final.output.verdict, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns, timings };
+      return { analysisId, verdict: final.output.verdict, confidence: final.output.confidence, reason, usage: run.usage, source: final.source, latencyMs: Date.now() - started, issues: final.issues, turns: run.turns, timings };
     } catch (error) {
       if (jobId) await ctx.runMutation(internal.agent.store.finishJob, { jobId, status: "failed", error: String(error).slice(0, 500) });
       throw error;

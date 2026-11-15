@@ -1,8 +1,8 @@
 # Backend (Convex)
 
 - Convex is a hosted backend: a database plus server functions, written in TypeScript in `convex/`.
-- Status: schema and the phone contract exist; data, agent, and monitoring work is in progress on branch
-  `ruhaan_backend`. No cloud deployment exists yet, so development uses a local backend.
+- Status: data ingestion, the shopping agent and monitoring are deployed on the shared dev backend from
+  `ruhaan_backend`. There is no iOS app yet. See [Try the backend now](try-now.md) for the no-write live demo.
 
 ## Guides
 

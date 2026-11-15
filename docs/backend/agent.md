@@ -23,7 +23,7 @@
   `insights`, `price_sources`), then one structured call to the larger model (default `gpt-6.1-sol`, low), no tool turns.
   Tool turns cost ~3s each and measured 8-14s per run before; see [evals](agent-evals.md).
 - Provisional products first get one SerpApi refresh (offers and Google price history), at most once a day per
-  product and 8 a day overall. The tool definitions in `tools.ts` remain for the loop in `loop.ts`.
+  product and one product a day overall (up to two searches). `tools.ts` remains available for the loop in `loop.ts`.
 - `port.ts` presents tool results to the model: timestamps become ISO dates, fractions become percents.
 
 ## Grounding

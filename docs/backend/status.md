@@ -20,15 +20,15 @@
 
 ## Shopping agent (convex/agent, convex/http.ts routes)
 
-- Works (2b7e6c9): POST /analyze (live card), GET /report, background full tool-loop analysis, grounding checks,
-  per-device rate limits, fail-closed API key. Verified live on the dev deployment at 230c0bf (gpt-5.4-mini live,
-  gpt-6.1-sol full): live p50 1.44 s / p95 1.78 s, cached 0.14 s; see docs/backend/agent-evals.md.
-- Eval: `node eval/run.mjs [--full]` against the deployment (deploy key); CI runs the same cases on the fake provider.
+- Works (b1d9b44): POST /analyze, GET /report with chart, forecast, retailer discount patterns, spec comparison;
+  grounded one-pass full report starts in parallel with the card. Auth/rate limits and monitoring hook work.
+- Latest real-model eval: original cases 10/10 live, 9/9 full; real demo 8/9 live, 6/7 full (Bose recommends a
+  cheaper Sony instead of expected BUY_NOW). Full p50 8.8 s; initial report sections ~1.8 s. See agent-evals.md.
+- Eval: `node eval/run.mjs [--cases eval/run-cases-demo.json] [--full]`; see [try it now](try-now.md).
 - Config (Convex env): OPENAI_API_KEY, APP_API_KEY (set on the dev deployment), optional AGENT_FAST_MODEL,
   AGENT_FULL_MODEL, AGENT_*_REASONING.
-- Blocked: tip deploys fail because deployed products still carry `embedding` (data thread's migration, asked 2026-11-15).
-- Next: after a tip deploy, run `npx convex run agent/store:deleteTestArtifacts '{"since": <ms>}'` to drop probe scans,
-  then `node eval/run.mjs --full`; then wire an unknown-product lookup (data thread's SerpApi, cached per title) into runFullAnalysis.
+- Next: verify no-write eval on the shared dev deployment; wire YCCO-8's no-fetch parseUrl when it lands and prove
+  URL-only resolution end to end. Background resolver is wired by reference; missing resolver falls back to extract.
 - Gotchas: deploy only from a clean origin/ruhaan_backend tip. HTTP probes on the shared deployment record real scan
   rows; clean them up. Tests that hit /analyze need `rateLimiterTest.register(t)`.
 

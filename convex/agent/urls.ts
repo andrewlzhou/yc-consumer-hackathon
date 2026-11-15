@@ -20,18 +20,22 @@ export function normalizeUrl(raw: string): string | null {
   try {
     const u = new URL(raw);
     if (u.protocol !== "https:" && u.protocol !== "http:") return null;
-    return `${u.hostname.toLowerCase().replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}`;
+    for (const k of [...u.searchParams.keys()]) if (/^(utm_.+|athbdg|gclid|fbclid|ref|ref_|tag)$/i.test(k)) u.searchParams.delete(k);
+    u.searchParams.sort();
+    const query = u.searchParams.toString();
+    return `${u.hostname.toLowerCase().replace(/^www\./, "")}${u.pathname.replace(/\/+$/, "")}${query ? `?${query}` : ""}`;
   } catch {
     return null;
   }
 }
 
 export const lookup = internalQuery({
-  args: { url: v.string() },
-  handler: async (ctx, { url }) => {
+  args: { url: v.string(), now: v.optional(v.number()) },
+  handler: async (ctx, { url, now }) => {
     const key = normalizeUrl(url);
     if (!key) return null;
     const row = await ctx.db.query("resolvedUrls").withIndex("by_url", (q) => q.eq("url", key)).first();
+    if (row && now !== undefined && row.status !== "resolved" && now - row.resolvedAt >= RETRY_PENDING_MS) return null;
     return row && { status: row.status, productId: row.productId ?? null, resolvedAt: row.resolvedAt };
   },
 });
@@ -41,8 +45,8 @@ export const claim = internalMutation({
   args: { url: v.string(), now: v.number() },
   handler: async (ctx, { url, now }) => {
     const row = await ctx.db.query("resolvedUrls").withIndex("by_url", (q) => q.eq("url", url)).first();
-    if (row && (row.status !== "pending" || now - row.resolvedAt < RETRY_PENDING_MS)) return false;
-    if (row) await ctx.db.patch(row._id, { resolvedAt: now });
+    if (row && (row.status === "resolved" || now - row.resolvedAt < RETRY_PENDING_MS)) return false;
+    if (row) await ctx.db.patch(row._id, { status: "pending", resolvedAt: now, error: undefined });
     else await ctx.db.insert("resolvedUrls", { url, status: "pending", resolvedAt: now });
     return true;
   },

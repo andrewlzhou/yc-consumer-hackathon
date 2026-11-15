@@ -49,11 +49,11 @@ export function forecastPrice(promo: Promo | undefined, current: number | null, 
   if (events.length) {
     const lows = events.flatMap((e) => e.pastSales.map((s) => s.minPrice));
     const event = events.find((e) => e.pastSales.some((s) => s.minPrice === Math.min(...lows)))!;
-    const past = events.flatMap((e) => e.pastSales);
+    const past = event.pastSales;
     const editions = new Set(past.map((s) => s.startAt.slice(0, 7))).size;
     const retailersBeatingToday = new Set(past.filter((s) => s.minPrice <= current * 0.95).map((s) => s.retailerSlug)).size;
     const confidence = Math.min(0.8, 0.35 + 0.15 * Math.min(editions, 3) + (retailersBeatingToday >= 2 ? 0.1 : 0) - (event.dateConfidence === "confirmed" ? 0 : 0.1));
-    const r = range(lows);
+    const r = range(past.map((s) => s.minPrice));
     return { ...r, outlook: outlook(r.low, editions >= 2 || retailersBeatingToday >= 2), byDate: event.endsAt, basedOn: "past_event_editions", eventName: event.name, pastEditions: editions, confidence: round2(confidence) };
   }
   const episodes = promo.episodes.filter((e) => !e.ongoing);
@@ -88,7 +88,7 @@ export function retailerPatterns(stats: Stats, promo: Promo | undefined) {
         lastSaleStarted: eps.length ? eps[eps.length - 1].startAt : null,
         advertisedDiscounts: claims.length,
         advertisedWithRarelyChargedWasPrice: claims.filter((c) => c.wasRarelyCharged).length,
-        priceRaisedBeforeSale: eps.filter((e) => e.preSaleHike).length + claims.filter((c) => c.preSaleHike).length,
+        priceRaisedBeforeSale: new Set([...eps, ...claims].filter((e) => e.preSaleHike).map((e) => e.startAt)).size,
       };
     })
     .sort((a, b) => a.latestPrice - b.latestPrice);

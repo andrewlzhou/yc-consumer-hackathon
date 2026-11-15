@@ -105,6 +105,7 @@ describe("live scans of seeded products (fake provider)", () => {
     await scan({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99 });
     const again = await scan({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99 });
     expect(again.path).toBe("cache");
+    expect(again.reportStatus).toBe("pending");
   });
 
   test("the scan price is recorded as an observation", async () => {

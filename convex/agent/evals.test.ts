@@ -32,5 +32,12 @@ test("eval set passes on the deterministic fake provider", { timeout: 60_000 }, 
     ...(r.fullScore && !(r.fullScore.verdictOk && r.fullScore.confidenceOk && r.fullScore.grounded) ? [`${r.id}: full ${r.full?.verdict} ${JSON.stringify(r.fullScore)} ${r.full?.groundingIssues}`] : []),
   ]);
   expect(failures).toEqual([]);
+  const state = await t.run(async (ctx) => ({
+    analyses: await ctx.db.query("analyses").first(),
+    scans: await ctx.db.query("agentScans").first(),
+    jobs: await ctx.db.query("analysisJobs").first(),
+    scanPrice: await ctx.db.query("priceObservations").filter((q) => q.eq(q.field("source"), "scan")).first(),
+  }));
+  expect(state).toEqual({ analyses: null, scans: null, jobs: null, scanPrice: null });
   vi.unstubAllEnvs();
 });

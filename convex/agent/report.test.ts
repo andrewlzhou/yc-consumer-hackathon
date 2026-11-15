@@ -8,6 +8,7 @@ import { SEED_NOW } from "../seed/generate";
 import { modules } from "../test.setup";
 import { forecastPrice, type Promo } from "./insights";
 import { hybridViable, mentionsBrand, type HybridCandidate } from "./identify";
+import { normalizeUrl } from "./urls";
 
 let t: ReturnType<typeof convexTest>;
 let ids: Record<string, Id<"products">>;
@@ -85,6 +86,19 @@ describe("report sections", () => {
 
 describe("product links", () => {
   const link = "https://www.walmart.com/ip/Apple-AirPods-Pro-3/123456?athbdg=L1600";
+  test("tracking parameters share a cache entry without merging product variants", () => {
+    expect(normalizeUrl(link)).toBe(normalizeUrl("https://walmart.com/ip/Apple-AirPods-Pro-3/123456"));
+    expect(normalizeUrl("https://shop.example/product?sku=128")).not.toBe(normalizeUrl("https://shop.example/product?sku=256"));
+  });
+
+  test("a failed resolver can retry after its cooldown", async () => {
+    const key = normalizeUrl(link)!;
+    await t.mutation(internal.agent.urls.settle, { url: key, error: "temporary", now: SEED_NOW });
+    expect(await t.query(internal.agent.urls.lookup, { url: link, now: SEED_NOW })).toMatchObject({ status: "failed" });
+    expect(await t.query(internal.agent.urls.lookup, { url: link, now: SEED_NOW + 300_000 })).toBeNull();
+    expect(await t.mutation(internal.agent.urls.claim, { url: key, now: SEED_NOW + 300_000 })).toBe(true);
+  });
+
   test("a link resolves in the background, then identifies the product on its own", async () => {
     const first = await scan({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99, url: link });
     expect(first.productId).toBe(ids["airpods-pro-3"]);
@@ -112,6 +126,11 @@ describe("forecast", () => {
   const promo = (over: Partial<Promo>): Promo => ({ episodes: [], claimedDiscounts: [], upcoming: [], recurrence: { episodeCount: 0, medianGapDays: null }, ...over });
   test("no history means no forecast", () => {
     expect(forecastPrice(promo({}), 100, "2026-11-15")).toMatchObject({ outlook: "unknown", low: null, confidence: 0 });
+  });
+  test("the forecast range comes from the event its date names", () => {
+    const event = (name: string, price: number, endsAt: string) => ({ name, startsAt: endsAt, endsAt, daysAway: 12, dateConfidence: "confirmed", pastSales: [{ retailerSlug: "target", startAt: "2025-11-28", minPrice: price }] });
+    const f = forecastPrice(promo({ upcoming: [event("Black Friday", 80, "2026-11-27"), event("Cyber Monday", 60, "2026-11-30")] }), 100, "2026-11-15");
+    expect(f).toMatchObject({ eventName: "Cyber Monday", low: 60, high: 60, byDate: "2026-11-30" });
   });
   test("a regular sale cycle forecasts the next sale date and its range", () => {
     const ep = (startAt: string, minPrice: number) => ({ retailerSlug: "target", startAt, endAt: startAt, minPrice, depthPercent: 20, ongoing: false, preSaleHike: false, preSaleHikePercent: null, events: [] });
