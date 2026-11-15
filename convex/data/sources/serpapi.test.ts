@@ -5,7 +5,11 @@ import type { Id } from "../../_generated/dataModel";
 import schema from "../../schema";
 import { SEED_NOW } from "../../seed/generate";
 import { modules } from "../../test.setup";
-import { dailySteps, parseInsightDate } from "./serpapi";
+import type { Doc } from "../../_generated/dataModel";
+import { SEED_PRODUCTS } from "../../seed/catalog";
+import { buildSearchText } from "../text";
+import shopping from "./fixtures/serpapi-shopping.json";
+import { dailySteps, parseInsightDate, parseShoppingResults } from "./serpapi";
 
 // Hand-written from the documented responses (serpapi.com/google-shopping-api, /google-product-api).
 const SHOPPING = {
@@ -67,6 +71,21 @@ test("price changes expand to one point per day until the next change or the new
   ]);
   expect(steps.filter((s) => s.retailerSlug === "target").map((s) => s.price)).toEqual([100, 100, 100, 80, 80]);
   expect(steps.filter((s) => s.retailerSlug === "bestbuy").map((s) => s.observedAt)).toEqual([day(5)]);
+});
+
+// Real Google Shopping results: the wrong model (XM5 for XM6), earbuds for headphones, and kits are not offers.
+test("real shopping results keep only the exact product", () => {
+  const product = (key: string) => {
+    const p = SEED_PRODUCTS.find((x) => x.key === key)!;
+    return { ...p, searchText: buildSearchText([p.title, p.brand, p.model, ...p.aliases]), isSample: false, provisional: false } as unknown as Doc<"products">;
+  };
+  const offers = (json: unknown, key: string) => parseShoppingResults(json, product(key)).map((o) => [o.retailerSlug, o.price, o.originalPrice]);
+  expect(offers(shopping.xm5, "sony-xm6")).toEqual([]);
+  expect(offers(shopping.xm6, "sony-xm6")).toEqual([["bestbuy", 378, 458], ["target", 391.49, 450]]);
+  expect(offers(shopping.xm5, "sony-xm5")).toEqual([["bestbuy", 198, 398]]);
+  expect(offers(shopping.bose, "bose-qcu-2")).toEqual([["bestbuy", 339.99, 449]]);
+  const cheap = { shopping_results: [{ title: "Sony WH-1000XM6 Wireless Noise Canceling Headphones", source: "Best Buy", extracted_price: 148, extracted_old_price: 248 }] };
+  expect(offers(cheap, "sony-xm6")).toEqual([]);
 });
 
 test("insight dates become 17:00 UTC on that day", () => {

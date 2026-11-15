@@ -43,7 +43,7 @@ type GoogleProduct = {
   price_insights?: { currency?: string; stores?: { name?: string; prices?: { date?: string; price?: number }[] }[] };
 };
 
-const NOT_THE_PRODUCT = /\b(refurbished|renewed|pre-owned|used|case|cover|replacement|skin|protector|charger only)\b/i;
+const NOT_THE_PRODUCT = /\b(refurbished|renewed|pre-owned|used|case|cover|replacement|skin|protector|charger only|bundle|kit)\b/i;
 const MIN_TITLE_SCORE = 0.6;
 export const SERPAPI_PROVIDERS = {
   shopping: "serpapi-google-shopping",
@@ -58,11 +58,31 @@ export function retailerFromSource(source: string | undefined): string | null {
   return KNOWN_RETAILERS.find((r) => r.aliases.includes(s) || r.slug === s.replace(/\s+/g, ""))?.slug ?? null;
 }
 
-const isSameProduct = (title: string | undefined, product: Doc<"products">) => {
+// Model-like tokens (letters and digits) with the same shape but different digits are different models: 1000xm5 vs 1000xm6.
+export function modelConflict(titleTokens: string[], product: Doc<"products">) {
+  const productTokens = new Set(product.searchText.split(" "));
+  const shape = (t: string) => t.replace(/\d+/g, "#");
+  const isModel = (t: string) => /\d/.test(t) && /[a-z]/.test(t);
+  const productShapes = new Set([...productTokens].filter(isModel).map(shape));
+  return titleTokens.some((t) => isModel(t) && !productTokens.has(t) && productShapes.has(shape(t)));
+}
+
+const EARBUDS = /\b(earbuds?|in-ear)\b/i;
+
+// A new item from a first-party retailer is never far outside its list price: under 40% or over 200% of MSRP is
+// a wrong match, a used listing, or a bundle. Real deep sales stay inside (XM5 at $198 is 49.5% of $399.99).
+const PRICE_BAND = { low: 0.4, high: 2 };
+export const plausiblePrice = (price: number, product: Doc<"products"> | null) =>
+  !product?.msrp || (price >= product.msrp * PRICE_BAND.low && price <= product.msrp * PRICE_BAND.high);
+
+export function isSameProduct(title: string | undefined, product: Doc<"products">) {
   if (!title || NOT_THE_PRODUCT.test(title)) return false;
-  const m = scoreCandidate(tokenize(title), product);
+  if (product.category === "headphones" && EARBUDS.test(title)) return false;
+  const tokens = tokenize(title);
+  if (modelConflict(tokens, product)) return false;
+  const m = scoreCandidate(tokens, product);
   return !m.sizeConflict && m.score >= MIN_TITLE_SCORE;
-};
+}
 
 // First matching offer per known retailer; accessories, used items, and other variants are dropped.
 export function parseShoppingResults(json: unknown, product: Doc<"products">): Offer[] {
@@ -71,7 +91,7 @@ export function parseShoppingResults(json: unknown, product: Doc<"products">): O
   for (const r of results) {
     const retailerSlug = retailerFromSource(r.source);
     if (!retailerSlug || offers.has(retailerSlug) || r.second_hand_condition) continue;
-    if (typeof r.extracted_price !== "number" || !isSameProduct(r.title, product)) continue;
+    if (typeof r.extracted_price !== "number" || !isSameProduct(r.title, product) || !plausiblePrice(r.extracted_price, product)) continue;
     offers.set(retailerSlug, {
       retailerSlug,
       price: r.extracted_price,
@@ -111,6 +131,7 @@ export function parseGoogleProduct(json: unknown, product: Doc<"products"> | nul
     const retailerSlug = retailerFromSource(s.name);
     if (!retailerSlug || offers.has(retailerSlug) || typeof s.extracted_price !== "number") continue;
     if (product && s.title && !isSameProduct(s.title, product)) continue;
+    if (!plausiblePrice(s.extracted_price, product)) continue;
     offers.set(retailerSlug, {
       retailerSlug,
       price: s.extracted_price,
@@ -173,11 +194,11 @@ export const productForRefresh = internalQuery({
 });
 
 export const setGoogleProductId = internalMutation({
-  args: { productId: v.id("products"), googleProductId: v.string() },
+  args: { productId: v.id("products"), googleProductId: v.union(v.string(), v.null()) },
   handler: async (ctx, args) => {
     const p = await ctx.db.get(args.productId);
     if (!p) return;
-    await ctx.db.patch(args.productId, { identifiers: { ...p.identifiers, googleProductId: args.googleProductId } });
+    await ctx.db.patch(args.productId, { identifiers: { ...p.identifiers, googleProductId: args.googleProductId ?? undefined } });
   },
 });
 
@@ -253,6 +274,9 @@ export async function refreshProduct(ctx: ActionCtx, productId: Id<"products">):
   if (page.status !== "ok") return { ...page, recorded: 0 };
   searches.push(page.latencyMs);
   const parsed = parseGoogleProduct(page.json, product);
+  if (!parsed.offers.length && !parsed.history.length && product.identifiers?.googleProductId) {
+    await ctx.runMutation(internal.data.sources.serpapi.setGoogleProductId, { productId, googleProductId: null });
+  }
   const offers = parsed.offers.length ? parsed.offers : shoppingOffers;
   const recorded = await recordOffers(ctx, productId, offers, parsed.offers.length ? SERPAPI_PROVIDERS.product : SERPAPI_PROVIDERS.shopping, observedAt);
   const historyPoints = await recordHistory(ctx, productId, dailySteps(parsed.history));

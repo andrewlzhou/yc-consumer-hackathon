@@ -12,7 +12,9 @@
 - Cost: one search finds the Google product id (once per product), one more reads the product page. Free plan: 250 searches/month.
 - History: Google lists a store's price only on days it changed. We expand each change to one point per day until the next
   change, so medians and "share of days at the was-price" are time-weighted. Marketplace sellers ("Walmart - X") are skipped.
-- Terms: results are Google Shopping listings. The parser drops used, refurbished, accessories, and other variants.
+- Offer guards: first-party retailers only; no used, refurbished, accessories, bundles or kits; no other model with the
+  same shape (1000xm5 vs 1000xm6); no earbuds for headphones; price within 40-200% of MSRP. A Google product id whose
+  page returns nothing is forgotten, so the next refresh searches again.
 - Verified live 2026-11-15: `google_product` returns about a year of per-store history (XM5: 28 Best Buy and 21 Target
   price changes since 2025-11-14). Real response saved as `fixtures/serpapi-product-xm5.json` and tested.
 
