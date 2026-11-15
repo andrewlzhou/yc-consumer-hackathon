@@ -23,6 +23,9 @@ xcrun simctl launch --terminate-running-process booted $BUNDLE -startTab account
 xcrun simctl openurl booted notyet://scan/a   # Wait report
 xcrun simctl openurl booted notyet://scan/b   # Fake deal report
 xcrun simctl openurl booted notyet://scan/c   # Buy report
+xcrun simctl openurl booted notyet://scan/d   # Look around report (CONSIDER_ALTERNATIVE, with alternatives)
+xcrun simctl openurl booted notyet://scan/e   # Check first report (INVESTIGATE, low confidence, match note)
+xcrun simctl openurl booted notyet://scan/digging   # loading state that never finishes
 xcrun simctl io booted screenshot shots/history.png
 ```
 
