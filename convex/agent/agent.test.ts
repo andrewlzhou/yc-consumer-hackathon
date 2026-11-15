@@ -179,6 +179,6 @@ describe("monitoring hook", () => {
   test("regression H1: the analysis handed to monitoring carries isSampleData", async () => {
     await scan({ title: "Apple AirPods Pro 3", retailer: "Walmart", currentPrice: 179.99 });
     const snap = await t.action(internal.monitoring.ports.getSnapshot, { productId: ids["airpods-pro-3"] });
-    expect(snap.snapshot.isSampleData).toBe(true);
+    expect(snap!.snapshot.isSampleData).toBe(true);
   });
 });

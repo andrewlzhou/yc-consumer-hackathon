@@ -61,6 +61,7 @@ import type * as watchlist_devices from "../watchlist/devices.js";
 import type * as watchlist_http from "../watchlist/http.js";
 import type * as watchlist_inbox from "../watchlist/inbox.js";
 import type * as watchlist_items from "../watchlist/items.js";
+import type * as watchlist_rateLimit from "../watchlist/rateLimit.js";
 import type * as watchlist_tables from "../watchlist/tables.js";
 
 import type {
@@ -123,6 +124,7 @@ declare const fullApi: ApiFromModules<{
   "watchlist/http": typeof watchlist_http;
   "watchlist/inbox": typeof watchlist_inbox;
   "watchlist/items": typeof watchlist_items;
+  "watchlist/rateLimit": typeof watchlist_rateLimit;
   "watchlist/tables": typeof watchlist_tables;
 }>;
 

@@ -60,3 +60,19 @@ test("preference, dedupe and cooldown block; a further 10% drop escalates past t
   expect(guard({ sent: [{ ...recent, price: 120 }] })).toBeUndefined();
   expect(guard({ sent: [{ ...recent, createdAt: now - 25 * 3600_000 }] })).toBeUndefined();
 });
+
+test("a verdict derived from sample data never triggers a verdict notification, price triggers stay allowed", () => {
+  const sample = snap({ currentPrice: 100, verdict: "BUY_NOW", isSampleData: true });
+  const flip = findCandidates(sample, state())[0];
+  expect(flip.trigger).toBe("buy_now_flip");
+  expect(checkGuardrails({ candidate: flip, snap: sample, state: state(), sent: [], key: "k", now, allowSimulated: false })).toBe("sample");
+
+  const alt = snap({ currentPrice: 100, verdict: "CONSIDER_ALTERNATIVE", isSampleData: true, alternative: { title: "Other", price: 60, savingsPct: 40 } });
+  const better = findCandidates(alt, state())[0];
+  expect(checkGuardrails({ candidate: better, snap: alt, state: state(), sent: [], key: "k", now, allowSimulated: false })).toBe("sample");
+
+  const price = snap({ currentPrice: 90, isSampleData: true });
+  const low = findCandidates(price, state())[0];
+  expect(low.trigger).toBe("new_low");
+  expect(checkGuardrails({ candidate: low, snap: price, state: state(), sent: [], key: "k", now, allowSimulated: false })).toBeUndefined();
+});

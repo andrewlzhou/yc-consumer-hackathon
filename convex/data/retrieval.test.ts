@@ -212,7 +212,7 @@ describe("untrusted scan prices", () => {
     await scan({ retailer: "target", price: 120, deviceId: "dev-a" });
     const state = await t.query(internal.monitoring.ports.readState, { productId: ids["airpods-pro-3"], now: SEED_NOW });
     expect(state!.snapshot.currentPrice).toBe(179.99);
-    expect(state!.snapshot.priorLow).toBe(179);
+    expect(state!.snapshot.priorLow).toBeUndefined();
   });
 
   test("unknown retailer strings are rejected and create no retailer rows", async () => {

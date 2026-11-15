@@ -10,7 +10,10 @@ const modules = import.meta.glob("./**/*.ts");
 const DEVICE = "device-test-0001";
 
 // Tests use the deterministic rules judge even when a real key is in the environment.
-beforeEach(() => vi.stubEnv("OPENAI_API_KEY", ""));
+beforeEach(() => {
+  vi.stubEnv("OPENAI_API_KEY", "");
+  vi.stubEnv("SERPAPI_API_KEY", "");
+});
 
 async function setup(over: { targetPrice?: number; prefs?: ReturnType<typeof defaultPrefs> } = {}) {
   const t = convexTest(schema, modules);
@@ -100,48 +103,91 @@ test("a simulated price outside the demo helper never sends", async () => {
   expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
 });
 
-test("end to end on seeded data: seed history never sends, a lone scan drop doesn't, a real api drop does", async () => {
+async function seeded() {
   const t = convexTest(schema, modules);
   const { products } = await t.action(internal.seed.run.all, {});
   const productId = Object.values(products)[0] as Id<"products">;
-  await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, prefs: defaultPrefs(), createdAt: Date.now() }));
+  const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });
+  const watch = (targetPrice?: number) =>
+    t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, targetPrice, prefs: defaultPrefs(), createdAt: Date.now() }));
   const log = () => t.run((ctx) => ctx.db.query("notificationLog").collect());
+  const sent = async () => (await log()).filter((r) => r.status === "sent");
+  const record = (price: number, source: "scan" | "api", observedAt = Date.now()) =>
+    t.run((ctx) => ctx.db.insert("priceObservations", { productId, retailerSlug: "target", price, inStock: true, observedAt, source }));
+  return { t, productId, state: state!, watch, log, sent, record };
+}
+
+test("end to end on seeded data: seeded lows are never stated as fact, a lone scan never notifies, a real api price under the target does", async () => {
+  const { t, productId, state, watch, sent, record, log } = await seeded();
+  expect(state.snapshot.priceSource).toBe("seed");
+  expect(state.snapshot.priorLow).toBeUndefined();
+  expect(state.snapshot.isSampleData).toBe(true);
+  await watch(state.snapshot.currentPrice - 10);
 
   expect(await t.action(internal.monitoring.check.checkProduct, { productId })).toMatchObject([{ status: "baseline" }]);
   await t.action(internal.monitoring.check.checkProduct, { productId });
-  expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
+  expect(await sent()).toEqual([]);
 
-  const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });
-  const current = state!.snapshot;
-  expect(current.priceSource).toBe("seed");
-  const dropped = Math.min(current.currentPrice, current.priorLow ?? current.currentPrice) - 15;
-  await t.mutation(internal.data.prices.recordObservation, { productId, retailer: "target", price: dropped, source: "scan", deviceId: "dev-a" });
+  await record(state.snapshot.currentPrice - 30, "scan");
   await t.action(internal.monitoring.check.checkProduct, { productId });
-  expect((await log()).filter((r) => r.status === "sent")).toEqual([]);
-  await t.mutation(internal.data.prices.recordObservation, { productId, retailer: "walmart", price: dropped, source: "api", provider: "serpapi-google-product" });
-  const res = await t.action(internal.monitoring.check.checkProduct, { productId });
-  expect(res).toMatchObject([{ status: "sent" }]);
-  expect((await log()).filter((r) => r.status === "sent")).toHaveLength(1);
+  expect(await sent()).toEqual([]);
+  await record(state.snapshot.currentPrice - 30, "api");
+  expect(await t.action(internal.monitoring.check.checkProduct, { productId })).toMatchObject([{ status: "sent" }]);
+  const rows = await sent();
+  expect(rows).toHaveLength(1);
+  expect(rows[0].trigger).toBe("target_hit");
+  expect((await log()).every((r) => r.trigger !== "new_low")).toBe(true);
 });
 
-test("demo helper: simulated drop on a seeded product sends a labeled push once, then the cooldown holds", async () => {
-  const t = convexTest(schema, modules);
-  const { products } = await t.action(internal.seed.run.all, {});
-  const productId = Object.values(products)[0] as Id<"products">;
-  await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, prefs: defaultPrefs(), createdAt: Date.now() }));
-  const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });
-  const low = Math.min(state!.snapshot.currentPrice, state!.snapshot.priorLow ?? Infinity);
+test("a stale price or an out-of-stock latest row is not the current price", async () => {
+  const { t, productId, record } = await seeded();
+  const now = Date.now();
+  await record(10, "api", now - 4 * 24 * 3600_000);
+  let state = await t.query(internal.monitoring.ports.readState, { productId, now });
+  expect(state!.snapshot.priceSource).toBe("seed");
+  await record(150, "api", now - 1000);
+  state = await t.query(internal.monitoring.ports.readState, { productId, now });
+  expect(state!.snapshot).toMatchObject({ currentPrice: 150, priceSource: "api", priorLow: 10 });
 
-  const first = await t.action(internal.monitoring.simulate.dropPrice, { deviceId: DEVICE, productId, price: low - 20 });
-  expect(first).toMatchObject([{ status: "sent" }]);
-  const second = await t.action(internal.monitoring.simulate.dropPrice, { deviceId: DEVICE, productId, price: Math.round((low - 20) * 95) / 100 });
-  expect(second).toMatchObject([{ status: "suppressed", by: "cooldown" }]);
+  await t.run((ctx) => ctx.db.insert("priceObservations", { productId, retailerSlug: "target", inStock: false, observedAt: now, source: "api" }));
+  state = await t.query(internal.monitoring.ports.readState, { productId, now });
+  expect(state!.snapshot.currentPrice).not.toBe(150);
+});
 
-  const rows = await t.run((ctx) => ctx.db.query("notificationLog").collect());
-  expect(rows.filter((r) => r.status === "sent")).toHaveLength(1);
-  expect(rows[0]).toMatchObject({ simulated: true });
+test("demo helper: a simulated drop sends one labeled push, leaves the baseline alone, then the cooldown holds", async () => {
+  const { t, productId, state, watch, log, sent } = await seeded();
+  const itemId = await watch(state.snapshot.currentPrice - 5);
+  const price = state.snapshot.currentPrice - 20;
+
+  expect(await t.action(internal.monitoring.simulate.dropPrice, { deviceId: DEVICE, productId, price })).toMatchObject([{ status: "sent" }]);
+  expect(await t.action(internal.monitoring.simulate.dropPrice, { deviceId: DEVICE, productId, price: Math.round(price * 95) / 100 })).toMatchObject([
+    { status: "suppressed", by: "cooldown" },
+  ]);
+
+  const rows = await sent();
+  expect(rows).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ simulated: true, trigger: "target_hit" });
   expect(rows[0].title.startsWith("[Simulated]")).toBe(true);
   expect(rows[0].body.startsWith("Simulated price drop for demo.")).toBe(true);
-  const history = await t.run((ctx) => ctx.db.query("priceObservations").collect());
-  expect(history.every((h) => h.source === "seed")).toBe(true);
+  expect((await t.run((ctx) => ctx.db.get(itemId)))!.lastPrice).toBeUndefined();
+  expect((await t.run((ctx) => ctx.db.query("priceObservations").collect())).every((h) => h.source === "seed")).toBe(true);
+  expect((await log()).length).toBe(2);
+});
+
+test("price refresh is skipped while real prices are fresh and reaches SerpApi otherwise", async () => {
+  const { t, productId, record } = await seeded();
+  expect(await t.action(internal.monitoring.ports.refreshPrices, { productId })).toEqual({ status: "no_key" });
+  await record(120, "api", Date.now() - 3600_000);
+  expect(await t.action(internal.monitoring.ports.refreshPrices, { productId })).toEqual({ status: "fresh_enough" });
+});
+
+test("the sweep asks for a price refresh on the first products only", async () => {
+  vi.stubEnv("MONITOR_REFRESH_CAP", "1");
+  const t = convexTest(schema, modules);
+  const make = (title: string) =>
+    t.run((ctx) => ctx.db.insert("products", { title, brand: "A", category: "c", familyKey: title, specs: {}, aliases: [], searchText: title, isSample: false, provisional: false }));
+  for (const p of [await make("A"), await make("B")]) await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId: p, prefs: defaultPrefs(), createdAt: 1 }));
+  expect(await t.mutation(internal.monitoring.check.sweep, {})).toBe(2);
+  const jobs = await t.run((ctx) => ctx.db.system.query("_scheduled_functions").collect());
+  expect(jobs.map((j) => (j.args[0] as { refresh: boolean }).refresh).sort()).toEqual([false, true]);
 });

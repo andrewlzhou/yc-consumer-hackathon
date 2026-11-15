@@ -1,45 +1,48 @@
 # Watchlist and monitoring
 
 - Owned by the monitoring thread. Push delivery research is in [monitoring-push](monitoring-push.md).
-- Identity is an anonymous client-made `deviceId` (8-128 chars). This is NOT authentication: anyone who knows an id can edit that list.
-- Optional `APP_API_KEY` env var: when set, the HTTP routes require it as an `x-api-key` header.
+
+## Access
+
+- Identity is an anonymous client-made `deviceId` (8-128 chars). It is NOT authentication: anyone holding the app key and a deviceId can edit that list.
+- All watchlist functions are `internal`; the only way in is the HTTP routes, so the app key cannot be bypassed via the Convex client.
+- Routes fail closed: with `APP_API_KEY` unset on the deployment every route answers 401 naming the missing setting; a missing or wrong `x-api-key` answers 401.
+- Rate limit: 60 requests per minute per deviceId (fixed window, `rateLimits` table), then 429.
 
 ## Tables (convex/watchlist/tables.ts)
 
-- `devices`: deviceId, apnsToken, environment (sandbox for Xcode debug builds, production for TestFlight/App Store).
-- `watchItems`: deviceId, productId, targetPrice, per-trigger prefs, last price/verdict seen, last check time.
-- `notificationLog`: one row per decision, sent or suppressed (why), price, verdict, judge, simulated flag. Used for cooldowns, dedupe, debugging and the in-app inbox.
+- `devices`: deviceId, apnsToken, environment (sandbox for Xcode builds, production for TestFlight/App Store).
+- `watchItems`: deviceId, productId, targetPrice, per-trigger prefs, last real price/verdict seen, last check time.
+- `notificationLog`: one row per decision, sent or suppressed (why), price, verdict, judge, simulated flag. Indexed by status so cooldown, dedupe and the inbox only read sent rows.
 
-## API (HTTP routes in convex/watchlist/http.ts; same functions are callable from the Convex client)
+## HTTP API (convex/watchlist/http.ts; every call needs `x-api-key`)
 
 - `GET /watchlist?deviceId=` list. `POST /watchlist/save` upsert/edit `{deviceId, productId, targetPrice?|null, prefs?}`.
-- `POST /watchlist/remove {deviceId, productId}`. `POST /watchlist/device {deviceId, apnsToken?, environment}`.
+- `POST /watchlist/remove {deviceId, productId}`.
+- `POST /watchlist/device {deviceId, apnsToken?, environment?}`: only sent fields change; `apnsToken: null` clears it; environment is required the first time and must be sandbox or production.
 - `GET /watchlist/notifications?deviceId=` unacknowledged sent notifications (the local-notification fallback). `POST /watchlist/notifications/ack {deviceId, ids}`.
-- Prefs are booleans: target_hit, new_low, buy_now_flip, sale_start, better_alternative (all on by default).
+- Prefs are booleans: target_hit, new_low, buy_now_flip, sale_start, better_alternative (all on by default). Unknown keys are a 400.
 
 ## How a check runs
 
-- Cron `monitor watchlist` runs every 4 hours (convex/crons.ts) and schedules one `monitoring/check:checkProduct` per watched product, 1 second apart.
-- `checkProduct` asks `monitoring/ports:getSnapshot` (the only file that touches the data and agent threads) for a fresh price and analysis.
-- Per device watching it: code lists candidate events (target crossed, new low, flip to BUY_NOW, sale start, better alternative), applies the guardrails, then the judge picks.
-- First check for a watch is a baseline: it records price and verdict and never notifies.
-- Judge: OpenAI chat call when `OPENAI_API_KEY` is set on the deployment (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini; checked live, about 1s), else a deterministic rules judge. It can only pick a listed candidate. Notification body is the agent's reason line.
-- Guardrails (convex/monitoring/policy.ts), re-checked inside the commit mutation: no seed or unlabeled simulated price, per-trigger prefs, dedupe on device+product+trigger+price, 24h cooldown per device+product (a further 10% drop overrides), minimum drop max($0.50, 1%).
+- Cron `monitor watchlist` every 4 hours schedules one `monitoring/check:checkProduct` per watched product, 1 second apart. The first `MONITOR_REFRESH_CAP` (default 10) also refresh prices; saving a product does too.
+- Refresh calls the data thread's SerpApi `refreshCurrentPrices` (source `api`, 1-2 searches) unless a real price is under 6 hours old.
+- `monitoring/ports.ts` is the only file touching the data and agent threads. Current price = cheapest latest row per retailer that is in stock and fresh (api 72h, scan 24h), real rows before seed rows. No fresh price means no check.
+- Previous low and typical price use real (non-seed) rows only. If any seed row is in the window, or the agent's analysis says isSampleData, the verdict counts as sample-derived and BUY_NOW-flip and better-alternative notifications are blocked.
+- Per device: code lists candidate events, applies guardrails, then the judge picks. The first real check is a baseline and never notifies.
+- Judge: OpenAI when `OPENAI_API_KEY` is set (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini), else a deterministic rules judge. It only picks a listed candidate. Body is the agent's reason line.
+- Guardrails (policy.ts), re-checked inside the commit mutation: seed or unlabeled simulated price, sample-derived verdict, prefs, dedupe on device+product+trigger+price, 24h cooldown per device+product (a further 10% drop overrides), minimum drop max($0.50, 1%).
 
 ## Delivery
 
-- APNs if the device has a token and the four `APNS_*` env vars exist; otherwise (or on APNs failure) the row stays in the inbox and the app raises a local notification from the live query.
+- APNs if the device has a token and the four `APNS_*` env vars exist, else the inbox. BadDeviceToken, Unregistered or DeviceTokenNotForTopic clear the stored token.
 
 ## Demo helper
 
-- `npx convex run monitoring/simulate:dropPrice '{"deviceId":"...","productId":"...","price":79.99}'` judges a pretend price for that one device. Title starts with [Simulated]; nothing is written to price history.
+- `npx convex run monitoring/simulate:dropPrice '{"deviceId":"...","productId":"...","price":79.99}'` judges a pretend price for that one device. Title starts [Simulated]; nothing is written to price history and the watcher's baseline is not moved.
+- Previous-low facts are real-only, so on a product with only seeded history give the watch a target price above the simulated price.
 
 ## Tests
 
-- `npm test` covers policy, judge (mocked OpenAI), APNs client (local HTTP/2 server) and the full flow with convex-test; tests force the rules judge.
-- `npm run test:live` calls the real OpenAI judge (needs `OPENAI_API_KEY`).
-
-## Status
-
-- `ports.getSnapshot` reads stored price history from the data layer (cheapest latest price, previous low, running sale). The agent's verdict, reason and alternative are not wired yet, so verdict triggers (flip to BUY_NOW, better alternative) never fire and the body is a numbers-only line. There is no live price source yet, so a check only sees prices that scans or other threads have recorded.
-
+- `npm test`: policy, judge (mocked OpenAI), APNs client (local HTTP/2 server), HTTP auth and rate limit, full flow with convex-test. Tests force the rules judge and no SerpApi key.
+- `npm run test:live` calls the real OpenAI judge.

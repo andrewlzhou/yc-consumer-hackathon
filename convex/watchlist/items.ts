@@ -1,6 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { internal } from "../_generated/api";
-import { internalQuery, mutation, query } from "../_generated/server";
+import { internalMutation, internalQuery } from "../_generated/server";
 import { defaultPrefs } from "../monitoring/policy";
 import { prefsV } from "./tables";
 
@@ -11,7 +11,7 @@ function assertDeviceId(deviceId: string) {
 }
 
 // Saves or edits a watched product. targetPrice null clears the target; omitted fields stay as they are.
-export const save = mutation({
+export const save = internalMutation({
   args: {
     deviceId: v.string(),
     productId: v.id("products"),
@@ -41,12 +41,12 @@ export const save = mutation({
       prefs: { ...defaultPrefs(), ...args.prefs },
       createdAt: Date.now(),
     });
-    await ctx.scheduler.runAfter(0, internal.monitoring.check.checkProduct, { productId: args.productId });
+    await ctx.scheduler.runAfter(0, internal.monitoring.check.checkProduct, { productId: args.productId, refresh: true });
     return id;
   },
 });
 
-export const remove = mutation({
+export const remove = internalMutation({
   args: { deviceId: v.string(), productId: v.id("products") },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -59,7 +59,7 @@ export const remove = mutation({
   },
 });
 
-export const list = query({
+export const list = internalQuery({
   args: { deviceId: v.string() },
   handler: async (ctx, args) => {
     return await ctx.db

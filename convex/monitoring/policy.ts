@@ -17,9 +17,9 @@ export type Snapshot = {
   confidence: number;
   reason: string;
   saleStartDetected?: boolean;
-  alternative?: { title: string; price: number; savingsPct: number };
-  // Set from the agent's analysis: true when its verdict or alternative rests on seeded evidence.
+  // True when the verdict or alternative may rest on seeded evidence (agent's isSampleData, or seed rows in the window).
   isSampleData?: boolean;
+  alternative?: { title: string; price: number; savingsPct: number };
 };
 
 export type WatchState = {
@@ -80,7 +80,9 @@ export function findCandidates(snap: Snapshot, state: WatchState): Candidate[] {
   return out;
 }
 
-export type Block = "seed" | "preference" | "cooldown" | "dedupe";
+export type Block = "seed" | "sample" | "preference" | "cooldown" | "dedupe";
+
+const VERDICT_TRIGGERS: Trigger[] = ["buy_now_flip", "better_alternative"];
 
 export const dedupeKey = (deviceId: string, productId: string, trigger: Trigger, price: number) =>
   `${deviceId}|${productId}|${trigger}|${Math.round(price * 100)}`;
@@ -98,6 +100,7 @@ export function checkGuardrails(args: {
   const { candidate, snap, state, sent, key, now } = args;
   if (snap.priceSource === "seed") return "seed";
   if (snap.priceSource === "simulated" && !args.allowSimulated) return "seed";
+  if (snap.isSampleData && VERDICT_TRIGGERS.includes(candidate.trigger)) return "sample";
   if (!state.prefs[candidate.trigger]) return "preference";
   if (sent.some((s) => s.dedupeKey === key)) return "dedupe";
   const latest = sent.reduce<SentRecord | undefined>((a, s) => (!a || s.createdAt > a.createdAt ? s : a), undefined);

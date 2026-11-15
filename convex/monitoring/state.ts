@@ -1,5 +1,6 @@
 import { v } from "convex/values";
-import { internalMutation, internalQuery } from "../_generated/server";
+import { internalMutation, internalQuery, type QueryCtx } from "../_generated/server";
+import type { Id } from "../_generated/dataModel";
 import { Candidate, SentRecord, Snapshot, checkGuardrails, dedupeKey } from "./policy";
 import { triggerV, verdictV } from "../watchlist/tables";
 
@@ -11,19 +12,19 @@ const snapshotV = v.object({
   confidence: v.number(),
   reason: v.string(),
   saleStartDetected: v.optional(v.boolean()),
+  isSampleData: v.optional(v.boolean()),
   alternative: v.optional(v.object({ title: v.string(), price: v.number(), savingsPct: v.number() })),
 });
 export { snapshotV };
 
-async function sentRecords(ctx: { db: any }, deviceId: string, productId: string): Promise<SentRecord[]> {
+// Sent rows only, read through the status index so suppressed rows never push older sends out of the window.
+async function sentRecords(ctx: QueryCtx, deviceId: string, productId: Id<"products">): Promise<SentRecord[]> {
   const rows = await ctx.db
     .query("notificationLog")
-    .withIndex("by_device_and_product", (q: any) => q.eq("deviceId", deviceId).eq("productId", productId))
+    .withIndex("by_device_and_product_and_status_and_createdAt", (q) => q.eq("deviceId", deviceId).eq("productId", productId).eq("status", "sent"))
     .order("desc")
     .take(50);
-  return rows
-    .filter((r: any) => r.status === "sent")
-    .map((r: any) => ({ createdAt: r.createdAt, price: r.price, trigger: r.trigger, dedupeKey: r.dedupeKey }));
+  return rows.map((r) => ({ createdAt: r.createdAt, price: r.price, trigger: r.trigger, dedupeKey: r.dedupeKey }));
 }
 
 // Everything the action needs to decide for one watcher: its state, prior sends and the device's push token.
@@ -37,8 +38,9 @@ export const loadWatcher = internalQuery({
   },
 });
 
-// Records one decision and the watcher's new baseline. Guardrails run again here, inside the transaction, so
-// two overlapping checks cannot both send.
+// Records one decision and, for real checks only, the watcher's new baseline. A simulated check never moves the
+// baseline, so the next real check still compares against the last real price. Guardrails run again here, inside
+// the transaction, so two overlapping checks cannot both send.
 export const commit = internalMutation({
   args: {
     watchId: v.id("watchItems"),
@@ -55,13 +57,15 @@ export const commit = internalMutation({
     if (!item) return { status: "gone" as const };
     const now = Date.now();
     const snap = args.snapshot as Snapshot;
-    const baseline = item.lastPrice === undefined;
-    await ctx.db.patch(item._id, {
-      lastPrice: snap.currentPrice,
-      lastVerdict: snap.verdict,
-      lastReason: snap.reason,
-      lastCheckedAt: now,
-    });
+    const baseline = item.lastPrice === undefined && !args.simulated;
+    if (!args.simulated) {
+      await ctx.db.patch(item._id, {
+        lastPrice: snap.currentPrice,
+        lastVerdict: snap.verdict,
+        lastReason: snap.reason,
+        lastCheckedAt: now,
+      });
+    }
     if (baseline || args.candidates.length === 0) return { status: baseline ? ("baseline" as const) : ("quiet" as const) };
 
     const sent = await sentRecords(ctx, item.deviceId, item.productId);
@@ -103,7 +107,7 @@ export const commit = internalMutation({
     }
     const logId = await log(candidate, "sent", undefined, args.chosen.judge, args.chosen.why);
     const device = await ctx.db.query("devices").withIndex("by_device", (q) => q.eq("deviceId", item.deviceId)).unique();
-    return { status: "sent" as const, logId, token: device?.apnsToken, environment: device?.environment };
+    return { status: "sent" as const, logId, deviceId: item.deviceId, token: device?.apnsToken, environment: device?.environment };
   },
 });
 

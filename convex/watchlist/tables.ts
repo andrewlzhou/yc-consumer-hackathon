@@ -63,6 +63,9 @@ export const watchlistTables = {
     acknowledged: v.boolean(),
     createdAt: v.number(),
   })
-    .index("by_device_and_product", ["deviceId", "productId", "createdAt"])
-    .index("by_device_and_created", ["deviceId", "createdAt"]),
+    .index("by_device_and_product_and_status_and_createdAt", ["deviceId", "productId", "status", "createdAt"])
+    .index("by_device_and_status_and_acknowledged_and_createdAt", ["deviceId", "status", "acknowledged", "createdAt"]),
+
+  // Fixed-window request counters for the HTTP rate limit, one row per key and window.
+  rateLimits: defineTable({ key: v.string(), windowStart: v.number(), count: v.number() }).index("by_key", ["key"]),
 };

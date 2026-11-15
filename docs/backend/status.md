@@ -30,3 +30,15 @@
 - Next steps: wire an unknown-product lookup (data thread's SerpApi adapter, cached per normalized title) into runFullAnalysis.
 - Gotchas: deploy only from a clean origin/ruhaan_backend tip. Seed data makes the reason end with "(sample data)".
   The convex-test rate limiter needs `rateLimiterTest.register(t)` in any test that calls /analyze or analyzeScan.
+
+## Watchlist and monitoring (convex/watchlist, convex/monitoring, convex/crons.ts)
+
+- Works: HTTP watchlist CRUD, device token, inbox (internal functions only, fail-closed key, 60/min per device);
+  4h cron with capped SerpApi refresh; guardrailed notify with OpenAI or rules judge; APNs sender; simulated drop.
+  Proven: APNs reachable from Convex cloud (`monitoring/apns:probe` 403 InvalidProviderToken), live OpenAI judge.
+- Config (Convex env): APP_API_KEY, OPENAI_API_KEY, SERPAPI_API_KEY; optional MONITOR_REFRESH_CAP (10),
+  MONITOR_JUDGE_MODEL; for real push APNS_KEY_ID, APNS_TEAM_ID, APNS_BUNDLE_ID, APNS_PRIVATE_KEY (see monitoring-push.md).
+- Open: real push to an iPhone (needs Apple key + device); per-watcher fan-out (one action runs all watchers).
+- Next steps: after a clean-tip deploy, save a watch over HTTP, run `monitoring/check:sweep`, read notificationLog.
+- Gotchas: seed rows anywhere in the window block verdict pushes; lone scans are ignored (trustedPoints);
+  previous lows are real-only, so demo drops on seeded products need a target price.

@@ -12,11 +12,14 @@ export const TRIGGER_LABEL = {
   better_alternative: "Better alternative found",
 } as const;
 
+const DEAD_TOKEN_REASONS = ["BadDeviceToken", "Unregistered", "DeviceTokenNotForTopic"];
+
 export type EvaluateArgs = {
   productId: Id<"products">;
   title: string;
   snapshot: Snapshot;
-  simulate?: { deviceId: string };
+  // Simulation targets one device; baseline stands in for a missing real lastPrice/lastVerdict without being stored.
+  simulate?: { deviceId: string; baseline?: { price: number; verdict: Snapshot["verdict"] } };
 };
 
 // Decides, for each device watching the product, whether the new snapshot deserves a notification, then sends it.
@@ -30,9 +33,15 @@ export async function evaluate(ctx: ActionCtx, args: EvaluateArgs): Promise<{ de
     const loaded = await ctx.runQuery(internal.monitoring.state.loadWatcher, { watchId: watcher._id });
     if (!loaded) continue;
     const { item, sent } = loaded;
-    const state = { targetPrice: item.targetPrice, lastPrice: item.lastPrice, lastVerdict: item.lastVerdict, prefs: item.prefs };
     const simulated = args.simulate !== undefined;
-    const candidates = item.lastPrice === undefined ? [] : findCandidates(snap, state);
+    const fallback = args.simulate?.baseline;
+    const state = {
+      targetPrice: item.targetPrice,
+      lastPrice: item.lastPrice ?? fallback?.price,
+      lastVerdict: item.lastVerdict ?? fallback?.verdict,
+      prefs: item.prefs,
+    };
+    const candidates = state.lastPrice === undefined ? [] : findCandidates(snap, state);
     const blocks = candidates.map((c) =>
       checkGuardrails({ candidate: c, snap, state, sent, key: dedupeKey(item.deviceId, item.productId, c.trigger, snap.currentPrice), now: Date.now(), allowSimulated: simulated }),
     );
@@ -52,7 +61,7 @@ export async function evaluate(ctx: ActionCtx, args: EvaluateArgs): Promise<{ de
     });
     results.push({ deviceId: item.deviceId, status: result.status, by: "by" in result ? result.by : undefined });
     if (result.status !== "sent") continue;
-    await deliver(ctx, result.logId, result.token, result.environment, {
+    await deliver(ctx, result.logId, result.deviceId, result.token, result.environment, {
       title: (simulated ? "[Simulated] " : "") + args.title + " - " + label,
       body: snap.reason,
       productId: args.productId,
@@ -66,6 +75,7 @@ export async function evaluate(ctx: ActionCtx, args: EvaluateArgs): Promise<{ de
 async function deliver(
   ctx: ActionCtx,
   logId: Id<"notificationLog">,
+  deviceId: string,
   token: string | undefined,
   environment: "sandbox" | "production" | undefined,
   message: { title: string; body: string; productId: string },
@@ -82,6 +92,9 @@ async function deliver(
     collapseId: message.productId,
     data: { productId: message.productId },
   });
+  if (!res.ok && res.reason && DEAD_TOKEN_REASONS.includes(res.reason)) {
+    await ctx.runMutation(internal.watchlist.devices.clearToken, { deviceId, apnsToken: token });
+  }
   await ctx.runMutation(internal.monitoring.state.markDelivery, {
     logId,
     channel: res.ok ? "apns" : "inbox",
