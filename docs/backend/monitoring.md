@@ -23,7 +23,7 @@
 - `checkProduct` asks `monitoring/ports:getSnapshot` (the only file that touches the data and agent threads) for a fresh price and analysis.
 - Per device watching it: code lists candidate events (target crossed, new low, flip to BUY_NOW, sale start, better alternative), applies the guardrails, then the judge picks.
 - First check for a watch is a baseline: it records price and verdict and never notifies.
-- Judge: OpenAI chat call when `OPENAI_API_KEY` is set (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini), else a deterministic rules judge. It can only pick a listed candidate. Notification body is the agent's reason line.
+- Judge: OpenAI chat call when `OPENAI_API_KEY` is set on the deployment (`MONITOR_JUDGE_MODEL`, default gpt-4.1-mini; checked live, about 1s), else a deterministic rules judge. It can only pick a listed candidate. Notification body is the agent's reason line.
 - Guardrails (convex/monitoring/policy.ts), re-checked inside the commit mutation: no seed or unlabeled simulated price, per-trigger prefs, dedupe on device+product+trigger+price, 24h cooldown per device+product (a further 10% drop overrides), minimum drop max($0.50, 1%).
 
 ## Delivery
@@ -36,9 +36,10 @@
 
 ## Tests
 
-- `npm test` covers policy, judge (mocked OpenAI), APNs client (local HTTP/2 server) and the full flow with convex-test.
+- `npm test` covers policy, judge (mocked OpenAI), APNs client (local HTTP/2 server) and the full flow with convex-test; tests force the rules judge.
+- `npm run test:live` calls the real OpenAI judge (needs `OPENAI_API_KEY`).
 
 ## Status
 
-- `ports.getSnapshot` is not wired to the data and agent functions yet; see the latest change note.
+- `ports.getSnapshot` reads stored price history from the data layer (cheapest latest price, previous low, running sale). The agent's verdict, reason and alternative are not wired yet, so verdict triggers (flip to BUY_NOW, better alternative) never fire and the body is a numbers-only line. There is no live price source yet, so a check only sees prices that scans or other threads have recorded.
 

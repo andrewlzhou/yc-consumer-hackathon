@@ -6,7 +6,7 @@
 
 - Convex actions marked `use node` run real Node 24 (docs.convex.dev/functions/runtimes), so `node:http2` and `node:crypto` exist.
 - From a cloud machine, `node:http2` reached api.sandbox.push.apple.com, negotiated h2 via ALPN, and with a throwaway ES256 key got `403 InvalidProviderToken`. That proves the protocol and token format get as far as Apple's validation.
-- Not proven: that Convex's hosted Node runtime allows the same outbound call. Run `npx convex run monitoring/apns:probe` on the deployment once; status 403 with InvalidProviderToken means yes.
+- Proven on Convex cloud (dev deployment, 2026-11-15): `npx convex run monitoring/apns:probe` returned status 403, reason InvalidProviderToken. So the hosted Node runtime reaches APNs over HTTP/2 and our ES256 token format passes Apple's parsing.
 - Convex's default (non-node) runtime only offers `fetch`; whether it speaks HTTP/2 to APNs is undocumented, so we do not rely on it.
 - A real push to a device is untested: it needs Ruhaan's Apple account and a physical iPhone.
 

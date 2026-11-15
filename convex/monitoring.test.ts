@@ -124,3 +124,25 @@ test("end to end on seeded data: seed history never sends, a real scan drop does
   expect(res).toMatchObject([{ status: "sent" }]);
   expect((await log()).filter((r) => r.status === "sent")).toHaveLength(1);
 });
+
+test("demo helper: simulated drop on a seeded product sends a labeled push once, then the cooldown holds", async () => {
+  const t = convexTest(schema, modules);
+  const { products } = await t.mutation(internal.seed.run.all, {});
+  const productId = Object.values(products)[0] as Id<"products">;
+  await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, prefs: defaultPrefs(), createdAt: Date.now() }));
+  const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });
+  const low = Math.min(state!.snapshot.currentPrice, state!.snapshot.priorLow ?? Infinity);
+
+  const first = await t.action(internal.monitoring.simulate.dropPrice, { deviceId: DEVICE, productId, price: low - 20 });
+  expect(first).toMatchObject([{ status: "sent" }]);
+  const second = await t.action(internal.monitoring.simulate.dropPrice, { deviceId: DEVICE, productId, price: Math.round((low - 20) * 95) / 100 });
+  expect(second).toMatchObject([{ status: "suppressed", by: "cooldown" }]);
+
+  const rows = await t.run((ctx) => ctx.db.query("notificationLog").collect());
+  expect(rows.filter((r) => r.status === "sent")).toHaveLength(1);
+  expect(rows[0]).toMatchObject({ simulated: true });
+  expect(rows[0].title.startsWith("[Simulated]")).toBe(true);
+  expect(rows[0].body.startsWith("Simulated price drop for demo.")).toBe(true);
+  const history = await t.run((ctx) => ctx.db.query("priceObservations").collect());
+  expect(history.every((h) => h.source === "seed")).toBe(true);
+});

@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "convex dev",
     "test": "vitest run",
+    "test:live": "LIVE_TESTS=1 vitest run judge.live",
     "typecheck": "tsc --noEmit -p convex",
     "seed": "convex run seed/run:all"
   },
