@@ -11,6 +11,8 @@ import Speech
 final class VoiceInput: ObservableObject {
     @Published var transcript = ""
     @Published var isListening = false
+    // Why the mic didn't start, in words that say what to do. Nil when it's fine.
+    @Published var problem: String?
 
     private let recognizer = SFSpeechRecognizer(locale: Locale(identifier: "en-US"))
     private let engine = AVAudioEngine()
@@ -22,7 +24,15 @@ final class VoiceInput: ObservableObject {
     }
 
     func start() async {
-        guard await Self.speechAllowed(), await AVAudioApplication.requestRecordPermission() else { return }
+        guard await Self.speechAllowed(), await AVAudioApplication.requestRecordPermission() else {
+            problem = "Allow Microphone and Speech Recognition in Settings."
+            return
+        }
+        guard recognizer?.isAvailable == true else {
+            problem = "Voice isn't available right now. Type instead."
+            return
+        }
+        problem = nil
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.record, mode: .measurement, options: .duckOthers)
@@ -44,6 +54,7 @@ final class VoiceInput: ObservableObject {
             task = recognizer?.recognitionTask(with: request, resultHandler: Self.resultHandler(for: self))
         } catch {
             stop()
+            problem = "Couldn't start the mic. Try again."
         }
     }
 

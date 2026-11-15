@@ -317,6 +317,11 @@ parts stubbed. "iOS:" marks where it differs from the Worldscape source.
   holds the word, symbol and hex. Buy green, Wait amber, Fake deal red, Look around lavender, Check first coral.
 - `SampleDataTag()` and `ConfidenceMeter(value:tint:)` (`ReportBits.swift`): the sample-data label the backend
   contract requires, and "Confidence ━━── 78%".
+- `InputBarSurface()` (`AskParts.swift`): the blue input bar's surface (gradient, fog, rim, shadow), as Search's
+  ask bar uses it; put it in `.background { }` of a row at least 56pt tall.
+- `ThinkingLine(step:)`: hopping dots plus the current step, shimmering, for a wait with no progress bar.
+- `FailureNote(message:actionTitle:action:onDismiss:)`: what went wrong and the one fix, as a "Try again" chip.
+- `IconPressStyle()`: round icon buttons shrink to 0.9 while pressed.
 
 **Old names kept** (`Views/Theme.swift`): `Theme.paper/ink/slate/hairline/prussian/prussianLight` map to
 canvas / textPrimary / textSecondary / stroke / electric / glow. `Theme.buy` and `Theme.wait` keep their
