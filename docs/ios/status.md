@@ -12,10 +12,15 @@
   watchlist edit/remove, inbox, setup with timings; App Intents for screenshot and link. Builds for the simulator
   on Revyl's runner (Xcode 27). How to build and use: [app](app.md).
 
+- Review fixes (YCCO-11): wrong-price and privacy regressions covered by `AdversarialTests.swift`; intent reads
+  the screenshot under security scope and deletes only app-owned files; timed-out `/analyze` is not repeated.
+- Mac build: Xcode 26.3 at `/Applications/Xcode-26.3.app`; use `DEVELOPER_DIR=/Applications/Xcode-26.3.app/Contents/Developer`
+  (xcode-select still points to Command Line Tools). Unsigned device build passes.
+
 ## In progress
 
-- Xcode 26.3 install on Ruhaan's MacBook Air (macOS 15.7.9 can't run Xcode 26.4+ or 27); needs his Apple ID.
-- Physical iPhone (A15, no Apple Intelligence) is connected by USB; install once Xcode is ready.
+- Signing: Xcode needs a Personal Team identity (Settings > Accounts > Manage Certificates > Apple Development).
+- Phone: iPhone 14 on iOS 27.0.1 is paired; Developer Mode must be turned on before install.
 
 ## Not verified yet
 

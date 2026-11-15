@@ -6,6 +6,7 @@ import ShopperKit
 @main
 struct OCRDump {
     static func main() async throws {
+        #if canImport(Vision)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         for path in CommandLine.arguments.dropFirst() {
@@ -20,6 +21,7 @@ struct OCRDump {
             FileHandle.standardError.write(Data("\(path): \(lines.count) lines, OCR \(String(format: "%.3f", ocrSeconds)) s -> \(result)\n".utf8))
             print(String(decoding: try encoder.encode(lines), as: UTF8.self))
         }
+        #endif
     }
 
     static func round4(_ value: Double) -> Double { (value * 10_000).rounded() / 10_000 }

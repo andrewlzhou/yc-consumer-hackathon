@@ -112,7 +112,7 @@ struct ResultCard: View {
                 Text("Read on device: \(e.title ?? "no title") · \(e.currentPrice.map { String(format: "$%.2f", $0) } ?? "no price")\(e.originalPrice.map { String(format: " (was $%.2f)", $0) } ?? "")\(e.retailer.map { " · " + $0 } ?? "")")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Text(String(format: "OCR %.2fs · model %.2fs · network %.2fs · total %.2fs", outcome.times.ocr, outcome.times.model, outcome.times.network, outcome.times.total))
+            Text(String(format: "OCR %.2fs · network %.2fs · total %.2fs", outcome.times.ocr, outcome.times.network, outcome.times.total))
                 .font(.caption2).foregroundStyle(.secondary)
         }
     }

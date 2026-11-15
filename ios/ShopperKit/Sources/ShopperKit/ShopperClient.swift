@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 public struct BackendConfig: Sendable {
     public var baseURL: URL
@@ -14,6 +17,7 @@ public struct BackendConfig: Sendable {
 
 public enum ShopperError: Error, Equatable, Sendable {
     case noProduct
+    case unreadableImage
     case notConfigured
     case unauthorized
     case rateLimited
@@ -26,6 +30,7 @@ public enum ShopperError: Error, Equatable, Sendable {
     public var message: String {
         switch self {
         case .noProduct: "No product found. Open a product page and try again."
+        case .unreadableImage: "Couldn't read the screenshot Shortcuts handed over. Check the shortcut passes Take Screenshot to Worth It."
         case .notConfigured: "This build has no backend key. Add it to ios/Config/Secrets.xcconfig and rebuild."
         case .unauthorized: "The price service refused this app's key (401)."
         case .rateLimited: "Too many checks right now (429). Try again in a minute."
@@ -64,7 +69,7 @@ public struct ShopperClient: Sendable {
     }
 
     public func analyze(_ extract: ProductExtract) async throws -> AnalyzeResponse {
-        try await send("POST", "analyze", body: try JSONEncoder().encode(extract), timeout: config.analyzeTimeout)
+        try await send("POST", "analyze", body: try JSONEncoder().encode(extract), timeout: config.analyzeTimeout, retryOnTimeout: false)
     }
 
     public func report(productId: String) async throws -> ReportResponse {
@@ -118,11 +123,13 @@ public struct ShopperClient: Sendable {
 
     private struct Ignored: Decodable {}
 
-    private func send<Response: Decodable>(_ method: String, _ path: String, query: [String: String] = [:], body: Data? = nil, timeout: TimeInterval) async throws -> Response {
+    // A timed-out analyze may still be running on the server, so it is not repeated (no duplicate scans or jobs).
+    private func send<Response: Decodable>(_ method: String, _ path: String, query: [String: String] = [:], body: Data? = nil,
+                                           timeout: TimeInterval, retryOnTimeout: Bool = true) async throws -> Response {
         let request = try makeRequest(method, path, query: query, body: body, timeout: timeout)
         do {
             return try await perform(request)
-        } catch let error as ShopperError where error.isRetryable {
+        } catch let error as ShopperError where error.isRetryable && (retryOnTimeout || error != .timeout) {
             return try await perform(request)
         }
     }

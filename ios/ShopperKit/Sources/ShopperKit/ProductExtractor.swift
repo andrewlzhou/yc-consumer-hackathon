@@ -19,24 +19,75 @@ public enum ProductExtractor {
     public static func extract(_ allLines: [OCRLine]) -> ExtractionResult {
         let lines = allLines.filter { $0.y > 0.045 }.sorted { ($0.y, $0.x) < ($1.y, $1.x) }
         var result = ExtractionResult()
-        result.retailer = retailer(in: allLines)
-
-        let mentions = lines.flatMap(PriceText.mentions(in:))
-        let plain = mentions.filter { $0.kind == .plain }
-        if isListingGrid(plain) {
+        if isCartOrCheckout(lines) {
             result.isListing = true
             return result
         }
-        let current = currentPrice(plain)
+        let mentions = lines.flatMap(PriceText.mentions(in:))
+        let plain = mentions.filter { $0.kind == .plain }
+        let pair = salePair(plain)
+        if pair == nil && isListingGrid(plain) {
+            result.isListing = true
+            return result
+        }
+        let current = pair?.current ?? currentPrice(plain)
         result.currentPrice = current?.value
         if let current {
-            result.originalPrice = originalPrice(for: current, mentions: mentions)
+            result.originalPrice = pair?.original.value ?? originalPrice(for: current, mentions: mentions)
         }
-        result.title = title(in: lines, near: current?.line)
-        if result.title == nil, current != nil {
-            result.fallbackLines = Array(titleCandidates(lines).sorted { $0.h > $1.h }.prefix(12).map { String($0.text.prefix(200)) })
+        let safe = withoutPersonalText(lines)
+        result.title = title(in: safe, near: current?.line)
+        result.retailer = retailer(in: allLines, title: result.title)
+        if result.title == nil, let current {
+            let window = titleCandidates(safe).filter { abs($0.midY - current.line.midY) <= priceWindow }
+            result.fallbackLines = window.sorted { $0.h > $1.h }.prefix(5).map { capUTF16($0.text, 200) }
         }
         return result
+    }
+
+    // A title or fallback line must sit within this share of the screen height of the chosen price.
+    static let priceWindow = 0.25
+
+    static func capUTF16(_ text: String, _ limit: Int) -> String {
+        var out = ""
+        for character in text {
+            if out.utf16.count + character.utf16.count > limit { break }
+            out.append(character)
+        }
+        return out
+    }
+
+    private static let cartWords = try! NSRegularExpression(pattern: #"\b(subtotal|order summary|place (your )?order|checkout|your cart|shopping cart|cart total)\b"#)
+
+    // A cart or checkout screen lists totals, not one product's price.
+    static func isCartOrCheckout(_ lines: [OCRLine]) -> Bool {
+        lines.contains { line in
+            let lower = line.text.lowercased()
+            return cartWords.firstMatch(in: lower, range: NSRange(location: 0, length: (lower as NSString).length)) != nil
+        }
+    }
+
+    private static let personal = try! NSRegularExpression(pattern: [
+        #"^(hello|hi|hey|welcome back|good (morning|afternoon|evening))\b"#,
+        #"@"#,
+        #"\(?\b\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b"#,
+        #"\b\d{1,5}\s+(\w+\s+){0,3}(st|street|ave|avenue|rd|road|blvd|boulevard|dr|drive|ln|lane|way|pkwy|parkway|ct|court|pl|place|hwy|apt|suite|unit)\b"#,
+        #"\b\d{5}(-\d{4})?\b"#,
+        #"^[a-z][\w .'-]{0,24}:\s"#,
+    ].joined(separator: "|"))
+    private static let bannerTime = try! NSRegularExpression(pattern: #"\b(now|\d+\s?(m|min|h|hr)s?( ago)?)$"#)
+
+    // Notification banners near the top, greetings, emails, phone numbers, street addresses, ZIP codes and
+    // "Name: message" lines never become a title or a fallback line, so they never leave the phone.
+    static func withoutPersonalText(_ lines: [OCRLine]) -> [OCRLine] {
+        let lowered = lines.map { $0.text.lowercased().trimmingCharacters(in: .whitespaces) }
+        let banners = zip(lines, lowered).filter { line, lower in
+            line.y < 0.3 && bannerTime.firstMatch(in: lower, range: NSRange(location: 0, length: (lower as NSString).length)) != nil
+        }.map(\.0)
+        return zip(lines, lowered).filter { line, lower in
+            if banners.contains(where: { line.y >= $0.y - 0.02 && line.y <= $0.y + 0.12 }) { return false }
+            return personal.firstMatch(in: lower, range: NSRange(location: 0, length: (lower as NSString).length)) == nil
+        }.map(\.0)
     }
 
     // Search results and carousels: the biggest price shares its row with another, or many prices are all the same size.
@@ -53,16 +104,33 @@ public enum ProductExtractor {
         return tallest.line.h < heights[heights.count / 2] * 1.35
     }
 
-    // The biggest plain price on screen; ties go to the higher one.
-    static func currentPrice(_ plain: [PriceMention]) -> PriceMention? {
-        guard let tallest = plain.map(\.line.h).max() else { return nil }
-        let top = plain.filter { $0.line.h >= tallest * 0.95 }.sorted { ($0.line.y, $0.offset) < ($1.line.y, $1.offset) }
-        let values = Set(top.map(\.value))
-        if values.count > 1 && top.count > 2 { return nil }
-        return top.first
+    static func biggest(_ plain: [PriceMention]) -> [PriceMention] {
+        guard let tallest = plain.map(\.line.h).max() else { return [] }
+        return plain.filter { $0.line.h >= tallest * 0.95 }.sorted { ($0.line.y, $0.offset) < ($1.line.y, $1.offset) }
     }
 
-    // A labelled "was/reg/list" price near the current one, else one unlabelled higher, smaller price right beside it.
+    // Two equal-size prices side by side ("$59.95 $41.96", struck price first or last): a sale price and its old price.
+    // The lower one is today's price, as long as the higher is at most 5x it.
+    static func salePair(_ plain: [PriceMention]) -> (current: PriceMention, original: PriceMention)? {
+        let top = biggest(plain)
+        guard top.count == 2, top[0].value != top[1].value else { return nil }
+        let (a, b) = (top[0], top[1])
+        let sameLine = a.line == b.line
+        let left = a.line.x <= b.line.x ? a.line : b.line, right = a.line.x <= b.line.x ? b.line : a.line
+        let adjacent = abs(a.line.midY - b.line.midY) < max(a.line.h, b.line.h) * 0.6 && right.x - (left.x + left.w) < 0.08
+        guard sameLine || adjacent else { return nil }
+        let low = a.value < b.value ? a : b, high = a.value < b.value ? b : a
+        return high.value <= low.value * 5 ? (low, high) : nil
+    }
+
+    // The biggest plain price on screen. Two different biggest prices that are not a sale pair are ambiguous: blank.
+    static func currentPrice(_ plain: [PriceMention]) -> PriceMention? {
+        let top = biggest(plain)
+        return Set(top.map(\.value)).count == 1 ? top.first : nil
+    }
+
+    // A labelled "was/reg/list" price near the current one, else one unlabelled higher price on the same line, or alone
+    // on its own line right beside the current price (a crossed-out price). Variant, plan and seller prices carry words.
     static func originalPrice(for current: PriceMention, mentions: [PriceMention]) -> Double? {
         let reach = max(current.line.h * 3, 0.06)
         let plausible = mentions.filter {
@@ -73,11 +141,15 @@ public enum ProductExtractor {
         if let nearest = labelled.min(by: { abs($0.line.midY - current.line.midY) < abs($1.line.midY - current.line.midY) }) {
             return nearest.value
         }
-        let beside = plausible.filter {
-            $0.kind == .plain && $0.line.h < current.line.h * 0.95 && abs($0.line.midY - current.line.midY) <= max(current.line.h * 1.6, 0.03)
+        let c = current.line
+        let candidates = plausible.filter { m in
+            guard m.kind == .plain else { return false }
+            if m.line == c { return m.offset > current.offset }
+            guard PriceText.isPriceOnly(m.line), m.line.h < c.h * 0.95 else { return false }
+            let sameRow = abs(m.line.midY - c.midY) <= max(c.h * 0.8, 0.02) && m.line.x - (c.x + c.w) < 0.1 && m.line.x > c.x
+            let below = m.line.y >= c.bottom && m.line.y - c.bottom <= c.h * 0.8 && abs(m.line.x - c.x) < 0.1
+            return sameRow || below
         }
-        let sameLine = plausible.filter { $0.kind == .plain && $0.line == current.line && $0.offset > current.offset }
-        let candidates = sameLine.isEmpty ? beside : sameLine
         return Set(candidates.map(\.value)).count == 1 ? candidates.first?.value : nil
     }
 
@@ -140,6 +212,7 @@ public enum ProductExtractor {
             if let price {
                 let first = block.first!, lastLine = block.last!
                 let distance = price.y >= lastLine.bottom ? price.y - lastLine.bottom : abs(first.midY - price.midY)
+                guard distance <= priceWindow else { return nil }
                 score += max(0, 1 - distance / 0.35) + (price.y >= lastLine.bottom ? 0.2 : 0)
             }
             return (text, score)
@@ -159,12 +232,15 @@ public enum ProductExtractor {
         ("american eagle", "American Eagle"), ("lululemon", "lululemon"), ("costco", "Costco"), ("home depot", "Home Depot"),
     ]
 
-    // A store domain anywhere on screen (Safari's address bar) wins; otherwise a store name that is not also a brand.
-    static func retailer(in lines: [OCRLine]) -> String? {
-        let text = lines.map { $0.text.lowercased() }.joined(separator: "\n")
-        for (domain, name) in domains where text.range(of: #"(^|[^a-z0-9])"# + NSRegularExpression.escapedPattern(for: domain), options: .regularExpression) != nil {
+    // A store domain anywhere on screen (Safari's address bar) wins; otherwise a store name outside the product title
+    // ("Amazon Echo Dot" on Best Buy is not an Amazon page).
+    static func retailer(in lines: [OCRLine], title: String? = nil) -> String? {
+        let all = lines.map { $0.text.lowercased() }.joined(separator: "\n")
+        for (domain, name) in domains where all.range(of: #"(^|[^a-z0-9])"# + NSRegularExpression.escapedPattern(for: domain), options: .regularExpression) != nil {
             return name
         }
+        let titleText = title?.lowercased() ?? ""
+        let text = lines.map { $0.text.lowercased() }.filter { titleText.isEmpty || !titleText.contains($0.trimmingCharacters(in: .whitespaces)) }.joined(separator: "\n")
         for (word, name) in storeNames where text.range(of: #"\b"# + word + #"\b"#, options: .regularExpression) != nil {
             if word == "target" && text.range(of: #"target (price|date|audience)"#, options: .regularExpression) != nil { continue }
             return name

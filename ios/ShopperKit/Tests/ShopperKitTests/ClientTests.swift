@@ -1,4 +1,7 @@
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Testing
 @testable import ShopperKit
 
@@ -62,10 +65,16 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
         #expect(StubProtocol.requests.count == 2)
     }
 
-    @Test func retryIsBounded() async throws {
-        let c = client([(-1, ""), (-1, ""), (200, card)])
-        await #expect(throws: ShopperError.timeout) { try await c.analyze(ProductExtract(deviceId: c.deviceId, title: "x y z")) }
+    @Test func readRetryIsBounded() async throws {
+        let c = client([(-1, ""), (-1, ""), (200, "[]")])
+        await #expect(throws: ShopperError.timeout) { try await c.watchlist() }
         #expect(StubProtocol.requests.count == 2)
+    }
+
+    @Test func timedOutAnalyzeIsNotRepeated() async throws {
+        let c = client([(-1, ""), (200, card)])
+        await #expect(throws: ShopperError.timeout) { try await c.analyze(ProductExtract(deviceId: c.deviceId, title: "x y z")) }
+        #expect(StubProtocol.requests.count == 1)
     }
 
     @Test func mapsAuthAndRateLimitWithoutRetry() async throws {

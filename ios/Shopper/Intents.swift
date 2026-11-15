@@ -14,21 +14,34 @@ struct CheckScreenshotIntent: AppIntent {
     var screenshot: IntentFile
 
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        let fileURL = screenshot.fileURL
-        var outcome: ScanOutcome
-        do {
-            let data = screenshot.data
-            outcome = await ScanPipeline.run(imageData: data, deviceId: DeviceIdentity.current())
-        }
-        if let fileURL {
-            try? FileManager.default.removeItem(at: fileURL)
-            outcome.tempFileDeleted = !FileManager.default.fileExists(atPath: fileURL.path)
-        }
-        log.info("screenshot intent: file-backed=\(fileURL != nil, privacy: .public) deleted=\(outcome.tempFileDeleted ?? false, privacy: .public)")
+        let (bytes, cleanup) = readOnce(screenshot)
+        var outcome = await ScanPipeline.run(imageData: bytes, deviceId: DeviceIdentity.current())
+        outcome.tempFileDeleted = cleanup
         let finished = outcome
         await MainActor.run { AppModel.shared.remember(finished) }
         return .result(dialog: IntentDialog(stringLiteral: finished.dialog), view: ResultSnippet(outcome: finished))
     }
+}
+
+// Copies the image bytes into memory under security-scoped access, then deletes the file only when it lives in this
+// app's own container or temp folder. Files owned by Shortcuts or the user are left to their owner
+// (Shortcuts removes its temporary files itself when removedOnCompletion is set).
+func readOnce(_ file: IntentFile) -> (Data, Bool?) {
+    guard let url = file.fileURL else { return (file.data, nil) }
+    let scoped = url.startAccessingSecurityScopedResource()
+    let bytes = file.data.withUnsafeBytes { Data($0) }
+    var deleted: Bool?
+    let path = url.resolvingSymlinksInPath().path
+    let owned = [FileManager.default.temporaryDirectory, URL(fileURLWithPath: NSHomeDirectory())]
+        .map { $0.resolvingSymlinksInPath().path + "/" }
+        .contains { path.hasPrefix($0) }
+    if owned {
+        try? FileManager.default.removeItem(at: url)
+        deleted = !FileManager.default.fileExists(atPath: path)
+    }
+    if scoped { url.stopAccessingSecurityScopedResource() }
+    log.info("screenshot file: bytes=\(bytes.count, privacy: .public) owned=\(owned, privacy: .public) deleted=\(deleted ?? false, privacy: .public) removedOnCompletion=\(file.removedOnCompletion, privacy: .public)")
+    return (bytes, deleted)
 }
 
 // Share-sheet path: a Shortcut that receives a link from Safari or a store app, or any link the user passes in.

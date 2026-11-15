@@ -6,6 +6,8 @@
 - Changed: added `ios/ShopperKit` (contract models, Vision OCR, extraction rules, HTTP client, device id) with
   fixture and client tests, an `ocrdump` dev tool, the SwiftUI app with App Intents, and iOS docs
   ([status](../../../ios/status.md), [app](../../../ios/app.md)).
-- Checks: `swift test` in ios/ShopperKit: 10 tests pass; fixture accuracy in [extraction](../../../ios/extraction.md).
-  App builds for the iOS simulator on Revyl's runner (Xcode 27). `python3 scripts/check_docs.py` passes.
-- Next: SwiftUI app and App Intents; Xcode 26.3 on the Mac; physical iPhone tests are not done yet.
+- Changed (review): fixed YCCO-11's wrong-price and privacy findings (sale pairs, superscript cents from glyph
+  geometry, banner/address text, variant and cart prices, store names in titles, intent file handling, analyze retry).
+- Checks: `swift test` in ios/ShopperKit: 22 tests pass; fixture accuracy in [extraction](../../../ios/extraction.md).
+  Simulator build on Revyl (Xcode 27); unsigned device build on the Mac (Xcode 26.3). `check_docs.py` passes.
+- Next: signing team and Developer Mode, then the physical iPhone Shortcut and link tests (not done yet).

@@ -7,9 +7,10 @@ let log = Logger(subsystem: "dev.yccohack.worthit", category: "scan")
 struct StageTimes: Codable {
     var ocr: Double = 0
     var extract: Double = 0
-    var model: Double = 0
     var network: Double = 0
     var total: Double = 0
+    var imageBytes = 0
+    var ocrLines = 0
 }
 
 struct ScanOutcome {
@@ -17,13 +18,11 @@ struct ScanOutcome {
     var response: AnalyzeResponse?
     var error: ShopperError?
     var times = StageTimes()
-    var usedModel = false
     var tempFileDeleted: Bool?
 
     var dialog: String {
         if let response {
-            let sample = response.isSampleData ? " (sample data)" : ""
-            return "\(response.verdict.label): \(response.reason)\(sample)"
+            return "\(response.verdict.label): \(response.reason)"
         }
         return error?.message ?? ShopperError.noProduct.message
     }
@@ -34,32 +33,29 @@ enum ScanPipeline {
     static func run(imageData: Data, deviceId: String) async -> ScanOutcome {
         let start = Date()
         var outcome = ScanOutcome()
+        outcome.times.imageBytes = imageData.count
         guard let image = TextRecognizer.cgImage(from: imageData) else {
-            outcome.error = .noProduct
+            outcome.error = .unreadableImage
+            record(outcome, source: "screenshot")
             return outcome
         }
         let lines: [OCRLine]
         do {
             lines = try await TextRecognizer.recognize(image)
         } catch {
-            outcome.error = .noProduct
+            outcome.error = .unreadableImage
+            record(outcome, source: "screenshot")
             return outcome
         }
         outcome.times.ocr = Date().timeIntervalSince(start)
+        outcome.times.ocrLines = lines.count
         let extractStart = Date()
         outcome.extract = ProductExtractor.extract(lines)
         outcome.times.extract = Date().timeIntervalSince(extractStart)
-        if !outcome.extract.isListing && (outcome.extract.title == nil || outcome.extract.currentPrice == nil) {
-            let modelStart = Date()
-            if let refined = await ModelAssist.refine(lines: lines, current: outcome.extract) {
-                outcome.extract = refined
-                outcome.usedModel = true
-            }
-            outcome.times.model = Date().timeIntervalSince(modelStart)
-        }
         guard outcome.extract.hasProduct else {
             outcome.error = .noProduct
             outcome.times.total = Date().timeIntervalSince(start)
+            record(outcome, source: "screenshot")
             return outcome
         }
         let e = outcome.extract
@@ -77,6 +73,11 @@ enum ScanPipeline {
         var outcome = ScanOutcome()
         let request = ProductExtract(deviceId: deviceId, url: url.absoluteString, capturedAt: (start.timeIntervalSince1970 * 1000).rounded())
         await send(request, into: &outcome, deviceId: deviceId)
+        // A new link is resolved in the background; asking once more shortly after usually returns the product.
+        if outcome.response?.productId == nil && outcome.response?.reportStatus == "pending" {
+            try? await Task.sleep(for: .seconds(2))
+            await send(request, into: &outcome, deviceId: deviceId)
+        }
         outcome.times.total = Date().timeIntervalSince(start)
         record(outcome, source: "link")
         return outcome
@@ -98,7 +99,7 @@ enum ScanPipeline {
     // Keeps the last 100 runs' stage times (no content) so Setup can show p50/p95 measured on this phone.
     static func record(_ outcome: ScanOutcome, source: String) {
         let t = outcome.times
-        log.info("scan \(source, privacy: .public) ok=\(outcome.response != nil, privacy: .public) ocr=\(t.ocr, privacy: .public) model=\(t.model, privacy: .public) network=\(t.network, privacy: .public) total=\(t.total, privacy: .public)")
+        log.info("scan \(source, privacy: .public) ok=\(outcome.response != nil, privacy: .public) bytes=\(t.imageBytes, privacy: .public) lines=\(t.ocrLines, privacy: .public) ocr=\(t.ocr, privacy: .public) network=\(t.network, privacy: .public) total=\(t.total, privacy: .public)")
         var runs = TimingLog.load()
         runs.append(TimingLog.Run(source: source, ok: outcome.response != nil, times: t))
         TimingLog.save(Array(runs.suffix(100)))

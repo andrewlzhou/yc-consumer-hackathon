@@ -71,7 +71,10 @@ func grade(_ fixture: Fixture, _ result: ExtractionResult) -> [String: Outcome] 
 @Test func priceParsingHandlesStoreFormats() {
     func values(_ text: String) -> [Double] { PriceText.mentions(in: OCRLine(text: text, x: 0, y: 0.5, w: 1, h: 0.02)).map(\.value) }
     #expect(values("$1,299.99") == [1299.99])
-    #expect(values("$27900 List: $35") == [279.0, 35.0])
+    #expect(values("$279.00 List: $35") == [279.0, 35.0])
+    #expect(values("$27900").isEmpty)
+    #expect(values("$1099").isEmpty)
+    #expect(values("C$349.99").isEmpty)
     #expect(values("$1.991mo. or $19.99/yr.").isEmpty == false)
     #expect(values("$2.299.99").isEmpty)
     #expect(values("$123456").isEmpty)
@@ -81,4 +84,7 @@ func grade(_ fixture: Fixture, _ result: ExtractionResult) -> [String: Outcome] 
     #expect(kinds("-43% $198.00") == [.plain])
     #expect(kinds("Save $120") == [.noise])
     #expect(kinds("$19.99 - $29.99") == [.noise, .noise])
+    #expect(kinds("Coupon -$50.00") == [.noise])
+    #expect(kinds("2 for $5.00") == [.noise])
+    #expect(kinds("Subtotal $329.98") == [.noise])
 }
