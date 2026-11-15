@@ -2,5 +2,14 @@ import SwiftUI
 
 @main
 struct CheckPriceApp: App {
-    var body: some Scene { WindowGroup { ContentView() } }
+    init() {
+        TabBarStyle.apply()
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .environment(ThreadStore.shared)
+        }
+    }
 }

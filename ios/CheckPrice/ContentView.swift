@@ -1,33 +1,65 @@
 import SwiftUI
 
-// The root: three tabs and the report sheet. Launch arguments for screenshots and cloud devices:
-// `-startTab home|watchlist|setup` opens on that tab, `-autoReveal YES` runs Home's capture →
-// analyzing → reveal demo on launch, and `-openReport YES` opens the report sheet on launch.
+// The root: three tabs (Home, Threads, Account) and the thread detail sheet. The bar's look lives
+// in `Components/TabBar.swift`. Each tab sits on `ScreenBackdrop`, so screens draw no backdrop
+// of their own. Any screen opens a thread by setting `ThreadStore.openThreadID`; this view
+// presents it and clears it on dismiss.
+//
+// Launch arguments for screenshots and cloud devices: `-startTab home|threads|account` opens on
+// that tab, `-autoReveal YES` runs Home's capture → analyzing → reveal demo on launch, and
+// `-openThread YES` opens the newest thread's detail on launch.
 struct ContentView: View {
-    @State private var tab = ContentView.startTab
-    @State private var report = UserDefaults.standard.bool(forKey: "openReport")
+    @Environment(ThreadStore.self) private var store
+    @State private var tab = AppTab(rawValue: UserDefaults.standard.string(forKey: "startTab") ?? "") ?? .home
     @State private var autoReveal = UserDefaults.standard.bool(forKey: "autoReveal")
-
-    private static var startTab: Int {
-        switch UserDefaults.standard.string(forKey: "startTab") {
-        case "watchlist": 1
-        case "setup": 2
-        default: 0
-        }
-    }
+    @State private var didHandleLaunch = false
 
     var body: some View {
-        ZStack {
-            AppColor.ink.ignoresSafeArea()
-            Group {
-                if tab == 0 { HomeView(report: $report, autoReveal: $autoReveal) }
-                else if tab == 1 { WatchlistView(report: $report) }
-                else { SetupView() }
+        TabView(selection: $tab) {
+            Tab(AppTab.home.title, systemImage: AppTab.home.symbol, value: AppTab.home) {
+                HomeView(report: openNewestThread, autoReveal: $autoReveal)
+                    .background { ScreenBackdrop() }
             }
-            .padding(.horizontal, 20).padding(.top, 12)
+            Tab(AppTab.threads.title, systemImage: AppTab.threads.symbol, value: AppTab.threads) {
+                ThreadsView()
+                    .background { ScreenBackdrop() }
+            }
+            Tab(AppTab.account.title, systemImage: AppTab.account.symbol, value: AppTab.account) {
+                AccountView()
+                    .background { ScreenBackdrop() }
+            }
         }
-        .safeAreaInset(edge: .bottom) { TabBar(tab: $tab).padding(.horizontal, 20).padding(.bottom, 8).background(AppColor.ink.opacity(0.95)) }
-        .sheet(isPresented: $report) { ReportView(product: Demo.headphones).presentationDragIndicator(.visible).presentationBackground(AppColor.ink) }
+        // Tint still reaches the screens (toolbar buttons, links); the bar's own colours are in TabBarStyle.
+        .tint(Palette.glow)
+        .sheet(item: openThread) { thread in
+            ThreadDetailView(threadID: thread.id)
+                .presentationDragIndicator(.visible)
+                .presentationBackground(Palette.canvas)
+        }
+        .onAppear {
+            guard !didHandleLaunch else { return }
+            didHandleLaunch = true
+            if UserDefaults.standard.bool(forKey: "openThread") { store.openThreadID = store.threads.first?.id }
+        }
         .preferredColorScheme(.dark)
+    }
+
+    // `.sheet(item:)` needs an Identifiable value; it keeps the detail on screen while it slides away.
+    private struct OpenThread: Identifiable { let id: UUID }
+
+    private var openThread: Binding<OpenThread?> {
+        Binding(
+            get: { store.openThreadID.map(OpenThread.init) },
+            set: { store.openThreadID = $0?.id }
+        )
+    }
+
+    // Bridges Home's old `report` flag to the store until Home opens threads itself: true opens
+    // the newest thread.
+    private var openNewestThread: Binding<Bool> {
+        Binding(
+            get: { store.openThreadID != nil },
+            set: { store.openThreadID = $0 ? store.threads.first?.id : nil }
+        )
     }
 }
