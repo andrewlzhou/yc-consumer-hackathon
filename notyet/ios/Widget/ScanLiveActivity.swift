@@ -6,12 +6,13 @@ import AppIntents
 import SwiftUI
 import WidgetKit
 
-// Same tokens as the app's Theme (the widget can't see app files).
+// Same tokens as the app's Palette and Theme (the widget can't see app files). Worldscape colours.
 private let buyGreen = Color(red: 0x3D / 255, green: 0xDC / 255, blue: 0x97 / 255)
 private let waitAmber = Color(red: 0xFF / 255, green: 0xB5 / 255, blue: 0x47 / 255)
-private let fakeRed = Color(red: 0xFF / 255, green: 0x5C / 255, blue: 0x5C / 255)
-private let radarCyan = Color(red: 0x4A / 255, green: 0x86 / 255, blue: 0xBD / 255)   // Prussian, light
-private let prussian = Color(red: 0x00 / 255, green: 0x31 / 255, blue: 0x53 / 255)
+private let fakeRed = Color(red: 0xFF / 255, green: 0x5C / 255, blue: 0x7A / 255)      // Palette.danger
+private let glow = Color(red: 0x43 / 255, green: 0x6F / 255, blue: 0xFF / 255)         // Palette.glow
+private let electric = Color(red: 0x00 / 255, green: 0x5E / 255, blue: 0xFF / 255)     // Palette.electric
+private let canvas = Color(red: 0x01 / 255, green: 0x01 / 255, blue: 0x01 / 255)       // Palette.canvas
 
 private extension ScanAttributes.ContentState {
     var isWorking: Bool { stage == "working" }
@@ -27,7 +28,7 @@ private extension ScanAttributes.ContentState {
     }
 
     var color: Color {
-        if isWorking { return radarCyan }
+        if isWorking { return glow }
         switch verdict {
         case "BUY_NOW": return buyGreen
         case "WAIT": return waitAmber
@@ -62,7 +63,7 @@ private struct RetailerPill: View {
             .font(.caption2.bold())
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
-            .background(prussian)
+            .background(electric)
             .foregroundStyle(.white)
     }
 }
@@ -73,7 +74,7 @@ private struct CancelButton: View {
             Image(systemName: "xmark")
                 .font(.caption.bold())
                 .frame(width: 28, height: 28)
-                .background(prussian)
+                .background(electric)
         }
         .buttonStyle(.plain)
         .foregroundStyle(.white)
@@ -117,7 +118,7 @@ struct ScanLiveActivity: Widget {
                 if s.isWorking { WorkingBar(state: s, startedAt: context.attributes.startedAt) }
             }
             .padding(16)
-            .activityBackgroundTint(Color.black)
+            .activityBackgroundTint(canvas)
             .activitySystemActionForegroundColor(.white)
             .widgetURL(s.link)
         } dynamicIsland: { context in

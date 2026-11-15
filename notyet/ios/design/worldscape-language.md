@@ -271,3 +271,52 @@ keyboard hints ("⌘F", "Esc"); the screen bar summoned over other apps and its 
   Decide whether to scale up ~2pt and whether to use `.custom(_:size:relativeTo:)`.
 - The look depends on blue light behind glass. Decide where the gradient lives in Not Yet
   (verdict screen background, input bar, or both) before building cards.
+
+## 5. Component catalog (Not Yet iOS, `notyet/ios/Views/DesignSystem/`)
+
+Built from sections 2-4. Not compiled for iOS yet: typechecked on the macOS SDK with the UIKit
+parts stubbed. "iOS:" marks where it differs from the Worldscape source.
+
+**Tokens**
+- `Palette`: `canvas`, `electric`, `iris`, `ultramarine`, `glow`, `textPrimary/Secondary/Tertiary`,
+  `stroke`, `strokeHover` (iOS: the pressed outline), `divider`, `fillBar/Card/RowPressed/Chip/ChipPressed`,
+  `fillBubbleOwn/Reply`, `link`, `linkPressed`, `quietBlue`, `danger`. `Color(hex: 0x005EFF, opacity: 1)`.
+- `TextStyle` + `.textStyle(_:)`: `Text("Buy").textStyle(.title)`. Roles as in section 2. iOS: sizes +1-2pt
+  (body/button 16, item 15, label/link 14, caption/smallButton 13, section/footnote 12, cardTitle 16, title 28),
+  scaled with Dynamic Type. `Font.hiragino(.w6, size: 40, relativeTo: .largeTitle)` falls back W4→W3,
+  W5→W6, then to the system font, checked on the device. Give multi-line text `.lineSpacing(2...8)`.
+- `Spacing`, `Radius`, `ControlHeight` (`minTouch` 44, `mainKey` 50, `smallKey` 36, `chip` 32, …),
+  `Shadows` + `.dropShadow(Shadows.listCard)`, `Motion` (`.animation(Motion.rise, value: x)`),
+  `.transition(.rise)` (scale 0.92, y+46, fade in; fade out).
+
+**Components**
+- `KeyButtonStyle(tone: .primary | .secondary, height: CGFloat? = nil, isWorking: Bool = false)`:
+  `Button("Track") { … }.buttonStyle(KeyButtonStyle())`. Primary is full width, 50pt; secondary hugs its
+  label, 36pt, with a 44pt hit area. iOS: light haptic on press, no hover glow.
+- `QuietButtonStyle(height: 44, isWorking: false)`: full-width outlined key for the second option.
+- `GlassSurface(cornerRadius: 20, isLit: false)` or `.glassSurface(cornerRadius:isLit:)`:
+  `VStack { … }.padding(16).glassSurface()`. Four layers over a blurred blue shadow; solid under
+  Reduce Transparency. Only over `BackdropGradient` or content, never over the plain canvas.
+- `GlassCardButtonStyle(cornerRadius: 20)`: a tappable glass card; lights and dips to 0.975 on press.
+- `BackdropGradient(style: .mesh | .linear)`: `ZStack { BackdropGradient(); content }`. Still mesh
+  (iOS 18) or plain gradient; no grain or drift. Ignores safe areas. Judge by eye.
+- `OutlinedField(_ title: String? = nil, prompt: String, text: Binding<String>, isSecure: Bool = false)`:
+  `OutlinedField("Name", prompt: "Your name", text: $name)`. 44pt, 1pt outline, glow caret.
+- `FieldBorder(isPressed: false, isHighlighted: false, cornerRadius: 10)`: the outline alone.
+- `Bubble(isPerson: Bool = false, fontSize: CGFloat = 16) { content }`: flat chat bubble; one line reads as a pill.
+- `FlatCard(cornerRadius: 14) { rows }`: list/settings card; separate rows with `Hairline()`.
+- `Chip(title:symbol:selected:action:)`: `Chip(title: "Buy", selected: f == .buy) { f = .buy }`.
+  32pt capsule, 44pt hit area. iOS addition: selected = white 22% fill, primary text, brighter outline.
+- `HoppingDots(color: .white)`: three hopping dots while waiting.
+- `.shimmering(_ isOn: Bool = true)`: `Text(step).textStyle(.caption).shimmering()`; off under Reduce Motion.
+- `StreamingText(_ text: String, isStreaming: Bool)`: text with an inline glow caret while streaming.
+  `StreamingCaret.image` is the caret alone, for use inside `Text("\(…)\(StreamingCaret.image)")`.
+- `WorkingIndicator(size: 15, color: .white)`: the arc spinner keys use while working.
+- `InsetShadow(shape:color:radius:y:)`: inner shadow that is safe to fade between states.
+
+**Old names kept** (`Views/Theme.swift`): `Theme.paper/ink/slate/hairline/prussian/prussianLight` map to
+canvas / textPrimary / textSecondary / stroke / electric / glow. `Theme.buy` and `Theme.wait` keep their
+green and amber (Worldscape has no verdict colours); `Theme.fake` is `danger`. `Theme.display(_:)` is
+Hiragino W6. `SharpButtonStyle()` is the primary key, `SharpButtonStyle(filled: false)` the quiet key,
+both 50pt. `RetailerBadge` is a capsule; `Hairline()` is the 6% divider. The widget keeps its own copy
+of the colours in `Widget/ScanLiveActivity.swift`.
