@@ -9,4 +9,5 @@
 - Checks: `npm run typecheck` passed; `npm test` 1 passed; schema deployed to a local anonymous Convex backend; check_docs passed.
 - Changed: retrieval functions in `convex/data/` (catalog match, bounded history, exact stats, promo patterns, calendar, digests, recordObservation) and a reproducible seed (`npm run seed`).
 - Checks: `npm test` 22 passed, including per-scenario numbers for every seeded product; seed loaded on the local backend (2728 points).
-- Next: source recommendation doc, seed notes, eval set, vector search.
+- Changed: `eval/cases.json` (5 seeded + 5 adversarial cases), SerpApi Google Shopping adapter (fixture-tested), `provider` on observations; `npm run seed` is now an action, one mutation per product, keeping product ids stable.
+- Next: real-data ingestion (Keepa, SerpApi insights, Best Buy live), hybrid vector search, unknown-product ingest, docs.

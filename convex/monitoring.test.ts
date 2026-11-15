@@ -102,7 +102,7 @@ test("a simulated price outside the demo helper never sends", async () => {
 
 test("end to end on seeded data: seed history never sends, a real scan drop does", async () => {
   const t = convexTest(schema, modules);
-  const { products } = await t.mutation(internal.seed.run.all, {});
+  const { products } = await t.action(internal.seed.run.all, {});
   const productId = Object.values(products)[0] as Id<"products">;
   await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, prefs: defaultPrefs(), createdAt: Date.now() }));
   const log = () => t.run((ctx) => ctx.db.query("notificationLog").collect());
@@ -127,7 +127,7 @@ test("end to end on seeded data: seed history never sends, a real scan drop does
 
 test("demo helper: simulated drop on a seeded product sends a labeled push once, then the cooldown holds", async () => {
   const t = convexTest(schema, modules);
-  const { products } = await t.mutation(internal.seed.run.all, {});
+  const { products } = await t.action(internal.seed.run.all, {});
   const productId = Object.values(products)[0] as Id<"products">;
   await t.run((ctx) => ctx.db.insert("watchItems", { deviceId: DEVICE, productId, prefs: defaultPrefs(), createdAt: Date.now() }));
   const state = await t.query(internal.monitoring.ports.readState, { productId, now: Date.now() });

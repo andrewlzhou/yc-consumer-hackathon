@@ -12,6 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "isolatedModules": true,
+    "resolveJsonModule": true,
     "noEmit": true
   },
   "include": ["./**/*"],

@@ -7,6 +7,7 @@ export type PricePoint = {
   inStock: boolean;
   observedAt: number;
   source: string;
+  provider?: string;
 };
 
 export type PricedPoint = PricePoint & { price: number };

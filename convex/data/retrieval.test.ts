@@ -12,7 +12,7 @@ let ids: Record<string, Id<"products">>;
 
 beforeEach(async () => {
   t = convexTest(schema, modules);
-  const seeded = await t.mutation(internal.seed.run.all, {});
+  const seeded = await t.action(internal.seed.run.all, {});
   ids = seeded.products as Record<string, Id<"products">>;
 });
 
@@ -22,10 +22,14 @@ const promo = (key: string, extra: Record<string, unknown> = {}) =>
   t.query(internal.data.prices.findPromoPatterns, { productId: ids[key], now: SEED_NOW, ...extra });
 
 describe("seeded scenarios", () => {
-  test("seed is reproducible", async () => {
-    const again = await t.mutation(internal.seed.run.all, {});
+  test("reseeding is reproducible, keeps product ids, and leaves real scans alone", async () => {
+    await t.mutation(internal.data.prices.recordObservation, { productId: ids["airpods-pro-3"], retailer: "target", price: 179.99, observedAt: SEED_NOW, source: "scan" });
+    const again = await t.action(internal.seed.run.all, {});
     expect(again.observations).toBe(2728);
-    expect(Object.keys(again.products)).toHaveLength(8);
+    expect(again.deletedSeedObservations).toBe(2728);
+    expect(again.products).toEqual(ids);
+    const h = await t.query(internal.data.prices.getPriceHistory, { productId: ids["airpods-pro-3"], from: SEED_NOW, to: SEED_NOW });
+    expect(h.points.filter((p) => p.source === "scan")).toHaveLength(1);
   });
 
   test("BUY_NOW: AirPods Pro 3 at $179.99 matches the low and the $249 was-price is real", async () => {

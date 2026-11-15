@@ -1,0 +1,305 @@
+{
+  "about": "Evaluation set for the shopping agent. Each case is what the phone would send (extract) and what a sensible shopper should be told (expect). Judge on whether the verdict is in acceptableVerdicts and the reason is grounded in tool results, not exact wording. All referenced products are seeded SAMPLE DATA (source seed); evaluate with now = 2026-11-15T18:00:00Z (SEED_NOW) after `npm run seed`. Numbers in facts come from the seeded history and are checked by convex/data/retrieval.test.ts.",
+  "now": "2026-11-15T18:00:00Z",
+  "fields": {
+    "match": "familyKey (and variant) the agent should identify, or null when no catalog product fits",
+    "verdict": "the best verdict",
+    "acceptableVerdicts": "verdicts that are defensible; anything else is a failure",
+    "facts": "claims a good reason or report should rest on (each traceable to a tool result)",
+    "mustNot": "things the answer must not do",
+    "maxConfidence": "upper bound on confidence when evidence is thin"
+  },
+  "cases": [
+    {
+      "id": "airpods-genuine-low",
+      "kind": "seeded",
+      "situation": "BUY_NOW: at the historical low with a genuine discount",
+      "extract": {
+        "retailer": "Walmart",
+        "title": "Apple AirPods Pro 3 Wireless Earbuds",
+        "currentPrice": 179.99,
+        "originalPrice": 249
+      },
+      "expect": {
+        "match": {
+          "familyKey": "apple-airpods-pro-3"
+        },
+        "verdict": "BUY_NOW",
+        "acceptableVerdicts": [
+          "BUY_NOW"
+        ],
+        "facts": [
+          "$179.99 is within $1 of the 12-month low of $179 (June 2026 sales)",
+          "the $249 was-price is real: it is the typical price and was charged most of the year",
+          "last Black Friday the price only fell to about $219, so waiting 12 days is unlikely to beat today"
+        ],
+        "mustNot": [
+          "call the $249 was-price inflated",
+          "recommend waiting for Black Friday as the main advice"
+        ]
+      }
+    },
+    {
+      "id": "ipad-wait-for-black-friday",
+      "kind": "seeded",
+      "situation": "WAIT: full price now, repeating sale cycle, Black Friday in 12 days",
+      "extract": {
+        "retailer": "Target",
+        "title": "Apple iPad (A16) 11-inch Wi-Fi 128GB (2025, 11th generation)",
+        "currentPrice": 449
+      },
+      "expect": {
+        "match": {
+          "familyKey": "apple-ipad-11-a16-wifi",
+          "variant": {
+            "storage": "128GB"
+          }
+        },
+        "verdict": "WAIT",
+        "acceptableVerdicts": [
+          "WAIT"
+        ],
+        "facts": [
+          "$449 is the full regular price (typical over the last 90 days is $449)",
+          "every big sale in the past year cut it: Black Friday 2025 ($274-$279.99), Presidents Day, Memorial Day, June ($279) and Target's October event ($399)",
+          "Black Friday 2026 is 12 days away (Nov 27)",
+          "the regular price rose from $349 to $449 in late June 2026, so last year's $279 is not the right target; a forecast near $379-$399 is"
+        ],
+        "mustNot": [
+          "promise a specific price",
+          "use the pre-June $349-era prices as if they still applied without saying so"
+        ]
+      }
+    },
+    {
+      "id": "ninja-pre-sale-hike",
+      "kind": "seeded",
+      "situation": "Misleading discount: price raised three weeks before a '25% off' sale",
+      "extract": {
+        "retailer": "Target",
+        "title": "Ninja AF101 Air Fryer with 4-Quart Ceramic Coated Basket",
+        "currentPrice": 74.99,
+        "originalPrice": 99.99
+      },
+      "expect": {
+        "match": {
+          "familyKey": "ninja-af101"
+        },
+        "verdict": "WAIT",
+        "acceptableVerdicts": [
+          "WAIT"
+        ],
+        "facts": [
+          "Target sat at $79.99 for months and raised it to $99.99 on Oct 20, three weeks before the sale",
+          "the real saving versus the typical $79.99 is about 6%, not the claimed 25%",
+          "last Black Friday it was $59.99 at Target and Walmart"
+        ],
+        "mustNot": [
+          "say the item is 25% off without qualification",
+          "call it BUY_NOW"
+        ]
+      }
+    },
+    {
+      "id": "bose-cheaper-sony",
+      "kind": "seeded",
+      "situation": "CONSIDER_ALTERNATIVE: a comparable competitor is meaningfully cheaper",
+      "extract": {
+        "retailer": "Best Buy",
+        "title": "Bose QuietComfort Ultra Headphones (2nd Gen) Wireless Noise Cancelling",
+        "currentPrice": 399,
+        "originalPrice": 449
+      },
+      "expect": {
+        "match": {
+          "familyKey": "bose-qc-ultra-headphones-2"
+        },
+        "verdict": "CONSIDER_ALTERNATIVE",
+        "acceptableVerdicts": [
+          "CONSIDER_ALTERNATIVE",
+          "WAIT"
+        ],
+        "facts": [
+          "the Sony WH-1000XM5 is $249.99 at Best Buy, $149 less, with noise cancelling and the same 30-hour battery",
+          "$399 is a real discount from the typical $449 but matches past sales, not a new low ($379 at Walmart in June)",
+          "the Sony WH-1000XM6 is $379.99, a newer alternative"
+        ],
+        "mustNot": [
+          "invent competitor specs not in the catalog",
+          "name a competitor product that is not in the catalog or a retrieved source"
+        ]
+      }
+    },
+    {
+      "id": "ember-thin-history",
+      "kind": "seeded",
+      "situation": "INVESTIGATE: very little history",
+      "extract": {
+        "retailer": "Target",
+        "title": "Ember Mug 2 Temperature Control Smart Mug 10 oz",
+        "currentPrice": 89.99,
+        "originalPrice": 129.95
+      },
+      "expect": {
+        "match": {
+          "familyKey": "ember-mug-2",
+          "variant": {
+            "capacity": "10oz"
+          }
+        },
+        "verdict": "INVESTIGATE",
+        "acceptableVerdicts": [
+          "INVESTIGATE"
+        ],
+        "maxConfidence": 0.5,
+        "facts": [
+          "only 3 observations over 13 days",
+          "$89.99 is below every observed price ($99.99-$129.95), but 3 points cannot show what is typical"
+        ],
+        "mustNot": [
+          "claim a historical low or a typical price with confidence"
+        ]
+      }
+    },
+    {
+      "id": "adversarial-inflated-was",
+      "kind": "adversarial",
+      "situation": "Was-price that was never charged",
+      "extract": {
+        "retailer": "Target",
+        "title": "Apple AirPods Pro 3",
+        "currentPrice": 229.99,
+        "originalPrice": 299.99
+      },
+      "expect": {
+        "match": {
+          "familyKey": "apple-airpods-pro-3"
+        },
+        "verdict": "WAIT",
+        "acceptableVerdicts": [
+          "WAIT"
+        ],
+        "facts": [
+          "$299.99 was never charged in the last 12 months (the highest seen is $249)",
+          "the real saving versus the typical $249 is about 8%, not the claimed 23%",
+          "Target and Walmart already have it at $179.99 in the seeded data"
+        ],
+        "mustNot": [
+          "repeat the 23% discount as real"
+        ]
+      }
+    },
+    {
+      "id": "adversarial-storage-variant",
+      "kind": "adversarial",
+      "situation": "Near-duplicate: same iPad family, 256GB instead of 128GB",
+      "extract": {
+        "retailer": "Best Buy",
+        "title": "Apple - 11-inch iPad A16 chip with Wi-Fi - 256GB - Silver",
+        "currentPrice": 499.99,
+        "originalPrice": 549
+      },
+      "expect": {
+        "match": {
+          "familyKey": "apple-ipad-11-a16-wifi",
+          "variant": {
+            "storage": "256GB"
+          }
+        },
+        "verdict": "WAIT",
+        "acceptableVerdicts": [
+          "WAIT",
+          "BUY_NOW"
+        ],
+        "facts": [
+          "this is the 256GB model; 128GB prices must not be used",
+          "$499.99 equals the October sale price; last Black Friday the 256GB fell to $379-$379.99 (before the June price increase)"
+        ],
+        "mustNot": [
+          "match the 128GB product",
+          "quote 128GB prices"
+        ]
+      }
+    },
+    {
+      "id": "adversarial-ocr-mangled",
+      "kind": "adversarial",
+      "situation": "OCR-mangled title",
+      "extract": {
+        "retailer": "walmart.com",
+        "title": "Ninja AFl0l Air Fryer w1th 4-Qt Cerarnic Basket",
+        "currentPrice": 75,
+        "originalPrice": 99.99
+      },
+      "expect": {
+        "match": {
+          "familyKey": "ninja-af101"
+        },
+        "verdict": "WAIT",
+        "acceptableVerdicts": [
+          "WAIT",
+          "INVESTIGATE"
+        ],
+        "facts": [
+          "Walmart's typical price is $75, so the claimed 25% saving off $99.99 is not real",
+          "last Black Friday it was $59.99",
+          "Walmart shows it out of stock since Nov 13 in the seeded data"
+        ],
+        "mustNot": [
+          "fail to identify the product",
+          "treat $99.99 as a real former price"
+        ]
+      }
+    },
+    {
+      "id": "adversarial-unknown-product",
+      "kind": "adversarial",
+      "situation": "Product not in the catalog",
+      "extract": {
+        "retailer": "Target",
+        "title": "Stanley Quencher H2.0 FlowState Tumbler 40 oz",
+        "currentPrice": 45
+      },
+      "expect": {
+        "match": null,
+        "verdict": "INVESTIGATE",
+        "acceptableVerdicts": [
+          "INVESTIGATE"
+        ],
+        "maxConfidence": 0.4,
+        "facts": [
+          "no catalog match and no price history"
+        ],
+        "mustNot": [
+          "match it to an unrelated catalog product",
+          "invent a price history"
+        ]
+      }
+    },
+    {
+      "id": "adversarial-missing-price",
+      "kind": "adversarial",
+      "situation": "OCR found the title but no price",
+      "extract": {
+        "retailer": "Target",
+        "title": "Apple AirPods Pro 3"
+      },
+      "expect": {
+        "match": {
+          "familyKey": "apple-airpods-pro-3"
+        },
+        "verdict": "INVESTIGATE",
+        "acceptableVerdicts": [
+          "INVESTIGATE",
+          "BUY_NOW"
+        ],
+        "facts": [
+          "the latest stored Target price is $179.99 (seeded), but the scan itself had no price"
+        ],
+        "mustNot": [
+          "state the shopper's current price as fact without saying it came from stored data"
+        ]
+      }
+    }
+  ]
+}

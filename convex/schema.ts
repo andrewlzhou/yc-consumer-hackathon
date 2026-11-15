@@ -26,7 +26,12 @@ export default defineSchema({
     aliases: v.array(v.string()),
     searchText: v.string(),
     identifiers: v.optional(
-      v.object({ gtin: v.optional(v.string()), asin: v.optional(v.string()) }),
+      v.object({
+        gtin: v.optional(v.string()),
+        asin: v.optional(v.string()),
+        googleProductId: v.optional(v.string()),
+        bestBuySku: v.optional(v.string()),
+      }),
     ),
     msrp: v.optional(v.number()),
     isSample: v.boolean(),
@@ -55,6 +60,7 @@ export default defineSchema({
     inStock: v.boolean(),
     observedAt: v.number(),
     source: observationSourceValidator,
+    provider: v.optional(v.string()),
     url: v.optional(v.string()),
   })
     .index("by_product_and_observedAt", ["productId", "observedAt"])

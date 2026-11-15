@@ -14,6 +14,7 @@ import type * as data_catalog from "../data/catalog.js";
 import type * as data_digests from "../data/digests.js";
 import type * as data_prices from "../data/prices.js";
 import type * as data_retailers from "../data/retailers.js";
+import type * as data_sources_serpapi from "../data/sources/serpapi.js";
 import type * as data_stats from "../data/stats.js";
 import type * as data_text from "../data/text.js";
 import type * as http from "../http.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   "data/digests": typeof data_digests;
   "data/prices": typeof data_prices;
   "data/retailers": typeof data_retailers;
+  "data/sources/serpapi": typeof data_sources_serpapi;
   "data/stats": typeof data_stats;
   "data/text": typeof data_text;
   http: typeof http;

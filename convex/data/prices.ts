@@ -46,7 +46,8 @@ function windowBounds(now: number, windowDays: number | undefined) {
   return { from: now - days * DAY, to: now, days };
 }
 
-const toPoint = (r: { retailerSlug: string; price?: number; originalPrice?: number; inStock: boolean; observedAt: number; source: string }): PricePoint => ({
+const toPoint = (r: { retailerSlug: string; price?: number; originalPrice?: number; inStock: boolean; observedAt: number; source: string; provider?: string }): PricePoint => ({
+  provider: r.provider,
   retailerSlug: r.retailerSlug,
   price: r.price,
   originalPrice: r.originalPrice,
@@ -192,6 +193,7 @@ export const recordObservation = internalMutation({
     inStock: v.optional(v.boolean()),
     observedAt: v.optional(v.number()),
     source: observationSourceValidator,
+    provider: v.optional(v.string()),
     url: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -235,6 +237,7 @@ export const recordObservation = internalMutation({
       inStock,
       observedAt,
       source: args.source,
+      provider: args.provider,
       url: args.url,
     });
     return { status: "recorded" as const, observationId, retailerSlug };
