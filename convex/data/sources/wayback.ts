@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internal } from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
-import { internalAction, internalQuery } from "../../_generated/server";
+import { internalAction, internalQuery, type ActionCtx } from "../../_generated/server";
 import { readProductPage } from "./pages";
 
 // Real price history from Internet Archive snapshots of retailer product pages. Each parsed snapshot is one
@@ -71,76 +71,79 @@ type IngestResult = {
   failures: string[];
 };
 
+const ingestArgs = {
+  productId: v.id("products"),
+  retailer: v.string(),
+  url: v.string(),
+  from: v.optional(v.string()),
+  to: v.optional(v.string()),
+  maxSnapshots: v.optional(v.number()),
+  pauseMs: v.optional(v.number()),
+};
+
+type IngestArgs = { productId: Id<"products">; retailer: string; url: string; from?: string; to?: string; maxSnapshots?: number; pauseMs?: number };
+
 // Backfill one product's history at one retailer from archived copies of its product page.
-export const ingest = internalAction({
-  args: {
-    productId: v.id("products"),
-    retailer: v.string(),
-    url: v.string(),
-    from: v.optional(v.string()),
-    to: v.optional(v.string()),
-    maxSnapshots: v.optional(v.number()),
-    pauseMs: v.optional(v.number()),
-  },
-  handler: async (ctx, args): Promise<IngestResult> => {
-    const cdx = new URL(CDX);
-    const params: Record<string, string> = {
-      url: args.url.replace(/^https?:\/\//, ""),
-      matchType: "exact",
-      output: "json",
-      from: args.from ?? "20251101",
-      filter: "statuscode:200",
-      collapse: "timestamp:8",
-      limit: "2000",
-    };
-    if (args.to) params.to = args.to;
-    for (const [k, val] of Object.entries(params)) cdx.searchParams.set(k, val);
-    const list = await get(cdx.toString());
-    if (!list.ok) return { snapshots: 0, fetched: 0, parsed: 0, blocked: 0, recorded: 0, skippedAlreadyIngested: 0, failures: [`cdx HTTP ${list.status}`] };
-    const all = parseCdx(JSON.parse(list.text || "[]"));
-    const done = new Set<string>(await ctx.runQuery(internal.data.sources.wayback.ingestedDays, { productId: args.productId, retailerSlug: args.retailer }));
-    const todo = spread(all.filter((s) => !done.has(s.timestamp.slice(0, 8))), Math.min(args.maxSnapshots ?? 40, 60));
-    const points: { price?: number; originalPrice?: number; inStock: boolean; observedAt: number; url: string }[] = [];
-    const failures: string[] = [];
-    let blocked = 0;
-    for (const s of todo) {
-      await sleep(Math.max(args.pauseMs ?? PAUSE_MS, 0));
-      try {
-        const page = await get(snapshotUrl(s));
-        if (!page.ok) {
-          failures.push(`${s.timestamp} HTTP ${page.status}`);
-          continue;
-        }
-        const read = readProductPage(args.retailer, page.text);
-        if (read.blocked) blocked++;
-        if (read.price !== null) {
-          points.push({ price: read.price, originalPrice: read.originalPrice ?? undefined, inStock: true, observedAt: waybackTime(s.timestamp), url: snapshotUrl(s) });
-        } else if (read.inStock === false) {
-          points.push({ inStock: false, observedAt: waybackTime(s.timestamp), url: snapshotUrl(s) });
-        }
-      } catch (e) {
-        failures.push(`${s.timestamp} ${(e as Error).message.slice(0, 60)}`);
+export async function ingestWayback(ctx: ActionCtx, args: IngestArgs): Promise<IngestResult> {
+  const cdx = new URL(CDX);
+  const params: Record<string, string> = {
+    url: args.url.replace(/^https?:\/\//, ""),
+    matchType: "exact",
+    output: "json",
+    from: args.from ?? "20251101",
+    filter: "statuscode:200",
+    collapse: "timestamp:8",
+    limit: "2000",
+  };
+  if (args.to) params.to = args.to;
+  for (const [k, val] of Object.entries(params)) cdx.searchParams.set(k, val);
+  const list = await get(cdx.toString());
+  if (!list.ok) return { snapshots: 0, fetched: 0, parsed: 0, blocked: 0, recorded: 0, skippedAlreadyIngested: 0, failures: [`cdx HTTP ${list.status}`] };
+  const all = parseCdx(JSON.parse(list.text || "[]"));
+  const done = new Set<string>(await ctx.runQuery(internal.data.sources.wayback.ingestedDays, { productId: args.productId, retailerSlug: args.retailer }));
+  const todo = spread(all.filter((s) => !done.has(s.timestamp.slice(0, 8))), Math.min(args.maxSnapshots ?? 40, 60));
+  const points: { price?: number; originalPrice?: number; inStock: boolean; observedAt: number; url: string }[] = [];
+  const failures: string[] = [];
+  let blocked = 0;
+  for (const s of todo) {
+    await sleep(Math.max(args.pauseMs ?? PAUSE_MS, 0));
+    try {
+      const page = await get(snapshotUrl(s));
+      if (!page.ok) {
+        failures.push(`${s.timestamp} HTTP ${page.status}`);
+        continue;
       }
+      const read = readProductPage(args.retailer, page.text);
+      if (read.blocked) blocked++;
+      if (read.price !== null) {
+        points.push({ price: read.price, originalPrice: read.originalPrice ?? undefined, inStock: true, observedAt: waybackTime(s.timestamp), url: snapshotUrl(s) });
+      } else if (read.inStock === false) {
+        points.push({ inStock: false, observedAt: waybackTime(s.timestamp), url: snapshotUrl(s) });
+      }
+    } catch (e) {
+      failures.push(`${s.timestamp} ${(e as Error).message.slice(0, 60)}`);
     }
-    let recorded = 0;
-    for (let i = 0; i < points.length; i += 500) {
-      const r: { recorded: number } = await ctx.runMutation(internal.data.prices.recordBatch, {
-        productId: args.productId as Id<"products">,
-        retailer: args.retailer,
-        source: "scrape",
-        provider: WAYBACK_PROVIDER,
-        points: points.slice(i, i + 500),
-      });
-      recorded += r.recorded;
-    }
-    return {
-      snapshots: all.length,
-      fetched: todo.length - failures.length,
-      parsed: points.filter((p) => p.price !== undefined).length,
-      blocked,
-      recorded,
-      skippedAlreadyIngested: all.length - all.filter((s) => !done.has(s.timestamp.slice(0, 8))).length,
-      failures: failures.slice(0, 10),
-    };
-  },
-});
+  }
+  let recorded = 0;
+  for (let i = 0; i < points.length; i += 500) {
+    const r: { recorded: number } = await ctx.runMutation(internal.data.prices.recordBatch, {
+      productId: args.productId,
+      retailer: args.retailer,
+      source: "scrape",
+      provider: WAYBACK_PROVIDER,
+      points: points.slice(i, i + 500),
+    });
+    recorded += r.recorded;
+  }
+  return {
+    snapshots: all.length,
+    fetched: todo.length - failures.length,
+    parsed: points.filter((p) => p.price !== undefined).length,
+    blocked,
+    recorded,
+    skippedAlreadyIngested: all.length - all.filter((s) => !done.has(s.timestamp.slice(0, 8))).length,
+    failures: failures.slice(0, 10),
+  };
+}
+
+export const ingest = internalAction({ args: ingestArgs, handler: ingestWayback });

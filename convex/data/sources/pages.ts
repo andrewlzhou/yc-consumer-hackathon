@@ -17,6 +17,8 @@ const money = (s: string | undefined) => {
 
 const BLOCKED = /captcha|robot check|px-captcha|access to this page has been denied|are you a human|verify you are human/i;
 const OUT_OF_STOCK = /currently unavailable|out of stock|sold out|"availabilityStatus":"OUT_OF_STOCK"|"availability_status":"OUT_OF_STOCK"/i;
+// Amazon pages carry "Currently unavailable" in templates and side widgets, so only the availability block counts.
+const AMAZON_OUT_OF_STOCK = /id="availability"[\s\S]{0,600}?currently unavailable/i;
 
 function firstMatch(html: string, patterns: [string, RegExp][]): { value: number; pattern: string } | null {
   for (const [name, re] of patterns) {
@@ -27,6 +29,8 @@ function firstMatch(html: string, patterns: [string, RegExp][]): { value: number
   return null;
 }
 
+// Archived Amazon pages (Wayback) almost always show "No featured offers available": the crawler gets no buy box,
+// so they yield no price. Prices in carousels and "New & Used from" boxes are other sellers and are never read.
 function amazon(html: string) {
   const core = html.match(/id="(?:corePrice_feature_div|corePriceDisplay_desktop_feature_div|corePrice_desktop|apex_desktop)"([\s\S]{0,8000})/)?.[1] ?? "";
   const price = firstMatch(core, [
@@ -99,7 +103,8 @@ export function readProductPage(retailerSlug: string, html: string): PageRead {
   const found = parser ? parser(html) : { price: null, was: null };
   const price = found.price ?? ldJson(html);
   const was = found.was && price && found.was.value > price.value ? found.was : null;
-  const inStock = price ? true : OUT_OF_STOCK.test(html) ? false : null;
+  const outOfStock = retailerSlug === "amazon" ? AMAZON_OUT_OF_STOCK : OUT_OF_STOCK;
+  const inStock = price ? true : outOfStock.test(html) ? false : null;
   return {
     price: price?.value ?? null,
     originalPrice: was?.value ?? null,

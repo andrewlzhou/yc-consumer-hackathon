@@ -1,0 +1,703 @@
+{
+ "_note": "Real google_product response for Sony WH-1000XM5 (product_id 17755277695162489284), fetched 2026-11-15, trimmed to stores and price_insights.",
+ "product_results": {
+  "title": "Sony WH-1000XM5 Wireless Noise Canceling Headphones",
+  "brand": "Sony",
+  "stores": [
+   {
+    "name": "Best Buy",
+    "title": "Sony - WH-1000XM5 Wireless Noise Cancelling Over-the-Ear Headphones - Black",
+    "link": "/goto?url=CAES2wEBxCJF17Nf8J4c4it2tZ4Bjt4NkLBQM-V6vYUsiH3X79XDYGrb3EuqGXZy1sbOkjbdx4aHeNTnUMwipRboV1ZvkYjxcw0joWN1ROsmhgpm33hiR255u0gUuyy2QuCdQbmt_qn3MBhSgan09nFP5HiK_rMr8JoqOBM79t_3KNPQS2h09hRzrvQDzbGAv7LttXoj0MihengoRcLqa71Owpdf7VHaHQh4PZa6ypbr3gYNKnvBhxxe-OrOnLw8zGlgiHeYcxBa-8QXVY-UkDQqPZD7sCQW1sY8m_lfV_8",
+    "extracted_price": 198.0,
+    "extracted_original_price": 398.0
+   },
+   {
+    "name": "Swiftronics USA",
+    "title": "Sony WH-1000XM5 - Wireless Noise Cancelling Headphones Black",
+    "link": "/goto?url=CAES5AIBxCJF14z9-SMomNFbpnj9x-go_6k1w8EJMEw6tUaYLm0qqFFnECf2pnTNhXsKdkz0_yWHzhPSkrz5kWgFGnGYuszvjHQeHgQeULgrM2A1iXltaHcoeQoUDpVp8HkwsyI8mf3DB9BWZjSULA4hRbqOfPn63NyUOypeHEi5CybTlbZom4gFyAArorx5izB6PqLH7Tkq5mQGpkzBC-7oavZpYdBhFMORBHpab2ugvBXhVGIiVLk3A6BF1BPWmyWVOlTZb384447QARbcCI_FQqvPeERzrU84UbRiJochvWoNPWYA_BcNhJHxegPf9rqmRssuOizudZp8UQ1sfApb9cmksywg9tHWfkKxiKjTU4dXhA-oY-RdOZ0gmJds13BHdaRvaW-pzjm_IMaMHwPs4fnV15_1QpslFYZsG1_ulNrTPGcJuMysDTLjvUPM8loD-8XbJozHTP2ds7-SAhcPXq5QC7OI0Q",
+    "extracted_price": 209.99,
+    "extracted_original_price": 399.99
+   },
+   {
+    "name": "Walmart - TheRightOne",
+    "title": "Sony Wh-1000xm5 The Best Wireless Noise Canceling Headphones, Black, Size: 12x8x4",
+    "link": "/goto?url=CAES5wEBxCJF11bQuNT9-IZBKNP-A2OIXLFh1foKKCHm1MqpHPn3u05rlWmx2ZDnW2fNOVXWhjA078JKQA6R3zJwr8-7g0Suv2hlY6mYOT4TxlhCE5a9lRxw2BMphgN2kyk2L1NrfiXaEvw2Y2i6pI-AWBNixD2I5Qo6306Feb1iJrOhW5mxW_k9gjJm__cuUC22vomyuLyqonnKUF-u6tmUn8TXGXvvu4GU8fJyd5Fa6y_F1u9X3jrcWFb6Z4v2a8P3Mhr0XUPZM2H1hyhKeCDqecBpcDWE-6wNkzqw_yKb3rTIdrXi-VTTO6s",
+    "extracted_price": 249.99,
+    "extracted_original_price": 288.0
+   },
+   {
+    "name": "Target",
+    "title": "Sony WH-1000XM5 Bluetooth Wireless Noise-Canceling Headphones - Black",
+    "link": "/goto?url=CAESnQIBxCJF1yhZEn6TD2kSB8HUFMbqB_AR1rFMjxTLsyUvMuW3oeqs-c324JimItMh27_I-oMmdnBXaPr-zvQYwL0zDTLeMIO_Kz8_eHsV__8tVVlfMaJWRdWY7FsSCqq2gZ4_FTs962r9BldOcsTUo95GHrtkY8_6fqRqq6HFKI7B9-33hJVwR0JppfxzBqiG_posG9SV71p7XwKsZtgpUIj3YzchtCMRhcn5LKS0uDX84JK98KqwCG_KA-5R2lBQRdqeDsvOKTEYeWR68VXE6LqqaoV5-tiXWtFLHi29zoKyFIJYOFvbCnhjdo2F2tPf22cc_4KSeKsbq7jkAhq5elaMlsy65CtyWfhebZpKdYla4FH0GtanIdlA9NQmuHY",
+    "extracted_price": 399.99
+   },
+   {
+    "name": "Sony",
+    "title": "Sony WH-1000XM5 Premium Wireless Noise Cancelling Headphones Black",
+    "link": "/goto?url=CAESxgEBxCJF1werfL-Id5G5n_A6hpJxW6z1YWsla-F4OZeL3wwmfQ8k4-hjn0Ybc1fuHp8PL05LWLk0BFHtWjwt0gBAb4qZWOhw4lM63H054z0j07UQfZOQxWFhQ6NEG1zSCii3oQoJLfVf1TgjqnvPT77fvVShnvAEWaySEdIfhNykMkrzIf8VDeSbCxouI9kFWZu2RUAZJwsLsHEtE_0outGR_w2MMmMCffppJRNlWIdaSHdpV6f1OVKSpGeUAedqzJ13L7ld0H4",
+    "extracted_price": 199.99,
+    "extracted_original_price": 399.99
+   }
+  ],
+  "price_insights": {
+   "price_history": true,
+   "currency": "USD",
+   "price_tracking_available": true,
+   "stores": [
+    {
+     "name": "Best Buy",
+     "prices": [
+      {
+       "date": "Nov 14, 2025",
+       "price": 298.0
+      },
+      {
+       "date": "Nov 17, 2025",
+       "price": 248.0
+      },
+      {
+       "date": "Dec 2, 2025",
+       "price": 278.0
+      },
+      {
+       "date": "Dec 15, 2025",
+       "price": 248.0
+      },
+      {
+       "date": "Jan 1, 2026",
+       "price": 298.0
+      },
+      {
+       "date": "Jan 5, 2026",
+       "price": 398.0
+      },
+      {
+       "date": "Jan 19, 2026",
+       "price": 298.0
+      },
+      {
+       "date": "Feb 16, 2026",
+       "price": 398.0
+      },
+      {
+       "date": "Mar 7, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "Mar 23, 2026",
+       "price": 298.0
+      },
+      {
+       "date": "Apr 6, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "May 4, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "May 18, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Jun 1, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "Jun 23, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Jun 29, 2026",
+       "price": 398.0
+      },
+      {
+       "date": "Jul 6, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 3, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "Aug 5, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 17, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "Aug 24, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 31, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Sep 8, 2026",
+       "price": 298.0
+      },
+      {
+       "date": "Oct 5, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Oct 12, 2026",
+       "price": 228.0
+      },
+      {
+       "date": "Oct 30, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Nov 2, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Nov 6, 2026",
+       "price": 198.0
+      }
+     ]
+    },
+    {
+     "name": "Swiftronics USA",
+     "prices": [
+      {
+       "date": "Nov 14, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Dec 8, 2025",
+       "price": 239.99
+      },
+      {
+       "date": "Oct 5, 2026",
+       "price": 209.99
+      }
+     ]
+    },
+    {
+     "name": "Walmart - TheRightOne",
+     "prices": [
+      {
+       "date": "Sep 10, 2026",
+       "price": 229.99
+      },
+      {
+       "date": "Sep 12, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Sep 15, 2026",
+       "price": 229.99
+      },
+      {
+       "date": "Sep 22, 2026",
+       "price": 249.99
+      }
+     ]
+    },
+    {
+     "name": "Target",
+     "prices": [
+      {
+       "date": "Nov 14, 2025",
+       "price": 299.99
+      },
+      {
+       "date": "Nov 17, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Dec 2, 2025",
+       "price": 279.99
+      },
+      {
+       "date": "Dec 14, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Dec 28, 2025",
+       "price": 299.99
+      },
+      {
+       "date": "Jan 4, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jan 18, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Feb 16, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Mar 7, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "Mar 22, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Apr 5, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "May 3, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "May 17, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "May 31, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "Jun 28, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Jun 29, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jul 5, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Jul 9, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "Aug 30, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Sep 9, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Oct 4, 2026",
+       "price": 399.99
+      }
+     ]
+    },
+    {
+     "name": "Sony",
+     "prices": [
+      {
+       "date": "Nov 14, 2025",
+       "price": 299.99
+      },
+      {
+       "date": "Nov 16, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Nov 17, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Nov 23, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Nov 24, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Nov 30, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Dec 1, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Dec 2, 2025",
+       "price": 279.99
+      },
+      {
+       "date": "Dec 7, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Dec 8, 2025",
+       "price": 279.99
+      },
+      {
+       "date": "Dec 14, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Dec 15, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Dec 21, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Dec 22, 2025",
+       "price": 249.99
+      },
+      {
+       "date": "Dec 28, 2025",
+       "price": 399.99
+      },
+      {
+       "date": "Dec 29, 2025",
+       "price": 299.99
+      },
+      {
+       "date": "Jan 4, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jan 19, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Jan 25, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jan 26, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Feb 1, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Feb 2, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Feb 8, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Feb 9, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Feb 15, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Mar 9, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "Mar 15, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Mar 16, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "Mar 22, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Mar 23, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Mar 29, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Mar 30, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Mar 31, 2026",
+       "price": 244.99
+      },
+      {
+       "date": "Apr 1, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Apr 5, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Apr 6, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "Apr 12, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Apr 13, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "Apr 19, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Apr 20, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "Apr 26, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Apr 27, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "May 3, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "May 4, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "May 10, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "May 11, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "May 17, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "May 18, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "May 24, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "May 25, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "May 31, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jun 1, 2026",
+       "price": 279.99
+      },
+      {
+       "date": "Jun 7, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jun 8, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "Jun 14, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jun 15, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "Jun 21, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jun 22, 2026",
+       "price": 278.0
+      },
+      {
+       "date": "Jun 23, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Jun 29, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jul 6, 2026",
+       "price": 249.99
+      },
+      {
+       "date": "Jul 7, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Jul 12, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jul 13, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Jul 19, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jul 20, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Jul 26, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Jul 27, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 2, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Aug 3, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 9, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Aug 10, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 16, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Aug 17, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 23, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Aug 24, 2026",
+       "price": 248.0
+      },
+      {
+       "date": "Aug 30, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Aug 31, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Sep 6, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Sep 8, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Sep 13, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Sep 14, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Sep 20, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Sep 21, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Sep 27, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Sep 28, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Oct 4, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Oct 5, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Oct 6, 2026",
+       "price": 198.0
+      },
+      {
+       "date": "Oct 12, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Oct 13, 2026",
+       "price": 228.0
+      },
+      {
+       "date": "Oct 18, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Oct 19, 2026",
+       "price": 228.0
+      },
+      {
+       "date": "Oct 25, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Oct 26, 2026",
+       "price": 228.0
+      },
+      {
+       "date": "Nov 1, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Nov 2, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Nov 8, 2026",
+       "price": 399.99
+      },
+      {
+       "date": "Nov 9, 2026",
+       "price": 299.99
+      },
+      {
+       "date": "Nov 10, 2026",
+       "price": 199.99
+      },
+      {
+       "date": "Nov 15, 2026",
+       "price": 399.99
+      }
+     ]
+    }
+   ]
+  }
+ }
+}

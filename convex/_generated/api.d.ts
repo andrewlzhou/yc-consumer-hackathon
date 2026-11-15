@@ -30,6 +30,7 @@ import type * as agent_tools from "../agent/tools.js";
 import type * as crons from "../crons.js";
 import type * as data_calendar from "../data/calendar.js";
 import type * as data_catalog from "../data/catalog.js";
+import type * as data_demo from "../data/demo.js";
 import type * as data_digests from "../data/digests.js";
 import type * as data_embeddings from "../data/embeddings.js";
 import type * as data_prices from "../data/prices.js";
@@ -93,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   "data/calendar": typeof data_calendar;
   "data/catalog": typeof data_catalog;
+  "data/demo": typeof data_demo;
   "data/digests": typeof data_digests;
   "data/embeddings": typeof data_embeddings;
   "data/prices": typeof data_prices;

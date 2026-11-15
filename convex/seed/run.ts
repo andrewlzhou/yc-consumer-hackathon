@@ -42,7 +42,7 @@ async function upsertProduct(ctx: MutationCtx, p: SeedProduct): Promise<Id<"prod
   return existing._id;
 }
 
-async function deleteSeedObservations(ctx: MutationCtx, productId: Id<"products">) {
+export async function deleteSeedObservations(ctx: MutationCtx, productId: Id<"products">) {
   let deleted = 0;
   for await (const o of ctx.db.query("priceObservations").withIndex("by_product_and_observedAt", (q) => q.eq("productId", productId))) {
     if (o.source !== "seed") continue;
@@ -87,6 +87,9 @@ export const seedProduct = internalMutation({
   handler: async (ctx, args) => {
     const p = SEED_PRODUCTS.find((x) => x.key === args.key);
     if (!p) throw new Error("unknown seed product " + args.key);
+    const family = await ctx.db.query("products").withIndex("by_family", (q) => q.eq("familyKey", p.familyKey)).take(20);
+    const real = family.find((x) => !x.isSample && sameVariant(x.variant, p.variant));
+    if (real) return { productId: real._id, observations: 0, deleted: 0 };
     const productId = await upsertProduct(ctx, p);
     const deleted = await deleteSeedObservations(ctx, productId);
     let observations = 0;

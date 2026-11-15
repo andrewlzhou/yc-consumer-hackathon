@@ -5,7 +5,7 @@ import type { Id } from "../../_generated/dataModel";
 import schema from "../../schema";
 import { SEED_NOW } from "../../seed/generate";
 import { modules } from "../../test.setup";
-import { parseInsightDate } from "./serpapi";
+import { dailySteps, parseInsightDate } from "./serpapi";
 
 // Hand-written from the documented responses (serpapi.com/google-shopping-api, /google-product-api).
 const SHOPPING = {
@@ -58,6 +58,17 @@ function stubSerpApi() {
   return calls;
 }
 
+test("price changes expand to one point per day until the next change or the newest date", () => {
+  const day = (d: number) => Date.UTC(2026, 9, d, 17);
+  const steps = dailySteps([
+    { retailerSlug: "target", price: 100, observedAt: day(1) },
+    { retailerSlug: "target", price: 80, observedAt: day(4) },
+    { retailerSlug: "bestbuy", price: 90, observedAt: day(5) },
+  ]);
+  expect(steps.filter((s) => s.retailerSlug === "target").map((s) => s.price)).toEqual([100, 100, 100, 80, 80]);
+  expect(steps.filter((s) => s.retailerSlug === "bestbuy").map((s) => s.observedAt)).toEqual([day(5)]);
+});
+
 test("insight dates become 17:00 UTC on that day", () => {
   expect(parseInsightDate("May 30, 2026")).toBe(Date.UTC(2026, 4, 30, 17));
   expect(parseInsightDate("not a date")).toBeNull();
@@ -86,13 +97,13 @@ describe("refresh with a key", () => {
       ["bestbuy", 199.99, undefined],
     ]);
     expect(r.recorded).toBe(3);
-    expect(r.historyPoints).toBe(2);
+    // Oct 1 -> Nov 9 at 229 (40 days), then Nov 10 at 189.99: Google's change points expanded to daily steps.
+    expect(r.historyPoints).toBe(41);
     const amazon = await t.query(internal.data.prices.getPriceHistory, { productId: airpods, retailerSlug: "amazon", from: SEED_NOW - 60 * 86400000, to: SEED_NOW + 86400000 });
-    expect(amazon.points.map((p) => [p.price, p.provider])).toEqual([
-      [229, "serpapi-google-price-history"],
-      [189.99, "serpapi-google-price-history"],
-      [189.99, "serpapi-google-product"],
-    ]);
+    const history = amazon.points.filter((p) => p.provider === "serpapi-google-price-history");
+    expect(history.filter((p) => p.price === 229)).toHaveLength(40);
+    expect(history.at(-1)).toMatchObject({ price: 189.99, observedAt: Date.UTC(2026, 10, 10, 17) });
+    expect(amazon.points.at(-1)).toMatchObject({ price: 189.99, provider: "serpapi-google-product" });
     const product = await t.query(internal.data.catalog.getProduct, { productId: airpods });
     expect(product!.identifiers?.googleProductId).toBe("4242");
   });

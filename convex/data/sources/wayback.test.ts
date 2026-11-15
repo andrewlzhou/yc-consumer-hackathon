@@ -26,6 +26,12 @@ describe("product page parsing", () => {
     expect(readProductPage("target", TARGET)).toMatchObject({ price: 74.99, originalPrice: 99.99 });
   });
 
+  test("Amazon template text 'Currently unavailable' outside the availability block is not out of stock", () => {
+    const page = '<h2 id="pqv-price">Price</h2><p>No featured offers available</p><div id="aod">Currently unavailable sellers</div>';
+    expect(readProductPage("amazon", page)).toMatchObject({ price: null, inStock: null });
+    expect(readProductPage("amazon", '<div id="availability"><span>Currently unavailable.</span></div>').inStock).toBe(false);
+  });
+
   test("a captcha page is flagged as blocked", () => {
     expect(readProductPage("amazon", "<html><title>Robot Check</title>Enter the characters you see below</html>").blocked).toBe(true);
   });

@@ -137,6 +137,24 @@ export function parseGoogleProduct(json: unknown, product: Doc<"products"> | nul
   return { title: p.title ?? null, brand: p.brand ?? null, offers: [...offers.values()], history, specs };
 }
 
+const DAY = 24 * 60 * 60 * 1000;
+
+// Google lists a store's price only on the days it changed. Each change becomes one point per day until the next
+// change (the last one runs to the newest date in the response), so medians and day shares are time-weighted.
+export function dailySteps(history: HistoryPoint[]): HistoryPoint[] {
+  if (history.length === 0) return [];
+  const until = Math.max(...history.map((h) => h.observedAt));
+  const out: HistoryPoint[] = [];
+  for (const retailerSlug of new Set(history.map((h) => h.retailerSlug))) {
+    const changes = history.filter((h) => h.retailerSlug === retailerSlug).sort((a, b) => a.observedAt - b.observedAt);
+    changes.forEach((c, i) => {
+      const end = i + 1 < changes.length ? changes[i + 1].observedAt : until + DAY;
+      for (let t = c.observedAt; t < end; t += DAY) out.push({ retailerSlug, price: c.price, observedAt: t });
+    });
+  }
+  return out;
+}
+
 async function serpapi(params: Record<string, string>) {
   const key = process.env.SERPAPI_API_KEY;
   if (!key) return { status: "no_key" as const };
@@ -237,7 +255,7 @@ export async function refreshProduct(ctx: ActionCtx, productId: Id<"products">):
   const parsed = parseGoogleProduct(page.json, product);
   const offers = parsed.offers.length ? parsed.offers : shoppingOffers;
   const recorded = await recordOffers(ctx, productId, offers, parsed.offers.length ? SERPAPI_PROVIDERS.product : SERPAPI_PROVIDERS.shopping, observedAt);
-  const historyPoints = await recordHistory(ctx, productId, parsed.history);
+  const historyPoints = await recordHistory(ctx, productId, dailySteps(parsed.history));
   return { status: "ok" as const, recorded, offers, historyPoints, googleProductId, latencyMs: searches };
 }
 

@@ -1,23 +1,29 @@
 # Data providers
 
-- Real data first, but no paid APIs (Ruhaan, 2026-11-15). Current prices come from SerpApi, real history from Wayback snapshots.
-- No keys exist yet. Each function returns `{ status: "no_key" }` without its env var, so none of this has run live.
-- "Fixture-tested" means the parser runs against a response written by hand from the provider's docs. It does not prove the live API matches.
+- Real data first, but no paid APIs (Ruhaan, 2026-11-15). History and current prices come from SerpApi; Wayback snapshots add a second source.
+- Without its env var each function returns `{ status: "no_key" }`. The shared deployment has `SERPAPI_API_KEY` and `OPENAI_API_KEY`.
+- "Fixture-tested" means the parser runs against a saved response. The demo set is in [data-demo.md](data-demo.md).
 
 ## SerpApi: current prices and Google's price history
 
 - Returns: current offers across retailers (price, "was" price, link) from `google_shopping`, plus per-store price history from `google_product` (`price_insights`).
 - Env var: `SERPAPI_API_KEY`.
 - Call: `internal.data.sources.serpapi.refreshCurrentPrices({ productId })`. It writes observations with source `api` and providers `serpapi-google-shopping`, `serpapi-google-product`, `serpapi-google-price-history`.
-- Cost: one search finds the Google product id (once per product), one more reads the product page. Billed per search on the plan.
+- Cost: one search finds the Google product id (once per product), one more reads the product page. Free plan: 250 searches/month.
+- History: Google lists a store's price only on days it changed. We expand each change to one point per day until the next
+  change, so medians and "share of days at the was-price" are time-weighted. Marketplace sellers ("Walmart - X") are skipped.
 - Terms: results are Google Shopping listings. The parser drops used, refurbished, accessories, and other variants.
-- Verified: fixture-tested only. Details live in `convex/data/sources/serpapi.ts`.
+- Verified live 2026-11-15: `google_product` returns about a year of per-store history (XM5: 28 Best Buy and 21 Target
+  price changes since 2025-11-14). Real response saved as `fixtures/serpapi-product-xm5.json` and tested.
 
 ## Wayback Machine snapshots: real history
 
 - Returns: archived retailer product pages, read for the price shown on each snapshot date.
-- Free, no key. Being built by the data thread: provider `wayback`, source `scrape`.
-- Status: in progress. Not documented here until it exists.
+- Free, no key: `internal.data.sources.wayback.ingest({ productId, retailer, url })`, provider `wayback`, source `scrape`,
+  observedAt = snapshot time, url = the snapshot (evidence). One request at a time with a 1.2 s pause.
+- Yield (2026-11-15): Best Buy and Walmart pages parse well but have few captures (1-29 a year). Archived Amazon pages show
+  "No featured offers" (no buy box for the crawler), so they give no price. Newer Target pages render prices client-side.
+- Terms: archive.org is free for research use; we fetch slowly, keep evidence links, and never hit retailer sites directly.
 
 ## Best Buy: optional live price only
 
