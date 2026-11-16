@@ -1,14 +1,14 @@
 # iPhone app integration status (resume here)
 
 - Goal (CON-14): store screen -> Back Tap -> Shortcut -> on-device text reading -> live backend -> one-word verdict ->
-  More Details -> that product's report in the Check Price app on `main`.
-- Branch `ruhaan_ios_bridge` (from `main`), draft PR #2. Source owner: YCCO-13. Device tests: YCCO-10 on Ruhaan's Mac and
-  iPhone. Review: YCCO-15. Nobody merges without Ruhaan. App rules: [ios/AGENTS.md](../../ios/AGENTS.md).
+  More Details -> the Check Price app. Ruhaan, 2026-11-15: reaching the app is enough for now; the exact report is a bonus.
+- On `main` since PR #2, with the owner's redesigned screens since 90edc6c. Source owner: YCCO-13. Device tests: YCCO-10
+  on Ruhaan's Mac and iPhone. Nobody merges without Ruhaan. App rules: [ios/AGENTS.md](../../ios/AGENTS.md).
 
 ## Works (unit tests and a cloud simulator with a mock backend, fake key)
 
-- Shortcut actions "Check Price in Screenshot" and "Check Price of Link" (iOS 26+) return a decision-only popup:
-  BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE on the verdict colour, with a blue More Details button.
+- Shortcut actions "Scan Screen with Check Price" and "Check Price of Link" (iOS 26+) return a decision-only popup:
+  BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE on the verdict colour, each with a blue More Details button.
 - A tap on the popup opens Check Price on that check's thread; the popup stays on top until Done is tapped. Checks
   are saved on the phone, so this also works when iOS closed the app in between.
 - A failed check or a missing key shows the failure, never a demo verdict.
@@ -17,11 +17,12 @@
 
 ## Not proven yet
 
-- This candidate on a real iPhone: Back Tap, the popup over a store app, More Details, temp-file deletion, timing.
-  An earlier build (bf21d72) was installed by YCCO-10 as `dev.ruhaan.checkprice`.
-- iOS adds its own Done button under a result popup. Apple documents no way to rename or remove it. A different
-  popup type (a confirmation, `requestConfirmation(actionName:snippetIntent:)`) lets the app name the system button;
-  it would change the flow (cancel instead of Done) and is untried.
+- On a real iPhone (installed as `dev.ruhaan.checkprice`): the popup and More Details as seen by a person.
+- Screenshot cleanup on the phone. Two real Back Taps (671b059) reached the backend in 0.9 s and 0.5 s, but the file
+  was classed `other`, so the app left it: not deleted by us, and whether iOS removes it is unknown. Next safe step:
+  YCCO-10 reads the file's folder on the device (kept private), then that exact folder joins the allowed roots with
+  a test. Never a substring match such as "/tmp/".
+- iOS's own Done can't be renamed or removed. Debug flag `CHECKPRICE_DEMO_BUY`: canned BUY popup, not a real verdict.
 
 ## How a check and its report fit
 
@@ -35,25 +36,25 @@
 
 1. Pull `ruhaan_ios_bridge`; keep the real key only in the git-ignored `ios/Config/Secrets.xcconfig` on the Mac.
 2. `cd ios && xcodegen generate`, then build and run a Debug build on the iPhone with local signing.
-3. Shortcuts: Take Screenshot, then Check Price in Screenshot (Check Price), with Show When Run on. Back Tap runs it.
+3. Shortcuts: Take Screenshot, then Scan Screen with Check Price, its Screenshot field set to the Screenshot variable (long-press
+   the field if it says Choose), Show When Run on. Back Tap runs it. Worth It's own action is a different one.
 4. On a store product page, double-tap the back. Expect a coloured one-word popup with More Details; tap it.
 5. Read the proof: `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id>
    --source Library/Preferences/<bundle id>.plist`, key `checkprice.scans`. Each run has `fileKind` (expect
-   `shortcutsTemp`), `deleted` (expect true), `bytes`, and `ocr`, `network`, `total` seconds.
+   `shortcutsTemp`), `deleted` (expect true), `bytes`, and `ocr`, `network`, `total` seconds. Key `checkprice.opens`
+   gains an entry each time a More Details tap reaches the app (`found`: its check was still there).
 
 ## Known limits (honest list)
 
 - Backend scan fixes are on `main` (a0146e1); YCCO-12 owns deploying them. With them, a screenshot of a product the
-  backend doesn't know gives INDETERMINATE with no More Details: new products come only from links.
+  backend doesn't know gives INDETERMINATE; More Details then opens a thread with the verdict and no chart.
 - Demo threads still sit in Threads and Home next to real checks, unlabelled; chat replies are canned.
-- A finished report without a chart, or six failed fetches, leaves the thread with its verdict and no chart.
-- Saved state is not kept across restarts. Report freshness uses a fixed 7-day window.
+- A report without a chart, or six failed fetches, leaves a thread with its verdict and no chart. Saved state is not
+  kept across restarts. Report freshness uses a fixed 7-day window.
 - The popup shows no reason. The in-app check (and its island) was removed from Home (owner, 2026-11-15); the island now plays only from `-demoLiveActivity YES`.
-- Simulator runs can't prove Back Tap or where a real iPhone puts the screenshot file (there it is `other`, kept).
 
 ## Checks
 
 - App tests: `xcodebuild test -project CheckPrice.xcodeproj -scheme CheckPrice -destination 'platform=iOS
   Simulator,name=iPhone 16,OS=26.5' CODE_SIGNING_ALLOWED=NO`. Package tests: `cd ios/ShopperKit && swift test`.
-- Cloud builds use no key, or a fake key with a mock backend passed as `CHECKPRICE_BACKEND_HOST` and
-  `CHECKPRICE_API_KEY` build settings. Never a real key.
+- Cloud builds: no key, or a fake key and mock host as `CHECKPRICE_BACKEND_HOST`/`CHECKPRICE_API_KEY`. Never a real key.
