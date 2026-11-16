@@ -12,7 +12,7 @@ const BLOCKED = /captcha|access denied|access to this page has been denied|are y
 function nikePrices(html: string, code: string | undefined) {
   if (!code) return null;
   const esc = code.replace(/[^A-Za-z0-9-]/g, "");
-  const m = html.match(new RegExp(esc + '"\\},"prices":\\{[^}]*?"currentPrice":([\\d.]+),"initialPrice":([\\d.]+)', "i"));
+  const m = html.match(new RegExp(esc + '"\\},"prices":\\{"currency":"USD",[^}]*?"currentPrice":([\\d.]+),"initialPrice":([\\d.]+)', "i"));
   return m ? { price: Number(m[1]), was: Number(m[2]) } : null;
 }
 

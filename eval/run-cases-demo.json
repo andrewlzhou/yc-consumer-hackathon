@@ -165,6 +165,65 @@
           "BUY_NOW"
         ]
       }
+    },
+    {
+      "id": "real-ae-wait",
+      "kind": "real",
+      "situation": "Real WAIT: $35.97 near typical, inflated was-price, $29.97 at past Black Friday (YCCO-8 data)",
+      "extract": {
+        "retailer": "American Eagle",
+        "title": "AE Baggy Jean Men's Black 33 x 32",
+        "currentPrice": 35.97,
+        "originalPrice": 59.95
+      },
+      "expect": {
+        "match": {
+          "familyKey": "ae-baggy-jean-mens"
+        },
+        "acceptableVerdicts": [
+          "WAIT"
+        ]
+      }
+    },
+    {
+      "id": "real-nike-zenvy-no-stale-alternative",
+      "kind": "real",
+      "situation": "Flat $105 history; the lululemon Align comparable only has stale archive prices",
+      "extract": {
+        "retailer": "Nike",
+        "title": "Nike Zenvy Women's High-Waisted Full-Length Leggings",
+        "currentPrice": 105
+      },
+      "expect": {
+        "match": {
+          "familyKey": "nike-zenvy-high-waisted-full-length-leggings"
+        },
+        "acceptableVerdicts": [
+          "BUY_NOW",
+          "WAIT",
+          "INVESTIGATE"
+        ],
+        "rationale": "Align's $98 is an August archive price, not today's; recommending it as a current saving would be wrong, so CONSIDER_ALTERNATIVE fails this case."
+      }
+    },
+    {
+      "id": "real-align-no-current-price",
+      "kind": "real",
+      "situation": "Only August archive prices ($98) and no price on the scan: no verified current price",
+      "extract": {
+        "retailer": "lululemon",
+        "title": "lululemon Align High-Rise Pant 25\""
+      },
+      "expect": {
+        "match": {
+          "familyKey": "lululemon-align-high-rise-pant-25"
+        },
+        "acceptableVerdicts": [
+          "INVESTIGATE",
+          "WAIT"
+        ],
+        "rationale": "The newest price is three months old, so a BUY_NOW or a claimed saving would rest on a stale price."
+      }
     }
   ]
 }

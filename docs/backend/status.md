@@ -29,8 +29,8 @@
   AGENT_FULL_MODEL, AGENT_*_REASONING.
 - Verified (4cecf5f): no-write real demo leaves app rows unchanged; URL-only /analyze on Apple and Walmart links
   identifies from the slug in 0.17-0.33 s with no page fetch; resolver runs in the background.
-- Real demo after the Bose decision (alternative-first at a year low): 9/9 live, 7/7 full (4ad60c7).
-- Next: add YCCO-8's store products to eval/run-cases-demo.json.
+- Real demo with YCCO-8's store products (e732bda): 12/12 live, 10/10 full, all grounded.
+- Next: nothing owed; open limits are in agent-evals.md (forecast calibration, no streaming).
 - Gotchas: deploy only from a clean origin/ruhaan_backend tip. HTTP probes on the shared deployment record real scan
   rows; clean them up. Tests that hit /analyze need `rateLimiterTest.register(t)`.
 
@@ -53,6 +53,7 @@
 
 ## More stores
 
-- Reader/resolver: c6ad7ea. Three demo additions are connected: AE Baggy Jean, lululemon Align 25-inch, Nike Zenvy.
-- Local: full suite 166 passed, two live tests skipped; targeted tests also cover AE ingestion and variant-preserving URLs.
-- Shared dev: AE has 361 expanded history points plus a current offer; leggings backfills are running. Final checks pending.
+- Works (c6ad7ea, 36fea79, ead4129): generic reader and variant-safe background URL resolver; 18-store survey.
+- Shared dev: AE has 361 daily history points + a current offer; Align has 10 archive points; Zenvy has 9 + a current page.
+- Real AE eval: live/full both WAIT, grounded, 1.08s/8.51s. Limits and ids: data-stores-live.md. Only AE refreshes daily.
+- Verified: 174 tests, typecheck/docs; clean-tip deploys. Align's $98 evidence is stale, not a current competitor price.

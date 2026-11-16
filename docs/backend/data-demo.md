@@ -1,15 +1,15 @@
 # Real-data demo set
 
-- Five products picked on 2026-11-15 by how much real history exists. Code: `convex/data/demo.ts`.
+- Five electronics products below, plus [three store products](data-stores-live.md), picked from real history. Code: `convex/data/demo.ts`.
 - Load one product: `npx convex run data/demo:ingest '{"key":"sony-xm5"}'` (1 SerpApi search, plus Wayback pages).
-- A daily cron (`refresh demo prices`, 14:00 UTC) refreshes each one: 5 searches a day, inside the free 250 a month.
+- Daily cron (`refresh demo prices`, 14:00 UTC): six Google-enabled products (the five below plus AE), up to 180 searches/month before other usage.
 - Turning a product real deletes its seed points; `npm run seed` then skips it. Other catalog products stay seed.
 
 ## Where the numbers come from
 
 - Google price history via SerpApi `google_product` (source `api`): each store's price on the days it changed,
   about a year back. We expand each change into one point per day until the next change, so medians are time-weighted.
-  Only Best Buy, Target, Walmart and Amazon are stored; brand stores and marketplace sellers are skipped.
+  Only known first-party retailers are stored, including the four verified store slugs; marketplace sellers are skipped.
 - Current offers from the same call (source `api`), and archived product pages from the Wayback Machine (source `scrape`).
 
 ## What the deployment holds (365-day window, 2026-11-15)
@@ -31,8 +31,8 @@
 
 ## What real data cannot show today
 
-- A genuine "WAIT for Black Friday": every demo product is already at its early-Black-Friday low, below last
-  year's Black Friday prices (XM5 was $248 then). We do not fake one.
+- These electronics do not provide "WAIT for Black Friday": they are at early-sale lows (XM5 was $248 last year).
+  The added [AE Baggy Jean](data-stores-live.md) does: $35.97 now versus $29.97 at Black Friday 2025; both model tiers returned WAIT.
 - A "was" price that was never charged: every claimed price here was charged on some days (16-45%).
 - Use the seed products (iPad, Ninja, Ember; labeled sample data) for those scenarios, and say they are samples.
 

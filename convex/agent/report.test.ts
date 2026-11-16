@@ -168,6 +168,19 @@ describe("forecast", () => {
   });
 });
 
+describe("stored prices", () => {
+  test("with no price on the scan, a stored price older than 14 days is not today's price", async () => {
+    const productId = await t.mutation(internal.data.catalog.createProvisionalProduct, { title: "Stalewidget Leggings 25 inch" });
+    for (let i = 0; i < 8; i++)
+      await t.mutation(internal.data.prices.recordObservation, { productId, retailer: "target", price: 98, observedAt: SEED_NOW - (40 + i * 10) * 86_400_000, source: "api", provider: "google" });
+    const card = await scan({ title: "Stalewidget Leggings 25 inch", retailer: "Target" });
+    expect(card.verdict).toBe("INVESTIGATE");
+    expect(card.reason).toMatch(/\$98\.00 from/);
+    const priced = await scan({ title: "Stalewidget Leggings 25 inch", retailer: "Target", currentPrice: 98 });
+    expect(priced.verdict).not.toBe("INVESTIGATE");
+  });
+});
+
 describe("hybrid suggestions", () => {
   const cand = (brand: string, score: number, vectorScore: number) => ({ product: { brand }, score, vectorScore, sizeConflict: false, matchedTokens: [] }) as unknown as HybridCandidate;
   test("OCR spellings still name the brand", () => {

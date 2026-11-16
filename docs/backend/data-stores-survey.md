@@ -46,5 +46,5 @@
 
 - Direct requests from this machine worked for Nike and Apple. AE's old URL redirects to a category, so resolution uses Wayback.
 - lululemon, Adidas, H&M and Uniqlo blocked direct fetches; archives can still be useful.
-- 15 cached SerpApi calls in this session so far; no paid API was used. The free 250/month allowance is shared.
+- 16 cached SerpApi research requests plus one deployment refresh request; no paid API. The free 250/month allowance is shared.
 - See [store support](data-stores.md) for implemented behavior and limits.

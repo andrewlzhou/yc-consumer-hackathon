@@ -55,6 +55,7 @@ export function parseUrl(raw: string): ParsedUrl | null {
   if (host !== "shop.lululemon.com" && !allowedHosts.some((domain) => host === domain || host === "www." + domain)) return null;
   const rule = RULES.find((r) => r.host.test(host));
   if (!rule) return null;
+  if ((rule.retailer === "nike" && !u.pathname.startsWith("/t/")) || (rule.retailer === "ae" && !u.pathname.startsWith("/us/en/p/"))) return null;
   const m = u.pathname.match(rule.code);
   if (!m) return null;
   const productCode = m ? (m.slice(1).find(Boolean) ?? undefined) : undefined;

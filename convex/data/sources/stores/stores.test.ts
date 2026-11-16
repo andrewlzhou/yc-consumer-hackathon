@@ -36,6 +36,12 @@ describe("store extras", () => {
     expect(readStorePage("ae", real.aeBaggy, AE)).toMatchObject({ title: "AE Baggy Jean", price: 24.99, originalPrice: 49.95 });
   });
 
+  test("a non-USD Nike price cannot enter the USD fallback", () => {
+    expect(readStorePage("nike", real.nikePeg41.replace(/USD/g, "EUR"), PEG41).price).toBeNull();
+    expect(parseUrl(AE.replace("/us/en/", "/ca/en/"))).toBeNull();
+    expect(parseUrl(PEG41.replace("/t/", "/gb/t/"))).toBeNull();
+  });
+
   test("an archived bot-wall stub is blocked, not a missing price", () => {
     expect(readStorePage("adidas", real.adidasStub)).toMatchObject({ price: null, blocked: true });
   });
@@ -64,7 +70,7 @@ describe("parseUrl (no network)", () => {
 
   test("an AggregateOffer range is not a was-price", () => {
     const range = '<script type="application/ld+json">{"@type":"Product","offers":{"@type":"AggregateOffer","lowPrice":20,"highPrice":40,"priceCurrency":"USD"}}</script>';
-    expect(readStructured(range)).toMatchObject({ price: 20, originalPrice: null });
+    expect(readStructured(range)).toMatchObject({ price: null, originalPrice: null });
   });
 
   test("different variant prices are not collapsed into a guessed current price", () => {
