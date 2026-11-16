@@ -20,12 +20,32 @@ struct CheckScreenshotIntent: AppIntent {
     var screenshot: IntentFile
 
     func perform() async throws -> some IntentResult & ShowsSnippetIntent {
+        // The canned demo: no text is read and nothing is sent. The temporary file is still cleaned up as usual.
+        if DemoVerdict.isOn {
+            _ = ScreenshotFile.readOnce(screenshot)
+            ScanDiagnostics.recordDemo()
+            return .result(snippetIntent: VerdictSnippetIntent.demo())
+        }
         let start = Date()
         let times = CheckRunner.Times()
         let (bytes, handoff) = ScreenshotFile.readOnce(screenshot)
         let result = await CheckRunner.run(imageData: bytes, times: times)
         ScanDiagnostics.record(source: "screenshot", result: result, handoff: handoff, times: times, since: start)
         return .result(snippetIntent: await VerdictSnippetIntent.record(result))
+    }
+}
+
+// A canned popup for showing the Back Tap flow without a real check (Ruhaan, 2026-11-15). It is not an analysis:
+// no screen text is read, nothing is sent, no check is saved. Off unless a Debug build is made with the compilation
+// condition CHECKPRICE_DEMO_BUY, which lives only in the git-ignored Config/Secrets.xcconfig on the Mac that builds
+// for the phone. Release builds can't turn it on.
+enum DemoVerdict {
+    static var isOn: Bool {
+        #if DEBUG && CHECKPRICE_DEMO_BUY
+        true
+        #else
+        false
+        #endif
     }
 }
 
@@ -65,6 +85,13 @@ struct VerdictSnippetIntent: SnippetIntent {
     func perform() async throws -> some IntentResult & ShowsSnippetView {
         .result(view: CompactVerdictView(verdict: verdict.flatMap(Verdict.init(rawValue:)), failure: failure,
                                          isSampleData: isSampleData, checkId: checkId))
+    }
+
+    // The canned demo's popup (DemoVerdict): BUY on green with More Details, which opens the app. No thread.
+    static func demo() -> VerdictSnippetIntent {
+        var snippet = VerdictSnippetIntent()
+        snippet.verdict = Verdict.buyNow.rawValue
+        return snippet
     }
 
     // Keeps a successful check as a new thread (fetching its report), then builds the snippet. Every verdict gets

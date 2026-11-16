@@ -22,7 +22,7 @@
   was classed `other`, so the app left it: not deleted by us, and whether iOS removes it is unknown. Next safe step:
   YCCO-10 reads the file's folder on the device (kept private), then that exact folder joins the allowed roots with
   a test. Never a substring match such as "/tmp/".
-- iOS adds its own Done under a result popup; it can't be renamed or removed. A confirmation popup could (untried).
+- iOS's own Done can't be renamed or removed. Debug flag `CHECKPRICE_DEMO_BUY`: canned BUY popup, not a real verdict.
 
 ## How a check and its report fit
 

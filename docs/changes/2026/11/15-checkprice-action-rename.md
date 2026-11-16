@@ -1,18 +1,17 @@
-# 2026-11-15 — Check Price: screenshot action renamed; More Details on every verdict
+# 2026-11-15 — Check Price: action renamed, More Details on every verdict, opt-in canned demo
 
 - Author: Capy (Fable 5.2), thread YCCO-13 for Captain Ruhaan (CON-18), branch `ruhaan_action_rename`, PR #4.
-- Instructions: Ruhaan: (1) the Check Price app's screenshot action must not share a name with the Worth It test
-  app's; it is titled exactly "Scan Screen with Check Price". (2) Reduced acceptance for now: double tap gives the
-  verdict word, and More Details gets into the Check Price app; exact report behaviour inside the app is not
-  required. The four words stay. Saved in [ios/AGENTS.md](../../../../ios/AGENTS.md),
-  [decisions](../../../project/decisions.md) and [status](../../../ios/bridge-status.md).
-- Changed: the action's title (same action type, so existing shortcuts keep working). More Details is now on every
-  verdict; before, a check the backend matched to no product had no button, so the popup had no way into the app.
-  The tap opens the app and that check's own saved thread (by the check's id, not the product's). Debug builds note
-  each tap that reaches the app under `checkprice.opens`. No layout, backend or contract change.
-- Checks: `python3 scripts/check_docs.py`; app tests and ShopperKit tests on a cloud runner with no key: see the PR.
-- Not verified: the tap on a real iPhone at this head. Screenshot cleanup on the phone is not verified either: two
-  real Back Taps on 671b059 classed the file `other`, so the app did not delete it. Next: read the file's folder on
-  the device privately and add that exact folder to the allowed roots; no substring matching. See the status doc.
-- Paused after this: Ruhaan is using a Shortcuts-only demo for now (a fixed banner, then Open App); no verdict is
-  hard-coded in the app or backend.
+- Instructions (Ruhaan): the screenshot action is titled exactly "Scan Screen with Check Price"; More Details must
+  always get into the app; and for the demo the popup may be fixed to green BUY with More Details. Saved in
+  [ios/AGENTS.md](../../../../ios/AGENTS.md), [decisions](../../../project/decisions.md), [status](../../../ios/bridge-status.md).
+- Changed: the action's title (same action type, so existing shortcuts keep working). More Details is on every
+  verdict and opens the app on that check's own saved thread. Debug builds note taps that reach the app
+  (`checkprice.opens`).
+- Changed: an opt-in canned demo. A Debug build made with the compilation condition `CHECKPRICE_DEMO_BUY` (one line
+  in the git-ignored `Config/Secrets.xcconfig`) answers every scan with BUY and More Details: no text reading, no
+  backend call, no saved check. Off by default and impossible in Release; the live path is unchanged when it is off.
+- Checks: `python3 scripts/check_docs.py`. Before the demo flag: 20 app tests passed on a cloud runner with no key.
+  The demo commit was pushed before its own cloud run; see the PR for that result.
+- Not verified: a flag-on build, and anything on a real iPhone at this head (YCCO-10). Screenshot cleanup on the
+  phone: two real Back Taps on 671b059 classed the file `other`, so the app did not delete it. Next: read the
+  file's folder on the device privately and add that exact folder to the allowed roots; no substring matching.

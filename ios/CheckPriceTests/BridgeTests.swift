@@ -236,6 +236,17 @@ final class RealCheckTests: XCTestCase {
         XCTAssertEqual(store.thread(id)?.product.summary, "new")
     }
 
+    // The canned demo is off unless a build opts in, and it is only a popup: no check, no thread, no failure text.
+    func testTheCannedDemoIsOffByDefaultAndSavesNothing() throws {
+        guard #available(iOS 26.0, *) else { throw XCTSkip("needs iOS 26") }
+        XCTAssertFalse(DemoVerdict.isOn, "this build was made with CHECKPRICE_DEMO_BUY")
+        let snippet = VerdictSnippetIntent.demo()
+        XCTAssertEqual(snippet.verdict, Check_Price.Verdict.buyNow.rawValue)
+        XCTAssertNil(snippet.checkId)
+        XCTAssertNil(snippet.failure)
+        XCTAssertFalse(snippet.isSampleData)
+    }
+
     func testAFailedCheckShowsItsMessageAndNothingElse() throws {
         guard #available(iOS 26.0, *) else { throw XCTSkip("needs iOS 26") }
         let store = ThreadStore(threads: [])
