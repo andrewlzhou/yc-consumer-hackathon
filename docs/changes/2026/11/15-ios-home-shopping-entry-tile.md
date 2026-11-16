@@ -1,0 +1,9 @@
+# 2026-11-15 — iOS Home: a one-off "Back to Shopping" tile
+
+- Author: Claude (Opus 5.5), requested by Andrew.
+- Instructions: the owner rejected the orange `KeyButtonStyle` "Back to Shopping" key: "make it a unique new button instead of using old design elements giving me the same slop." Build a purpose-made component, not from KeyButtonStyle, FlatCard, HomeCard, Chip or other existing styles. Saved in `ios/AGENTS.md` (Home line).
+- Changed: new `ios/CheckPrice/Screens/Home/ShoppingEntryButton.swift`: a 96pt full-width tile, corner radius 28, `.ultraThinMaterial` (dark), 1pt border as a gradient from cream `#FAF9F5` at 35% to the accent at 70%. Left, a facepile of the top four stores (34pt monogram circles, 10pt overlap, warm muted fills, 2pt canvas ring). Middle, "Back to Shopping" (Hiragino W6, 19pt) over "Most checks at Amazon · 38 this year", built from the data. Right, four 5pt capsule bars (max 36pt), the tallest orange, the rest off-white at 30%, drawn with plain shapes. Its own button style scales to 0.97 and brightens the border on press; a light impact haptic on tap; no idle animation. VoiceOver reads one button, "Back to Shopping", hint "Shows which stores you shop at most".
+- Changed: `HomeView` uses the tile (same push to `ShoppingStatsView`). `ShoppingStatsSample.storesByChecks` (stores sorted, most checks first) feeds it, so no numbers are copied.
+- Note: the request listed Amazon 18, Best Buy 11, Lewkin 7, Target 6, Apple 4, Nespresso 2; the sample in code is 14, 9, 6, 5, 3, 1 (38 total). The tile reads the code's numbers, so the line says 38.
+- Checks: `ios/scripts/typecheck.sh` passed (app and widget, Mac Catalyst type-check, not an iOS build). `python3 scripts/check_docs.py` passed.
+- Not verified: not built or run on a simulator or device (no full Xcode); the look, press feel and haptic are unseen.

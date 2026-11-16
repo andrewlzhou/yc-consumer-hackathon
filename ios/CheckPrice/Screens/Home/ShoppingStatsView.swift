@@ -1,4 +1,4 @@
-// Shopping stats, pushed from Home's "Back to Shopping" key (owner, 2026-11-15: "stats on which
+// Shopping stats, pushed from Home's "Back to Shopping" tile (owner, 2026-11-15: "stats on which
 // places you shop the most, such as Amazon, Lewkin, etc. Basically more stats"). A small centred
 // title, then cards in Home's style over the backdrop: where you shop, a summary strip, the verdict
 // split, checks by month, and categories. Every number is `ShoppingStatsSample`, invented.
@@ -235,6 +235,9 @@ enum ShoppingStatsSample {
         Store(name: "Apple", checks: 3),
         Store(name: "Nespresso", checks: 1),
     ]
+
+    // Stores with the most checks first, for Home's entry tile.
+    static var storesByChecks: [Store] { stores.sorted { $0.checks > $1.checks } }
 
     static let verdicts = [
         VerdictShare(verdict: .buyNow, checks: 12),

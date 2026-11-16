@@ -1,6 +1,6 @@
 // Home: a dashboard (owner, 2026-11-15: "only a dashboard, without the animation"). No screen title
 // and no in-app check (the round "plus" button was removed, owner 2026-11-15). The content starts
-// about a third of the way down with the "Back to Shopping" key (the one orange key), which pushes
+// about a third of the way down with the "Back to Shopping" tile (`ShoppingEntryButton`), which pushes
 // Shopping stats (`ShoppingStatsView`), then the cards: three counts in one strip (`StatStrip`), the
 // Watchlist, and Recent checks. The layout follows the Truck page of Apple's Food Truck sample
 // (`TruckView`): a scrolling stack of cards at even spacing, each card with its own header, and rows
@@ -20,8 +20,7 @@ struct HomeView: View {
                     // Free space above everything (owner, 2026-11-15: "push all these elements down").
                     Color.clear
                         .containerRelativeFrame(.vertical) { height, _ in height * 0.28 }
-                    Button("Back to Shopping") { path.append(ShoppingStatsRoute()) }
-                        .buttonStyle(KeyButtonStyle())
+                    ShoppingEntryButton { path.append(ShoppingStatsRoute()) }
                     HomeSummaryRow(threads: store.threads, saved: store.saved)
                     if !store.saved.isEmpty {
                         HomeWatchlistCard(threads: store.saved, open: open)
