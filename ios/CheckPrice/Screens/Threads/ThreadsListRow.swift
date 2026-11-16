@@ -1,6 +1,7 @@
 // One thread in the Library, Shazam-style: a square picture on the left, the product name over
 // the retailer, and a save button on the right (orange filled bookmark when saved). No fill or
-// separator. The picture is `ProductPicture`: the demo products' images, a symbol tile otherwise.
+// separator. The picture is `ProductPicture`: the demo products' images, a symbol tile otherwise,
+// with a small round verdict badge on its bottom-right corner.
 // Tapping the row opens the thread; swipe left or long-press also saves. Also the plain List row
 // and List styling the Threads screen shares.
 import SwiftUI
@@ -17,6 +18,7 @@ struct ThreadsListRow: View {
         Button(action: open) {
             HStack(spacing: Spacing.rowIconToText) {
                 ProductPicture(product: product, size: Self.pictureSize)
+                    .overlay(alignment: .bottomTrailing) { VerdictBadge(verdict: product.verdict) }
                 VStack(alignment: .leading, spacing: 5) {
                     Text(product.name)
                         .textStyle(.body)
@@ -33,7 +35,7 @@ struct ThreadsListRow: View {
             }
             .threadsRowPadding(vertical: 6)
             .accessibilityElement(children: .combine)
-            .accessibilityValue(thread.isSaved ? "Saved" : "")
+            .accessibilityValue(thread.isSaved ? "\(product.verdict.word), Saved" : product.verdict.word)
         }
         .buttonStyle(ListRowButtonStyle())
         .overlay(alignment: .trailing) { saveButton }
@@ -70,6 +72,29 @@ struct ThreadsListRow: View {
     // With the Watchlist filter on, an unsaved row leaves the list, so the change animates.
     private func toggleSave() {
         withAnimation(Motion.rise) { store.toggleSave(thread.id) }
+    }
+}
+
+// The verdict's symbol on a disc of its colour, ringed in the canvas colour so it stands apart
+// from the picture, and set a few points past the picture's corner. Every verdict symbol is a
+// filled circle with the glyph cut out, so the canvas disc behind shows through as the glyph.
+private struct VerdictBadge: View {
+    let verdict: Verdict
+
+    private static let size: CGFloat = 19
+    private static let ring: CGFloat = 2
+    private static let overhang: CGFloat = 5
+
+    var body: some View {
+        Image(systemName: verdict.symbol)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(verdict.color)
+            .frame(width: Self.size, height: Self.size)
+            .padding(Self.ring)
+            .background(Circle().fill(Palette.canvas))
+            .offset(x: Self.overhang, y: Self.overhang)
+            .accessibilityHidden(true)
     }
 }
 

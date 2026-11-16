@@ -14,7 +14,7 @@
 - Show information plainly: a number or a word instead of a sentence ("Back Tap", not "Set Back Tap or Action Button"). When in doubt, remove.
 - Font: Hiragino Sans only, through `TextStyle`/`.textStyle()` or `Font.hiragino`; never `.font(.system(...))`, `.headline` and the like, serif or rounded on text (SF Symbols may keep `.system` sizes). iOS ships only `HiraginoSans-W3`, `-W6`, `-W7`: `HiraginoWeight` w3/w4/w5 (regular, medium) → W3, w6 (semibold) → W6, w7 (bold, heavy) → W7, named directly with `Font.custom(_:size:relativeTo:)`.
 - The tab bar is icons only, no names under them (owner, 2026-11-15): outline when not selected, filled when selected (`house`, `bubble.left.and.text.bubble.right`, `person.crop.circle`). Titles stay on the items, drawn clear, so VoiceOver reads them.
-- Verdicts: `Verdict.word`, `.symbol`, `.color` (`DesignSystem/VerdictStyle.swift`): Buy green, Wait amber, Look around lavender, Check first coral.
+- Verdicts: `Verdict.word`, `.symbol`, `.color` (`DesignSystem/VerdictStyle.swift`): Buy green, Wait amber, Look around lavender, Check first sand (was coral; changed 2026-11-15 so it isn't confused with the orange accent). Library rows show the verdict as a small round badge on the picture's bottom-right corner.
 - How Not Yet drew similar screens: `notyet/ios/Views/` (for example `ProductReportView.swift`, `HomeView.swift`, `HistoryView.swift`).
 
 ## Backend
