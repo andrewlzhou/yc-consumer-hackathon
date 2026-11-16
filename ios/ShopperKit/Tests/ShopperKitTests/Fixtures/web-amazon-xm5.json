@@ -1,0 +1,157 @@
+{
+ "name": "web-amazon-xm5",
+ "expected": {
+  "note": "Amazon mobile web, alternatives block above the product",
+  "titleContains": [
+   "WH-1",
+   "XM5"
+  ],
+  "retailer": "Amazon",
+  "currentPrice": 179.0,
+  "originalPrice": null,
+  "product": true,
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0168,
+   "text": "amazon",
+   "w": 0.1992,
+   "x": 0.1229,
+   "y": 0.0156
+  },
+  {
+   "h": 0.0145,
+   "text": "Sign in",
+   "w": 0.0983,
+   "x": 0.8949,
+   "y": 0.0219
+  },
+  {
+   "h": 0.0133,
+   "text": "Search Amazon",
+   "w": 0.2661,
+   "x": 0.0525,
+   "y": 0.0775
+  },
+  {
+   "h": 0.0215,
+   "text": "Q Delivering to Anytown 00000 - Update location v",
+   "w": 0.8483,
+   "x": 0.0339,
+   "y": 0.1307
+  },
+  {
+   "h": 0.0176,
+   "text": "Consider these alternative items",
+   "w": 0.7229,
+   "x": 0.0381,
+   "y": 0.1878
+  },
+  {
+   "h": 0.018,
+   "text": "Sony WH-1 OOOXM51B Wireless",
+   "w": 0.5627,
+   "x": 0.3424,
+   "y": 0.2367
+  },
+  {
+   "h": 0.018,
+   "text": "Industry Leading Noise Cancelin...",
+   "w": 0.6195,
+   "x": 0.3441,
+   "y": 0.261
+  },
+  {
+   "h": 0.018,
+   "text": "4.3****4t 1,443",
+   "w": 0.3712,
+   "x": 0.3407,
+   "y": 0.2887
+  },
+  {
+   "h": 0.016,
+   "text": "$179.00",
+   "w": 0.1534,
+   "x": 0.3415,
+   "y": 0.3181
+  },
+  {
+   "h": 0.0176,
+   "text": "Google Pixel Buds Pro 2- Wireless Bluetooth E",
+   "w": 0.7746,
+   "x": 0.2119,
+   "y": 0.3998
+  },
+  {
+   "h": 0.0086,
+   "text": "Google Pixel",
+   "w": 0.1059,
+   "x": 0.0322,
+   "y": 0.4045
+  },
+  {
+   "h": 0.0145,
+   "text": "_80/0 $210.99 List Price: $22999",
+   "w": 0.4847,
+   "x": 0.2127,
+   "y": 0.4245
+  },
+  {
+   "h": 0.0321,
+   "text": "SONY",
+   "w": 0.3881,
+   "x": 0.0373,
+   "y": 0.4793
+  },
+  {
+   "h": 0.0156,
+   "text": "Visit the Sony Store",
+   "w": 0.311,
+   "x": 0.0356,
+   "y": 0.5203
+  },
+  {
+   "h": 0.0117,
+   "text": "4.2*",
+   "w": 0.0771,
+   "x": 0.9127,
+   "y": 0.5227
+  },
+  {
+   "h": 0.0156,
+   "text": "Sony WH-1000XM5 Premium Noise Cancelling Wireless He",
+   "w": 0.9432,
+   "x": 0.0373,
+   "y": 0.5462
+  },
+  {
+   "h": 0.0125,
+   "text": "Black",
+   "w": 0.0847,
+   "x": 0.0381,
+   "y": 0.5673
+  },
+  {
+   "h": 0.0156,
+   "text": "Auto NC Optimizer, Up to 30 Hrs of Battery, Carrying Case,",
+   "w": 0.9288,
+   "x": 0.0356,
+   "y": 0.5884
+  },
+  {
+   "h": 0.0153,
+   "text": "Calls, Touch Control, Multipoint Connection",
+   "w": 0.6771,
+   "x": 0.0373,
+   "y": 0.6095
+  },
+  {
+   "h": 0.0156,
+   "text": "500+ bought in past month",
+   "w": 0.4314,
+   "x": 0.0373,
+   "y": 0.6373
+  }
+ ]
+}

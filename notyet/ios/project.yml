@@ -1,4 +1,5 @@
-# XcodeGen spec: builds the app (no widget) so GitHub's Macs can screenshot it.
+# XcodeGen spec: builds the app plus the widget extension (Live Activity / Dynamic Island in Widget/),
+# embedded in the app, unsigned, so GitHub's Macs and cloud simulators can run it.
 # On a Mac you can also run `brew install xcodegen && xcodegen` in ios/ to get a ready project.
 name: NotYetUI
 options:
@@ -20,6 +21,9 @@ targets:
       - path: App
       - path: Views
       - path: Shared
+    dependencies:
+      - target: NotYetWidgets
+        embed: true
     info:
       path: Generated/Info.plist
       properties:
@@ -37,3 +41,19 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.notyet.ui
         TARGETED_DEVICE_FAMILY: "1"
     scheme: {}
+  NotYetWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widget
+      - path: Shared
+    info:
+      path: Generated/Widgets-Info.plist
+      properties:
+        CFBundleDisplayName: not yet.
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.notyet.ui.widgets
+        TARGETED_DEVICE_FAMILY: "1"

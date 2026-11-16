@@ -1,0 +1,8 @@
+# 2026-11-15 Not Yet iOS: Live Activity built and demoable without a Shortcut
+
+- Author: Claude agent (Opus), for Andrew.
+- Instructions: no new lasting guidance. Task: make the Live Activity / Dynamic Island visible on a cloud simulator (Revyl) with no Shortcut or Back Tap; edit only the listed iOS files; never touch main.
+- Changed: `notyet/ios/project.yml` now builds the widget extension `NotYetWidgets` (`Widget/` + `Shared/`, bundle id `com.notyet.ui.widgets`, unsigned, iOS 18) and embeds it in the app. Before this, no Live Activity UI was in the build.
+- Changed: launching with `-demoLiveActivity YES` (mock mode only) starts the pop-up: "Digging…" through the four step labels for 6 seconds, then the verdict with an alert. `-demoVerdict <key>` picks the sample (default `a`, Wait; `b`–`e` the others). Starting and finishing the pop-up moved into `ScanActivity` in `CheckPriceIntent.swift`, shared by the intent and the demo. Launch args are in `notyet/ios/UI_WORKFLOW.md`.
+- Checks: XcodeGen 2.46 generated the project: the appex lands in "Embed Foundation Extensions" (PlugIns), its Info.plist has the WidgetKit extension point and package type `XPC!`, and each target compiles the right files. App sources (previews stripped) and widget + Shared sources typechecked as Mac Catalyst iOS 18 against ActivityKit/WidgetKit interfaces with the Catalyst bans removed, Swift 5: no errors; planted errors were caught in both. Not built or run on iOS; nothing seen on screen.
+- Next: the Dynamic Island hides the app's own activity while the app is open, so swipe home after launch. A background task keeps the 6-second switch to "ready" running after leaving the app; confirm on Revyl that the switch happens.

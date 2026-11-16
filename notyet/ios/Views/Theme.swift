@@ -1,14 +1,8 @@
-// Target membership: app only. Colors, type and shared pieces for every screen.
-// Look: black background, white text, dark Prussian blue as the brand color, square corners.
+// Target membership: app only. Old token names and shared pieces, now drawn in the Worldscape
+// design language (tokens and components live in Views/DesignSystem/). The names below are kept
+// so existing screens keep compiling; new code should use `Palette`, `TextStyle` and the
+// DesignSystem components directly.
 import SwiftUI
-
-extension Color {
-    init(hex: UInt32) {
-        self.init(red: Double((hex >> 16) & 0xFF) / 255,
-                  green: Double((hex >> 8) & 0xFF) / 255,
-                  blue: Double(hex & 0xFF) / 255)
-    }
-}
 
 enum Config {
     // Paste your iCloud shortcut link and Whop checkout link here.
@@ -17,22 +11,23 @@ enum Config {
 }
 
 enum Theme {
-    // Core
-    static let paper = Color.black                    // app background
-    static let ink = Color.white                      // primary text
-    static let slate = Color.white.opacity(0.6)       // secondary text
-    static let hairline = Color.white.opacity(0.14)   // dividers and outlines
-    static let prussian = Color(hex: 0x003153)        // brand: buttons, verdict panel, selected chips
-    static let prussianLight = Color(hex: 0x4A86BD)   // brand tint that stays visible on black (icons, chart)
+    // Old names mapped onto the Worldscape palette.
+    static let paper = Palette.canvas               // app background
+    static let ink = Palette.textPrimary            // primary text
+    static let slate = Palette.textSecondary        // secondary text
+    static let hairline = Palette.stroke            // outlines (dividers: `Hairline()`)
+    static let prussian = Palette.electric          // brand fill: the one blue action or panel
+    static let prussianLight = Palette.glow         // blue that stays visible on black (icons, chart, tint)
 
-    // Verdicts, brightened for a dark background
+    // Verdicts. Worldscape has no verdict colours; green and amber are kept from the original
+    // design, and the red is Worldscape's danger red.
     static let buy = Color(hex: 0x3DDC97)
     static let wait = Color(hex: 0xFFB547)
-    static let fake = Color(hex: 0xFF5C5C)
+    static let fake = Palette.danger
 
-    /// Big numbers and verdict words. Falls back to the system font if Bricolage isn't bundled.
+    // Big numbers and verdict words, in Hiragino Sans W6.
     static func display(_ size: CGFloat) -> Font {
-        .custom("BricolageGrotesque-Bold", size: size, relativeTo: .largeTitle)
+        .hiragino(.w6, size: size, relativeTo: .largeTitle)
     }
 
     static func money(_ value: Double) -> String {
@@ -74,46 +69,24 @@ struct VerdictStyle {
     let word: String
     let color: Color
 
+    // Old entry point, kept for callers; the words and colors come from the shared Verdict table.
     init(_ verdict: String?) {
-        switch verdict {
-        case "BUY_NOW": word = "Buy"; color = Theme.buy
-        case "WAIT": word = "Wait"; color = Theme.wait
-        case "FAKE_DEAL": word = "Fake deal"; color = Theme.fake
-        default: word = "Checking"; color = Theme.slate
-        }
+        let v = Verdict(verdict)
+        word = v.word
+        color = v == .unknown ? Theme.slate : v.color
     }
 }
 
-/// Square-cornered button. Filled Prussian blue, or outlined.
+// Old button name. Filled is the primary key; outlined is the quiet key. Both 50pt tall.
 struct SharpButtonStyle: ButtonStyle {
     var filled = true
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .font(.headline)
-            .foregroundStyle(Theme.ink)
-            .frame(maxWidth: .infinity, minHeight: 50)
-            .background(filled ? Theme.prussian : Color.clear)
-            .overlay(Rectangle().stroke(filled ? Color.clear : Theme.hairline, lineWidth: 1))
-            .opacity(configuration.isPressed ? 0.7 : 1)
-    }
-}
 
-/// Square chip for filters and choices.
-struct Chip: View {
-    let title: String
-    let selected: Bool
-    let action: () -> Void
-    var body: some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline.weight(.medium))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 8)
-                .background(selected ? Theme.prussian : Color.clear)
-                .overlay(Rectangle().stroke(selected ? Color.clear : Theme.hairline, lineWidth: 1))
-                .foregroundStyle(Theme.ink)
+    @ViewBuilder func makeBody(configuration: Configuration) -> some View {
+        if filled {
+            KeyButtonStyle(tone: .primary, height: ControlHeight.mainKey).makeBody(configuration: configuration)
+        } else {
+            QuietButtonStyle(height: ControlHeight.mainKey).makeBody(configuration: configuration)
         }
-        .buttonStyle(.plain)
     }
 }
 
@@ -121,11 +94,11 @@ struct RetailerBadge: View {
     let name: String
     var body: some View {
         Text(name.lowercased())
-            .font(.caption.bold())
-            .foregroundStyle(Theme.ink.opacity(0.85))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .overlay(Rectangle().stroke(Theme.hairline, lineWidth: 1))
+            .textStyle(.footnote)
+            .foregroundStyle(Palette.textSecondary)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(Palette.fillChip))
     }
 }
 
@@ -150,7 +123,7 @@ struct StarsView: View {
 }
 
 struct Hairline: View {
-    var body: some View { Rectangle().fill(Theme.hairline).frame(height: 1) }
+    var body: some View { Rectangle().fill(Palette.divider).frame(height: 1) }
 }
 
 // The gear in the top-right corner of every tab.

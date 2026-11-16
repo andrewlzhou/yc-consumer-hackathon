@@ -1,11 +1,35 @@
 // Target membership: app only.
-// Filters, then Today / Last 7 days / Earlier. The amber square marks items re-checked daily.
+// Filter chips, then Today / Last 7 days / Earlier, each a list card. A row reads at a glance:
+// verdict (word and tile colour), price, product. The amber dot marks items re-checked daily.
 import SwiftUI
 
 struct HistoryView: View {
-    enum Filter: String, CaseIterable, Identifiable {
-        case all = "All", tracking = "Tracking", buy = "Buy", wait = "Wait", fake = "Fake"
-        var id: String { rawValue }
+    enum Filter: Hashable, CaseIterable, Identifiable {
+        case all, tracking, verdict(Verdict)
+
+        // One chip per verdict the app knows, old backend and new.
+        static let allCases: [Filter] = [.all, .tracking]
+            + [Verdict.buyNow, .wait, .fakeDeal, .considerAlternative, .investigate].map(Filter.verdict)
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .all: "All"
+            case .tracking: "Tracking"
+            case .verdict(let v): v.word
+            }
+        }
+
+        // `verdictKind` turns any string into a known verdict or `.unknown`, so a value this list
+        // does not know still shows under All and Tracking.
+        func includes(_ item: HistoryItem) -> Bool {
+            switch self {
+            case .all: true
+            case .tracking: item.isTracking
+            case .verdict(let v): item.verdictKind == v
+            }
+        }
     }
 
     private struct DaySection: Identifiable {
@@ -21,15 +45,7 @@ struct HistoryView: View {
     @State private var loading = true
 
     private var filtered: [HistoryItem] {
-        let base = items.filter { item in
-            switch filter {
-            case .all: return true
-            case .tracking: return item.isTracking
-            case .buy: return item.verdict == "BUY_NOW"
-            case .wait: return item.verdict == "WAIT"
-            case .fake: return item.verdict == "FAKE_DEAL"
-            }
-        }
+        let base = items.filter(filter.includes)
         return newestFirst ? base : base.reversed()
     }
 
@@ -47,54 +63,76 @@ struct HistoryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    filterBar.padding(.bottom, 16)
-                    if loading && items.isEmpty {
-                        ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
-                    } else if filtered.isEmpty {
-                        Text("Nothing here yet.").foregroundStyle(Theme.slate).padding(.top, 24)
-                    } else {
-                        ForEach(sections) { section in
-                            Text(section.title)
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(Theme.slate)
-                                .padding(.top, 16)
-                                .padding(.bottom, 6)
-                            ForEach(section.items) { item in
-                                HistoryRow(item: item) { router.openKey = item.scanKey }
-                                Hairline()
-                            }
-                        }
-                    }
+                    ScreenTitle("History")
+                    filterBar.padding(.top, 12)
+                    content
+                        .animation(Motion.rise, value: filter)
+                        .animation(Motion.rise, value: newestFirst)
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Spacing.screenMargin)
                 .padding(.bottom, 24)
             }
-            .background(Theme.paper)
-            .navigationTitle("History")
+            .background { ScreenBackdrop() }
             .settingsButton()
             .task { await load() }
             .refreshable { await load() }
         }
     }
 
+    @ViewBuilder private var content: some View {
+        if loading && items.isEmpty {
+            HoppingDots()
+                .frame(maxWidth: .infinity)
+                .padding(.top, 72)
+        } else if filtered.isEmpty {
+            VStack(spacing: 10) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 22, weight: .light))
+                    .foregroundStyle(Palette.textTertiary)
+                Text("Nothing here yet.")
+                    .textStyle(.caption)
+                    .foregroundStyle(Palette.textSecondary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 72)
+            .transition(.opacity)
+        } else {
+            ForEach(sections) { section in
+                VStack(alignment: .leading, spacing: 8) {
+                    SectionLabel(section.title).padding(.leading, 4)
+                    FlatCard {
+                        VStack(spacing: 0) {
+                            ForEach(Array(section.items.enumerated()), id: \.element.id) { index, item in
+                                if index > 0 {
+                                    // Inset to line up with the row text: padding 12 + tile 38 + gap 14.
+                                    Hairline().padding(.leading, 64)
+                                }
+                                HistoryRow(item: item) { router.openKey = item.scanKey }
+                            }
+                        }
+                    }
+                }
+                .padding(.top, 20)
+                .transition(.rise)
+            }
+        }
+    }
+
     private var filterBar: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 4) {
             Menu {
                 Picker("Sort", selection: $newestFirst) {
                     Text("Newest first").tag(true)
                     Text("Oldest first").tag(false)
                 }
             } label: {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .frame(width: 36, height: 36)
-                    .overlay(Rectangle().stroke(Theme.hairline, lineWidth: 1))
-                    .foregroundStyle(Theme.ink)
+                RoundIcon(systemName: "line.3.horizontal.decrease")
             }
             .accessibilityLabel("Sort")
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Filter.allCases) { f in
-                        Chip(title: f.rawValue, selected: filter == f) { filter = f }
+                        Chip(title: f.title, selected: filter == f) { filter = f }
                     }
                 }
             }
@@ -104,7 +142,13 @@ struct HistoryView: View {
     private func load() async {
         loading = true
         defer { loading = false }
-        if let fresh = try? await ScanAPI.fetchHistory() { items = fresh }
+        guard let fresh = try? await ScanAPI.fetchHistory() else { return }
+        if items.isEmpty {
+            // First arrival rises in; a refresh swaps in place.
+            withAnimation(Motion.rise) { items = fresh }
+        } else {
+            items = fresh
+        }
     }
 }
 
@@ -112,64 +156,89 @@ struct HistoryRow: View {
     let item: HistoryItem
     let open: () -> Void
     @State private var trackedHere = false
+    @State private var pressed = false
 
     private var tracking: Bool { item.isTracking || trackedHere }
 
     var body: some View {
-        let style = VerdictStyle(item.verdict)
-        HStack(spacing: 12) {
-            HStack(spacing: 12) {
-                ZStack(alignment: .leading) {
-                    Rectangle().fill(Theme.prussian).frame(width: 46, height: 46)
-                    Rectangle().fill(style.color).frame(width: 3, height: 46)
-                    Image(systemName: Theme.productSymbol(item.productName))
-                        .font(.title3)
-                        .foregroundStyle(Theme.ink)
-                        .frame(width: 46, height: 46)
-                }
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(item.productName ?? "Checking…")
-                        .font(.headline)
-                        .foregroundStyle(Theme.ink)
-                        .lineLimit(1)
-                    Text(item.date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day().year()))
-                        .font(.subheadline)
-                        .foregroundStyle(Theme.slate)
-                    if tracking {
+        let verdict = item.verdictKind
+        HStack(spacing: 0) {
+            Button(action: open) {
+                HStack(spacing: Spacing.rowIconToText) {
+                    VerdictTile(symbol: Theme.productSymbol(item.productName), color: verdict.color)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(item.productName ?? "Checking…")
+                            .textStyle(.item)
+                            .foregroundStyle(Palette.textPrimary)
+                            .lineLimit(1)
                         HStack(spacing: 6) {
-                            Rectangle().fill(Theme.wait).frame(width: 6, height: 6)
-                            Text(trackingLine).font(.caption).foregroundStyle(Theme.wait)
+                            Text(verdict.word)
+                                .font(.hiragino(.w6, size: TextStyle.caption.size, relativeTo: .caption))
+                                .foregroundStyle(verdict.color)
+                            if let retailer = item.retailer {
+                                Text("·").foregroundStyle(Palette.textTertiary)
+                                Text(retailer)
+                                    .textStyle(.caption)
+                                    .foregroundStyle(Palette.textSecondary)
+                            }
                         }
-                    }
-                }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture(perform: open)
-
-            Spacer(minLength: 0)
-
-            VStack(alignment: .trailing, spacing: 14) {
-                Menu {
-                    Button("Open", action: open)
-                    if !tracking {
-                        Button("Track this price") {
-                            Task {
-                                try? await ScanAPI.saveToWishlist(key: item.scanKey)
-                                trackedHere = true
+                        .lineLimit(1)
+                        if tracking {
+                            HStack(spacing: 6) {
+                                Circle().fill(Theme.wait).frame(width: 6, height: 6)
+                                Text(trackingLine)
+                                    .textStyle(.footnote)
+                                    .foregroundStyle(Theme.wait)
                             }
                         }
                     }
-                    if let one = item.oneLiner, let name = item.productName {
-                        ShareLink(item: "\(name): \(one)")
+                    Spacer(minLength: 8)
+                    VStack(alignment: .trailing, spacing: 4) {
+                        if let price = item.currentPrice {
+                            Text(Theme.money(price))
+                                .font(.hiragino(.w6, size: 17, relativeTo: .body))
+                                .monospacedDigit()
+                                .foregroundStyle(Palette.textPrimary)
+                        }
+                        Text(timeLabel)
+                            .textStyle(.footnote)
+                            .monospacedDigit()
+                            .foregroundStyle(Palette.textTertiary)
                     }
-                } label: {
-                    Image(systemName: "ellipsis").padding(6).foregroundStyle(Theme.slate)
                 }
-                .accessibilityLabel("More")
-                if let r = item.retailer { RetailerBadge(name: r) }
+                .padding(.leading, Spacing.rowHorizontal)
+                .padding(.vertical, 12)
+                .frame(minHeight: ControlHeight.row)
+                .accessibilityElement(children: .combine)
             }
+            .buttonStyle(PressReportingStyle(isPressed: $pressed))
+
+            Menu {
+                Button("Open", action: open)
+                if !tracking {
+                    Button("Track this price") {
+                        Task {
+                            try? await ScanAPI.saveToWishlist(key: item.scanKey)
+                            trackedHere = true
+                        }
+                    }
+                }
+                if let one = item.oneLiner, let name = item.productName {
+                    ShareLink(item: "\(name): \(one)")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Palette.textTertiary)
+                    .frame(width: 40, height: ControlHeight.minTouch)
+                    .contentShape(Rectangle())
+            }
+            .accessibilityLabel("More")
         }
-        .padding(.vertical, 12)
+        // The whole row lights while its main area is pressed.
+        .background { ListRowPressedFill(isPressed: pressed) }
+        .animation(Motion.hover, value: pressed)
+        .animation(Motion.valueChange, value: trackedHere)
     }
 
     private var trackingLine: String {
@@ -179,12 +248,57 @@ struct HistoryRow: View {
         }
         return "Daily"
     }
+
+    // Rows are already grouped by day, so today's rows show the time and older rows the date.
+    private var timeLabel: String {
+        let cal = Calendar.current
+        if cal.isDateInToday(item.date) {
+            return item.date.formatted(date: .omitted, time: .shortened)
+        }
+        if cal.isDate(item.date, equalTo: .now, toGranularity: .year) {
+            return item.date.formatted(.dateTime.month(.abbreviated).day())
+        }
+        return item.date.formatted(.dateTime.month(.abbreviated).day().year())
+    }
+}
+
+// The product symbol on a tile tinted with the verdict colour.
+private struct VerdictTile: View {
+    let symbol: String
+    let color: Color
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Radius.key, style: .continuous)
+        Image(systemName: symbol)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundStyle(color)
+            .frame(width: ControlHeight.avatar, height: ControlHeight.avatar)
+            .background { shape.fill(color.opacity(0.14)) }
+            .overlay { shape.strokeBorder(color.opacity(0.28), lineWidth: 0.5) }
+            .accessibilityHidden(true)
+    }
+}
+
+// Passes the button's pressed state out, so the row's fill can cover the menu area too.
+private struct PressReportingStyle: ButtonStyle {
+    @Binding var isPressed: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
+            .onChange(of: configuration.isPressed) { _, pressed in isPressed = pressed }
+    }
 }
 
 #Preview {
     ScrollView {
-        VStack(spacing: 0) { ForEach(SampleData.history) { HistoryRow(item: $0) {}; Hairline() } }.padding()
+        FlatCard {
+            VStack(spacing: 0) {
+                ForEach(SampleData.history) { HistoryRow(item: $0) {} }
+            }
+        }
+        .padding()
     }
-    .background(Theme.paper)
+    .background { ScreenBackdrop() }
     .preferredColorScheme(.dark)
 }

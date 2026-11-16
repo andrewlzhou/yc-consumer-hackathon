@@ -22,10 +22,11 @@ An AI shopping assistant that tells you whether a product is worth buying right 
 
 ## What exists today
 
-- The backend works on branch `ruhaan_backend`: a product title or supported store link returns a verdict card, with a price chart and detailed report available separately.
+- The Convex backend is on `main`: a product title or supported store link returns a verdict card, with a price chart and detailed report available separately.
 - A small electronics demo uses real online price history; gaps use clearly labeled sample data. Broader store coverage is still being verified.
 - Watchlists, target prices and a notification inbox work. Real iPhone push delivery still needs Apple credentials and a device.
-- There is no iOS app yet. [Try the backend now](docs/backend/try-now.md) from a terminal; no app API key is needed for the Convex-authorized internal demo.
+- The iPhone app (`ios/`, Check Price) sends a store link or screenshot to that backend and shows the real verdict and report (2026-11-15). Not yet tried on a phone with the real key.
+- [Try the backend now](docs/backend/try-now.md) from a terminal; no app API key is needed for the Convex-authorized internal demo.
 
 ## Where this goes
 

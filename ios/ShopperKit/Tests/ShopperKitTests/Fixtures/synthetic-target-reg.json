@@ -1,0 +1,66 @@
+{
+ "name": "synthetic-target-reg",
+ "expected": {
+  "note": "Target style: sale price, reg price, payments",
+  "titleContains": [
+   "Bose",
+   "QuietComfort"
+  ],
+  "retailer": "Target",
+  "currentPrice": 299.0,
+  "originalPrice": 429.0,
+  "product": true,
+  "source": "synthetic, hand-written lines modelled on the store layout"
+ },
+ "lines": [
+  {
+   "text": "Target",
+   "x": 0.05,
+   "y": 0.06,
+   "w": 0.15,
+   "h": 0.018
+  },
+  {
+   "text": "Bose QuietComfort Ultra Wireless Noise Cancelling",
+   "x": 0.05,
+   "y": 0.48,
+   "w": 0.85,
+   "h": 0.019
+  },
+  {
+   "text": "Headphones (2nd Gen) - Black",
+   "x": 0.05,
+   "y": 0.503,
+   "w": 0.5,
+   "h": 0.019
+  },
+  {
+   "text": "$299.00 Sale",
+   "x": 0.05,
+   "y": 0.55,
+   "w": 0.3,
+   "h": 0.03
+  },
+  {
+   "text": "reg $429.00",
+   "x": 0.05,
+   "y": 0.585,
+   "w": 0.2,
+   "h": 0.014
+  },
+  {
+   "text": "Save $130.00 (30% off)",
+   "x": 0.3,
+   "y": 0.585,
+   "w": 0.4,
+   "h": 0.014
+  },
+  {
+   "text": "4 interest-free payments of $74.75",
+   "x": 0.05,
+   "y": 0.61,
+   "w": 0.6,
+   "h": 0.013
+  }
+ ]
+}

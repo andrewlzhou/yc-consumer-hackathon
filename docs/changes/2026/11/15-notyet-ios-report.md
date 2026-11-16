@@ -1,0 +1,9 @@
+# 2026-11-15 — Not Yet iOS: purchase report restyle and new verdicts
+
+- Author: Claude (Opus 5.5) subagent, requested by Andrew through a coordinating agent.
+- Instructions: report work only (report view, Models, SampleData, report sheet); Models changes additive only; mock keys a, b, c, digging unchanged. No lasting new rules beyond the mock-key list in `notyet/ios/UI_WORKFLOW.md`.
+- Changed: `Models.swift` gained a `Verdict` enum (adds Look around = CONSIDER_ALTERNATIVE, Check first = INVESTIGATE, unknown fallback) and optional fields for the sample-data flag, match note, typical and lowest price, forecast range, discount check, key facts, alternatives, sale events and pending report. Nested fields decode tolerantly.
+- Changed: sample reports for every verdict; new mock keys `d` (Look around) and `e` (Check first).
+- Changed: the report leads with the verdict on glass over blue light (word, symbol, one-liner, confidence, sample-data tag, match note), then price evidence, chart, facts and alternatives, then tracking and the store. Saving now shows progress, errors, the reminder day and a notifications-off notice; tracked dates persist on the phone.
+- Checks: report view, Models, SampleData and the design system typecheck together with `swiftc -typecheck` on the macOS 15 SDK (UIKit stubbed, previews removed); a decode run showed every mock key gives the right verdict and malformed fields become nil. `NotYetApp.swift` was not typechecked. Nothing compiled for iOS or seen on screen.
+- Next: build in Xcode or CI and judge the hero colours by eye. `VerdictStyle` in `Views/Theme.swift` (not owned here) still shows "Checking" for the two new verdicts; it should switch to `Verdict`. The backend adapter in `ScanAPI` that fills the new fields is not written. Buy-verdict reminders still say "Time to buy" on the need-by date (`Reminders.swift`, not owned here).

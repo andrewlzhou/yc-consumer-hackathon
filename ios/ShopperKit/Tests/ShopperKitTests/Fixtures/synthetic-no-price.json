@@ -1,0 +1,37 @@
+{
+ "name": "synthetic-no-price",
+ "expected": {
+  "note": "Product title but no price on screen: never invent one",
+  "titleContains": [
+   "Align High-Rise"
+  ],
+  "retailer": "lululemon",
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": true,
+  "source": "synthetic, hand-written lines modelled on the store layout"
+ },
+ "lines": [
+  {
+   "text": "lululemon.com",
+   "x": 0.4,
+   "y": 0.06,
+   "w": 0.2,
+   "h": 0.013
+  },
+  {
+   "text": "lululemon Align High-Rise Pant 25\"",
+   "x": 0.05,
+   "y": 0.55,
+   "w": 0.8,
+   "h": 0.026
+  },
+  {
+   "text": "Select a size",
+   "x": 0.05,
+   "y": 0.62,
+   "w": 0.3,
+   "h": 0.014
+  }
+ ]
+}
