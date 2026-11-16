@@ -1,7 +1,8 @@
-// The Threads tab, titled "Library" (owner, 2026-11-15): the title scrolls with the content, then a
-// Watchlist row, then "Recents": every thread newest first, Shazam-style (picture, name, retailer,
-// save button). Tapping Watchlist filters the list in place to saved threads and tapping again
-// shows all; the orange filled bookmark marks it on. Tapping a thread opens ThreadDetailView.
+// The Threads tab, titled "Library" (owner, 2026-11-15): the title scrolls with the content, with
+// an icon-only Watchlist toggle at its right end, then "Recents": every thread newest first,
+// Shazam-style (picture, name, retailer, save button). The toggle filters the list in place to
+// saved threads and tapping again shows all; the orange filled bookmark marks it on. Tapping a
+// thread opens ThreadDetailView.
 // There is no search (the owner leaves that to a general agent). It is a List because swipe
 // actions only exist on List rows.
 import SwiftUI
@@ -18,11 +19,7 @@ struct ThreadsView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                ScreenTitle("Library")
-                    .padding(.horizontal, Spacing.rowHorizontal)
-                    .padding(.bottom, 12)
-                    .threadsPlainRow()
-                watchlistRow
+                titleLine
                 recentsLabel
                 ForEach(threads) { thread in
                     ThreadsListRow(thread: thread) { path.append(thread.id) }
@@ -36,30 +33,35 @@ struct ThreadsView: View {
         }
     }
 
-    // A thin outline bookmark and "Watchlist" in large regular text; on, the bookmark fills orange.
-    private var watchlistRow: some View {
+    // The trailing inset matches the rows' save buttons, so the bookmarks line up in one column.
+    private var titleLine: some View {
+        HStack(spacing: 0) {
+            ScreenTitle("Library")
+            Spacer(minLength: 0)
+            watchlistToggle
+        }
+        .padding(.leading, Spacing.rowHorizontal)
+        .padding(.bottom, 12)
+        .threadsPlainRow()
+    }
+
+    // A thin outline bookmark; on, it fills orange and the list shows only saved threads.
+    private var watchlistToggle: some View {
         Button {
             withAnimation(Motion.rise) { watchlistOnly.toggle() }
         } label: {
-            HStack(spacing: Spacing.rowIconToText) {
-                Image(systemName: watchlistOnly ? "bookmark.fill" : "bookmark")
-                    .font(.system(size: 19, weight: .light))
-                    .foregroundStyle(watchlistOnly ? Palette.accent : Palette.textPrimary)
-                    .contentTransition(.symbolEffect(.replace))
-                    .frame(width: 24)
-                    .accessibilityHidden(true)
-                Text("Watchlist")
-                    .textStyle(.statement(size: 18))
-                    .foregroundStyle(Palette.textPrimary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .threadsRowPadding()
+            Image(systemName: watchlistOnly ? "bookmark.fill" : "bookmark")
+                .font(.system(size: 19, weight: .light))
+                .foregroundStyle(watchlistOnly ? Palette.accent : Palette.textPrimary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: ControlHeight.minTouch, height: ControlHeight.minTouch)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(ListRowButtonStyle())
+        .buttonStyle(IconPressStyle())
         .sensoryFeedback(.selection, trigger: watchlistOnly)
+        .accessibilityLabel("Watchlist")
+        .accessibilityValue(watchlistOnly ? "On" : "Off")
         .accessibilityAddTraits(watchlistOnly ? .isSelected : [])
-        .threadsPlainRow()
     }
 
     private var recentsLabel: some View {
