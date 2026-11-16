@@ -13,8 +13,8 @@
 - `deviceId`: anonymous random UUID made on first launch. Not real auth; used for watchlists and rate limits.
 - `url`: product URL, when the trigger has one (share sheet, Safari). Enough on its own; see [report](agent-report.md).
 - `ocrLines`: fallback only. A few pruned text lines when on-device parsing could not fill title and price. They can
-  only find a clear catalog match; they never create a product or get stored. Personal-looking or store-chrome titles
-  ("Best Buy App") are treated as missing. See [scan safety](agent-scan-safety.md).
+  only find a clear catalog match; they never create a product or get stored. Titles that look personal, are store
+  chrome ("Best Buy App"), or carry no product signal are treated the same way. See [scan safety](agent-scan-safety.md).
 - `capturedAt`: phone time of the scan, epoch milliseconds.
 - The screenshot itself is never sent.
 

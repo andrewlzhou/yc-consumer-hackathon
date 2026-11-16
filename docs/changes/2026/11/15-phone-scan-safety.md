@@ -8,8 +8,11 @@
   background. AE/Nike color codes keep variants apart; failed links and thin history explain themselves.
   OCR-only, personal and store-chrome text ("Best Buy App") never creates products, stores titles, or makes paid calls.
 - Changed: live path has a 4 s budget. Fake provider reads the 365-day stats, as the prompt intends.
+- Review (YCCO-14, CON-13): color guard now also covers the background title fallback and cached links; titles need a
+  product signal and are NFKC-normalized; relation check fixed for subjects, negation and one-price phrasings;
+  embedding bounded and failure-tolerant; stale contradictory cache entries rerun.
 - Contract: no type change; `ocrLines` behavior is narrower (contract.md updated). New products index `by_identifiers_asin`.
-- Checks: `npm run typecheck`, `npx vitest run` (197: 195 passed, 2 live skipped), `python3 scripts/check_docs.py`,
+- Checks: `npm run typecheck`, `npx vitest run` (222: 220 passed, 2 live skipped), `python3 scripts/check_docs.py`,
   local anonymous `npx convex dev` push and HTTP probes (latencies in scan-safety doc). No shared deployment.
 - Next: deploy after review; verify on the shared deployment with the real model and the phone. A real a.co link and
   the XM4C (M4 2nd Gen) match are unverified. Phone side must still re-POST a pending link (M6).

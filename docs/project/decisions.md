@@ -12,8 +12,8 @@
 - 2026-11-15 (Ruhaan): the backend is an LLM agent that reasons over retrieved evidence, not a rules engine.
   Exact math, storage, scheduling, and caching stay in code. See [product context](../backend/product.md).
 - 2026-11-15 (Ruhaan): seeded or simulated data is always labeled as sample data and never fires real notifications.
-- 2026-11-15 (Ruhaan, CON-10): OCR-only, personal or store-chrome screen text never creates a catalog product, gets stored,
-  or triggers a paid lookup. See [scan safety](../backend/agent-scan-safety.md).
+- 2026-11-15 (Ruhaan, CON-10): only a phone title with a product signal may create a catalog product, be stored, or
+  trigger a paid lookup; OCR-only, personal-looking or store-chrome text never does. See [scan safety](../backend/agent-scan-safety.md).
 - 2026-11-15 (Ruhaan): backend work lands on branch `ruhaan_backend`. See [orchestration](../backend/orchestration.md).
 
 ## Initial setup choices
