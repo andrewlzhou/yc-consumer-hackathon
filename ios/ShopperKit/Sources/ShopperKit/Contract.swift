@@ -93,6 +93,8 @@ public struct ReportResponse: Decodable, Sendable {
         public var tier: String
         public var source: String?
         public var createdAt: Double?
+        // The price the scan behind this analysis saw; nil when that scan had none.
+        public var scanPrice: Double?
         public var verdict: Verdict
         public var confidence: Double
         public var reason: String

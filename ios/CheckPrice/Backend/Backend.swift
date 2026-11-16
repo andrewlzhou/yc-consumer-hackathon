@@ -23,14 +23,9 @@ struct CheckResult {
     var product: Product {
         Product(
             name: response.matchedTitle ?? extract.title ?? url?.host() ?? "Product",
-            retailer: extract.retailer ?? url.map(Self.storeName) ?? "",
-            price: extract.currentPrice.map(Money.text) ?? "",
-            icon: "tag",
-            verdict: Verdict(response.verdict),
-            summary: response.reason,
-            projectedLow: "",
             productId: response.productId,
-            isSampleData: response.isSampleData
+            check: CheckSnapshot(price: extract.currentPrice, retailer: extract.retailer ?? url.map(Self.storeName) ?? "",
+                                 verdict: Verdict(response.verdict), reason: response.reason, isSampleData: response.isSampleData)
         )
     }
 
@@ -44,29 +39,39 @@ struct CheckResult {
 // Screenshot or link -> on-device text reading -> POST /analyze. The image stays in memory here and
 // never leaves the phone; only the extracted fields are sent (docs/backend/contract.md on main).
 enum CheckRunner {
-    static func run(url: URL) async -> Result<CheckResult, ShopperError> {
+    // How long each stage took, for ScanDiagnostics.
+    final class Times {
+        var ocr = 0.0
+        var network = 0.0
+    }
+
+    static func run(url: URL, times: Times? = nil) async -> Result<CheckResult, ShopperError> {
         let request = ProductExtract(deviceId: DeviceIdentity.current(), url: url.absoluteString, capturedAt: nowMillis())
-        var result = await analyze(request)
+        var result = await analyze(request, times)
         // A new link is resolved in the background; asking once more shortly after usually finds the product.
         if case let .success(response) = result, response.productId == nil, response.reportStatus == "pending" {
             try? await Task.sleep(for: .seconds(2))
-            result = await analyze(request)
+            result = await analyze(request, times)
         }
         return result.map { CheckResult(response: $0, url: url) }
     }
 
-    static func run(imageData: Data) async -> Result<CheckResult, ShopperError> {
+    static func run(imageData: Data, times: Times? = nil) async -> Result<CheckResult, ShopperError> {
+        let start = Date()
         guard let image = TextRecognizer.cgImage(from: imageData),
               let lines = try? await TextRecognizer.recognize(image) else { return .failure(.unreadableImage) }
+        times?.ocr = Date().timeIntervalSince(start)
         let extract = ProductExtractor.extract(lines)
         guard extract.hasProduct else { return .failure(.noProduct) }
         let request = ProductExtract(deviceId: DeviceIdentity.current(), retailer: extract.retailer, title: extract.title,
                                      currentPrice: extract.currentPrice, originalPrice: extract.originalPrice,
                                      ocrLines: extract.title == nil ? extract.fallbackLines : nil, capturedAt: nowMillis())
-        return await analyze(request).map { CheckResult(response: $0, extract: extract) }
+        return await analyze(request, times).map { CheckResult(response: $0, extract: extract) }
     }
 
-    private static func analyze(_ request: ProductExtract) async -> Result<AnalyzeResponse, ShopperError> {
+    private static func analyze(_ request: ProductExtract, _ times: Times?) async -> Result<AnalyzeResponse, ShopperError> {
+        let start = Date()
+        defer { times?.network += Date().timeIntervalSince(start) }
         do { return .success(try await Backend.client.analyze(request)) }
         catch let error as ShopperError { return .failure(error) }
         catch { return .failure(.network) }

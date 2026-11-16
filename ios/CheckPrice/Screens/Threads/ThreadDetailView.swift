@@ -22,6 +22,8 @@ struct ThreadDetailView: View {
             }
         }
         .background(Palette.canvas.ignoresSafeArea())
+        // A thread opened from the list, or kept from before a restart, still needs its report.
+        .task { store.loadReportIfNeeded(for: threadID) }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
     }

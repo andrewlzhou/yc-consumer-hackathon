@@ -9,18 +9,16 @@ struct ThreadDetailReport: View {
     let product: Product
     // Sections rise in one after another once this turns true.
     var revealed: Bool
-    // nil while a checked product's report is still on its way.
+    // nil while a checked product's report is still on its way, or when it has none.
     private let figures: ThreadDetailFigures?
+    private let awaitingReport: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(product: Product, report: ReportResponse?, revealed: Bool) {
         self.product = product
         self.revealed = revealed
-        if product.productId == nil {
-            self.figures = ThreadDetailDemoHistory.figures(for: product)
-        } else {
-            self.figures = report.flatMap { ThreadDetailFigures(report: $0, product: product) }
-        }
+        self.figures = ThreadDetailFigures.forThread(product: product, report: report)
+        self.awaitingReport = product.productId != nil && (report?.pending ?? true)
     }
 
     private var verdict: Verdict { product.verdict }
@@ -36,7 +34,7 @@ struct ThreadDetailReport: View {
             if let figures {
                 chartSection(figures)
                     .modifier(ThreadDetailArrive(index: 3, revealed: revealed, reduceMotion: reduceMotion))
-            } else {
+            } else if awaitingReport {
                 ThinkingLine(step: nil)
                     .padding(.horizontal, 4)
             }

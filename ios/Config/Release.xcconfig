@@ -1,4 +1,4 @@
 // Release builds never carry the shared key: a shipped app needs device-bound auth on the backend first.
-// Without a key the app runs its demo check.
+// Without a key a check fails with a message.
 CHECKPRICE_BACKEND_HOST = scintillating-caterpillar-190.convex.site
 CHECKPRICE_API_KEY =

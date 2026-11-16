@@ -32,17 +32,25 @@ struct ShoppingThread: Identifiable {
 
 @MainActor @Observable
 final class ThreadStore {
-    static let shared = ThreadStore()
-
     // Newest first.
     var threads: [ShoppingThread]
     // Set to open a thread's detail as a sheet from anywhere (ContentView presents it).
     var openThreadID: UUID?
     // The id of the reply currently being "typed", so the detail view can stream it.
     var replyingIn: UUID?
+    // GET /report; tests swap it for a stub.
+    @ObservationIgnored var fetchReport: (String) async throws -> ReportResponse = { try await Backend.client.report(productId: $0) }
+    // Where real checks are kept across restarts; nil in tests and previews.
+    @ObservationIgnored private let archive: ScanArchive?
+    // The report load now running for each thread. A newer load takes a thread over; the older one stops.
+    @ObservationIgnored private var reportLoads: [UUID: Int] = [:]
+    @ObservationIgnored private var lastLoad = 0
 
-    init(threads: [ShoppingThread] = DemoThreads.all) {
+    static let shared = ThreadStore(threads: ScanArchive.standard.load() + DemoThreads.all, archive: .standard)
+
+    init(threads: [ShoppingThread] = DemoThreads.all, archive: ScanArchive? = nil) {
         self.threads = threads
+        self.archive = archive
     }
 
     var hearted: [ShoppingThread] { threads.filter(\.isHearted) }
@@ -54,6 +62,7 @@ final class ThreadStore {
     func startThread(for product: Product) -> UUID {
         let thread = ShoppingThread(id: UUID(), product: product, startedAt: .now, isHearted: false, isSaved: false, messages: [])
         threads.insert(thread, at: 0)
+        if product.check != nil { archive?.save(threads) }
         return thread.id
     }
 
@@ -74,13 +83,21 @@ final class ThreadStore {
         }
     }
 
-    // Fetches the report, then again every few seconds while the full analysis is still running.
+    // Fetches a checked product's report, then again every few seconds while the full analysis is still running.
+    // Only this thread's own product's report is kept, and only from the newest load.
     func loadReport(for id: UUID) {
-        guard let productId = thread(id)?.product.productId else { return }
+        guard let product = thread(id)?.product, product.check != nil, let productId = product.productId else { return }
+        lastLoad += 1
+        let load = lastLoad
+        reportLoads[id] = load
         Task { @MainActor in
+            defer { if reportLoads[id] == load { reportLoads[id] = nil } }
             for attempt in 0..<6 {
                 if attempt > 0 { try? await Task.sleep(for: .seconds(3)) }
-                guard let report = try? await Backend.client.report(productId: productId) else { continue }
+                guard reportLoads[id] == load else { return }
+                let report = try? await fetchReport(productId)
+                guard reportLoads[id] == load else { return }
+                guard let report, report.product.productId == productId else { continue }
                 update(id) {
                     $0.report = report
                     $0.product = $0.product.updated(with: report)
@@ -88,6 +105,22 @@ final class ThreadStore {
                 if !report.pending { return }
             }
         }
+    }
+
+    // For a thread opened later (from Threads, or kept from before a restart): fetches the report unless the
+    // thread has its finished one or a load is already running.
+    func loadReportIfNeeded(for id: UUID) {
+        guard reportLoads[id] == nil, thread(id)?.report?.pending ?? true else { return }
+        loadReport(for: id)
+    }
+
+    // Opens the newest check of a backend product: the Back Tap result's Details button and
+    // checkprice://product/<id> land here. Checks are kept across restarts (ScanArchive), so the thread is the
+    // check itself, with its own price and verdict. A product never checked on this phone opens nothing.
+    func openProduct(_ productId: String) {
+        guard let id = threads.first(where: { $0.product.check != nil && $0.product.productId == productId })?.id else { return }
+        openThreadID = id
+        loadReportIfNeeded(for: id)
     }
 
     // Appends the user's message, then a canned reply after a short pause.

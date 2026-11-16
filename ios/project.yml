@@ -39,6 +39,10 @@ targets:
       properties:
         CheckPriceBackendHost: $(CHECKPRICE_BACKEND_HOST)
         CheckPriceAPIKey: $(CHECKPRICE_API_KEY)
+        # checkprice://product/<productId> opens that product's thread (CheckPrice/Intents/ProductLink.swift).
+        CFBundleURLTypes:
+          - CFBundleURLName: com.ycconsumerhackathon.checkprice
+            CFBundleURLSchemes: [checkprice]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ycconsumerhackathon.checkprice
@@ -47,7 +51,22 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Check Price
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_NSSupportsLiveActivities: YES
-    scheme: {}
+    scheme:
+      testTargets: [CheckPriceTests]
+  # Unit tests for the app's own logic, hosted in the app (the app module is Check_Price).
+  CheckPriceTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [CheckPriceTests]
+    dependencies:
+      - target: CheckPrice
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.ycconsumerhackathon.checkprice.tests
+        # The app's product name has a space, so XcodeGen's default host path is wrong.
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Check Price.app/Check Price"
+        BUNDLE_LOADER: "$(TEST_HOST)"
   CheckPriceWidgets:
     type: app-extension
     platform: iOS
