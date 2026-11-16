@@ -1,6 +1,7 @@
-// The Account tab, laid out the way Instagram's profile page is: handle and a gear in the top bar,
-// avatar beside three counts, name and bio (each only when set), Edit profile and Share profile keys, then a grid of
-// the user's threads under two icon tabs (Hearted, Saved). The counts are Check Price's own: checks,
+// The Account tab, laid out the way Instagram's profile page is: handle and a gear (opens the
+// Settings sheet) in the top bar, avatar beside three counts, name and bio (each only when set),
+// Edit profile and Share profile keys, then a grid of the user's threads under two icon tabs
+// (Hearted, Saved). The counts are Check Price's own: checks,
 // saved threads, and the money saved by waiting on saved threads.
 import SwiftUI
 
@@ -9,6 +10,7 @@ struct AccountView: View {
     @AppStorage(ProfileKeys.handle) private var handle = ""
     @AppStorage(ProfileKeys.bio) private var bio = ""
     @State private var editing = false
+    @State private var settingsOpen = false
     @State private var shelf: ProfileShelf = .hearted
 
     @Environment(ThreadStore.self) private var store
@@ -42,9 +44,7 @@ struct AccountView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        AccountSettingsView()
-                    } label: {
+                    Button { settingsOpen = true } label: {
                         Image(systemName: "gearshape")
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(Palette.textPrimary)
@@ -54,8 +54,10 @@ struct AccountView: View {
             }
             .toolbarColorScheme(.dark, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
-            // Settings' back button is the chevron alone, no word beside it.
-            .toolbarRole(.editor)
+            .sheet(isPresented: $settingsOpen) {
+                AccountSettingsView()
+                    .presentationBackground(Palette.canvas)
+            }
             .sheet(isPresented: $editing) {
                 EditProfileSheet()
                     .presentationDragIndicator(.visible)
@@ -132,7 +134,8 @@ enum ProfileKeys {
     static let bio = "profileBio"
 }
 
-// A round avatar: the name's initials, or a person symbol when there is no name, on a warm grey pair with a white top sheen (worldscape F/People/PersonRow.swift).
+// A round avatar: the name's initials, or a person symbol when there is no name, on a warm grey
+// pair with a white top sheen (worldscape F/People/PersonRow.swift).
 struct ProfileAvatar: View {
     let name: String
     var size: CGFloat = 84
