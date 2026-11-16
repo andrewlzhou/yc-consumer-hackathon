@@ -15,6 +15,11 @@ export function otherVariant(product: { model?: string; title: string }, parsed:
   return product.model?.toUpperCase() !== code && !product.title.toUpperCase().includes(code);
 }
 
+// The name for a product created from a color-coded link: the title plus the link's code, kept apart from other colors.
+export function variantTitle(title: string, parsed: ParsedUrl | null): string {
+  return otherVariant({ title }, parsed) ? `${title} ${parsed!.productCode}` : title;
+}
+
 // Measured on the deployment (2026-11-15): OCR-mangled titles of the right product score 0.64-0.79, while
 // wrong look-alikes reach 0.52 (WH-1000XM4 -> Bose) and 0.65 (AirPods Pro 2 -> Pro 3).
 const VECTOR_VIABLE = 0.6;

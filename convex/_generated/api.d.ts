@@ -26,7 +26,6 @@ import type * as agent_openai from "../agent/openai.js";
 import type * as agent_output from "../agent/output.js";
 import type * as agent_port from "../agent/port.js";
 import type * as agent_prompt from "../agent/prompt.js";
-import type * as agent_screenText from "../agent/screenText.js";
 import type * as agent_store from "../agent/store.js";
 import type * as agent_tables from "../agent/tables.js";
 import type * as agent_tools from "../agent/tools.js";
@@ -100,7 +99,6 @@ declare const fullApi: ApiFromModules<{
   "agent/output": typeof agent_output;
   "agent/port": typeof agent_port;
   "agent/prompt": typeof agent_prompt;
-  "agent/screenText": typeof agent_screenText;
   "agent/store": typeof agent_store;
   "agent/tables": typeof agent_tables;
   "agent/tools": typeof agent_tools;

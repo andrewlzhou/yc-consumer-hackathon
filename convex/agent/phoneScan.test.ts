@@ -5,14 +5,11 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import schema from "../schema";
 import { SEED_NOW } from "../seed/generate";
-import { SEED_PRODUCTS } from "../seed/catalog";
-import { DEMO_PRODUCTS } from "../data/demo";
 import { modules } from "../test.setup";
 import xm5 from "../data/sources/fixtures/serpapi-product-xm5.json";
 import pages from "../data/sources/stores/fixtures/store-pages.json";
 import { checkCard, EvidenceLedger, relationIssues } from "./evidence";
 import { keyFacts } from "./facts";
-import { productTitle, usableTitle } from "./screenText";
 import { expandShortLink, isAmazonShortLink, normalizeUrl } from "./urls";
 
 // Regressions from real iPhone 14 scans (YCCO-10) and the iOS review (YCCO-11 H3): CON-10 and CON-11.
@@ -291,7 +288,7 @@ describe("Amazon links", () => {
   });
 });
 
-describe("OCR-only and personal screen text (CON-10)", () => {
+describe("screen text runs local matching only (CON-10)", () => {
   const notProducts: [string, Record<string, unknown>][] = [
     ["notification banner as OCR lines", { ocrLines: ["Messages now", "Mom: are you picking up Sam at 5 today", "$24.99"], currentPrice: 24.99, retailer: "Target" }],
     ["account header as OCR lines", { ocrLines: ["Hello, Ruhaan Singh", "1600 Amphitheatre Pkwy apt 4", "Deliver to Ruhaan - Anytown 00000"], currentPrice: 49.99 }],
@@ -301,10 +298,15 @@ describe("OCR-only and personal screen text (CON-10)", () => {
     ["store home screen as the title", { title: "Best Buy App", retailer: "Best Buy", currentPrice: 9.99 }],
     ...["Welcome, Ruhaan", "Ruhaan Singh", "Mom", "Messages", "Ruhaan's Cart", "Hello Ruhaan Singh", "Call 4155550100", "(415)555-0100",
       "San Francisco CA 94107", "1 Infinite Loop Cupertino", "Deliver-to Ruhaan", "Hi\u{1F44B} Ruhaan", "\uFF28\uFF45\uFF4C\uFF4C\uFF4F, Ruhaan",
-      "Deliver\u200B to Ruhaan", "Target Circle", "Amazon Prime", "Best Buy - Deals of the Day"].map((title): [string, Record<string, unknown>] => [`review H2 title "${title}"`, { title, retailer: "Target", currentPrice: 24.99 }]),
+      "Deliver\u200B to Ruhaan", "Target Circle", "Amazon Prime", "Best Buy - Deals of the Day",
+      // Re-review R1: codes, payments, travel and plans with digits or times.
+      "Your code is 482913", "Venmo: You paid Sam $25 for dinner 1114", "Chase: Card ending 4821 charged $54.20", "Gate B22 boarding at 7:45",
+      "Flight UA1234 to SFO", "Dinner with Priya at 7pm", "Package arriving by 8pm", "Ruhaan 2026",
+      // Real but unknown products and ambiguous titles also ask for a link instead of discovery from screen text (R3).
+      "Hello Kitty Plush Toy 12 inch", "Zorblax Hyperwidget ZX9000 Turbo", "Sony noise cancelling headphones"].map((title): [string, Record<string, unknown>] => [`review H2 title "${title}"`, { title, retailer: "Target", currentPrice: 24.99 }]),
   ];
   for (const [name, extract] of notProducts)
-    test(`${name}: INVESTIGATE, no product, no stored text, no paid call`, async () => {
+    test(`${name}: INVESTIGATE asking for a link, no product, no stored text, no external call`, async () => {
       vi.stubEnv("AGENT_PROVIDER", "");
       vi.stubEnv("OPENAI_API_KEY", "test-key");
       vi.stubEnv("SERPAPI_API_KEY", "test-key");
@@ -314,6 +316,7 @@ describe("OCR-only and personal screen text (CON-10)", () => {
       const card = await scan(extract);
       await settle();
       expect(card).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "none" });
+      expect(card.reason).toMatch(/Share its product page link/);
       expect(card.productId).toBeUndefined();
       expect(await productCount()).toBe(before);
       expect(fetchMock).not.toHaveBeenCalled();
@@ -324,12 +327,6 @@ describe("OCR-only and personal screen text (CON-10)", () => {
       expect(prices).toEqual([]);
     });
 
-  test("a real product with a greeting-like brand still becomes a provisional product", async () => {
-    const card = await scan({ title: "Hello Kitty Plush Toy 12 inch", retailer: "Target", currentPrice: 19.99 });
-    expect(card).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "pending" });
-    expect(card.productId).toBeDefined();
-  });
-
   test("OCR lines that clearly name a catalog product still match, without the banner reaching the analysis", async () => {
     const card = await scan({ ocrLines: ["Messages now Mom: are you there", "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones", "$248.00"], retailer: "Best Buy", currentPrice: 248 });
     expect(card.productId).toBe(ids["sony-xm5"]);
@@ -337,45 +334,5 @@ describe("OCR-only and personal screen text (CON-10)", () => {
     expect(JSON.stringify(stored!.evidence)).not.toMatch(/Mom|Messages/);
     const rows = await t.run((ctx) => ctx.db.query("agentScans").collect());
     expect(rows[0].title).toBeUndefined();
-  });
-
-  test("real product titles are trusted, and aliases are never treated as screen chrome or personal text", () => {
-    const titles = [...SEED_PRODUCTS, ...DEMO_PRODUCTS].map((p) => p.title);
-    titles.push("Amazon Echo Dot (5th Gen) Smart Speaker", "Best Buy Essentials 6ft HDMI Cable", "Apple AirPods Pro 3", "Target Up&Up Cotton Rounds 100 ct",
-      "Nike Pegasus 42 Men's Road Running Shoes", "Hello Kitty Plush Toy 12 inch", "Hey Dude Wally Sox Shoes", "Hi-Res Audio Wireless Headphones");
-    expect(titles.filter((x) => productTitle(x) === null)).toEqual([]);
-    expect([...SEED_PRODUCTS, ...DEMO_PRODUCTS].flatMap((p) => p.aliases).filter((x) => usableTitle(x) === null)).toEqual([]);
-    for (const chrome of ["Best Buy App", "Amazon", "walmart.com", "Target Home", "Shop Nike", "Apple Store"]) expect(usableTitle(chrome)).toBeNull();
-  });
-});
-
-describe("live budget (review M3)", () => {
-  // Network calls that take delayMs unless their abort signal fires first.
-  const slow = (delayMs: number, body: unknown) => (init?: RequestInit) =>
-    new Promise<Response>((resolve, reject) => {
-      const timer = setTimeout(() => resolve(new Response(JSON.stringify(body))), delayMs);
-      init?.signal?.addEventListener("abort", () => {
-        clearTimeout(timer);
-        reject(new Error("aborted"));
-      });
-    });
-
-  test("a slow embedding and a slow match pick still return the card inside 4.3 s", async () => {
-    vi.useRealTimers();
-    vi.stubEnv("AGENT_PROVIDER", "");
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    const embedding = slow(2500, { data: [{ index: 0, embedding: new Array(1536).fill(0.01) }] });
-    const responses = slow(2400, { output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify({ productId: null }) }] }] });
-    vi.stubGlobal("fetch", vi.fn((url: string | URL, init?: RequestInit) => (String(url).includes("/embeddings") ? embedding(init) : responses(init))));
-    const card = await scan({ title: "Sony noise cancelling headphones", retailer: "Best Buy", currentPrice: 299 });
-    expect(card.verdict).toBe("INVESTIGATE");
-    expect(card.latencyMs).toBeLessThan(4300);
-  }, 15_000);
-
-  test("an embedding HTTP error falls back to text matching instead of failing the scan", async () => {
-    vi.stubEnv("OPENAI_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 500 })));
-    const card = await scan({ title: "Sony noise cancelling headphones 2026", retailer: "Best Buy", currentPrice: 299 });
-    expect(card.verdict).toBeDefined();
   });
 });

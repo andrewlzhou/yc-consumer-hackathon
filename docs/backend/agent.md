@@ -6,11 +6,11 @@
 ## How a scan flows
 
 - `POST /analyze` validates the extract by hand, then calls `agent/analyze:analyzeScan` (internal action).
-- Identify: `matchProduct` re-ranks full-text hits; clear matches (score >= 0.75, 0.15 lead, no size conflict) are
-  taken in code. Otherwise `hybridSearch` (text + vector, text-only without a key) feeds the fast model, which picks one or none.
-  Vector-only suggestions need 0.6 similarity and a brand match; model/size conflicts are rejected. Failed model picks return no match.
+- Identify: links first (cached link, exact Amazon ASIN). Screen text (title, each OCR line, joined lines, URL slug)
+  only takes a clear local `matchProduct` match (score >= 0.75, 0.15 lead, no size conflict); it never reaches
+  embeddings, a model pick or SerpApi ([scan safety](agent-scan-safety.md)). OCR readings of one token count once.
 - Record: every priced scan goes through `data/prices:recordObservation` as `source: "scan"`.
-- No match: only a usable phone `title` creates a provisional product ([scan safety](agent-scan-safety.md)); INVESTIGATE at once, full run queued.
+- No match: INVESTIGATE at once. Only a product link creates a provisional product (background resolver, full run queued).
 - Links: a `url` resolved earlier identifies the product exactly; a new one is resolved off the live path (see [report](agent-report.md)).
 - Cached: a full analysis under 12 hours old (or a live one under 30 minutes) made within 2% of today's price is returned as is.
 - Otherwise the live pass: stats, promo patterns, competitors and exact `key_facts` are fetched in code, then one small

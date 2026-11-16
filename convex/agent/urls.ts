@@ -4,9 +4,8 @@ import type { Id } from "../_generated/dataModel";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { normalizeRetailer } from "../data/retailers";
 import { parseUrl } from "../data/sources/stores/url";
-import { decideMatch, otherVariant } from "./identify";
+import { decideMatch, otherVariant, variantTitle } from "./identify";
 import { rateLimiter } from "./limits";
-import { productTitle } from "./screenText";
 
 const RETRY_PENDING_MS = 5 * 60_000;
 
@@ -111,12 +110,11 @@ export const settle = internalMutation({
   },
 });
 
-// Resolves a product link off the live path: the store resolver first, then the extract's title. When the scan had
-// no catalog match, it also starts the full analysis for the resolved product.
+// Resolves a product link off the live path with the store resolver: the page's own title, never screen text.
+// When the scan had no catalog match, it also starts the full analysis for the resolved product.
 export const resolveInBackground = internalAction({
   args: {
     url: v.string(),
-    title: v.optional(v.string()),
     retailer: v.optional(v.string()),
     deviceId: v.optional(v.string()),
     currentPrice: v.optional(v.number()),
@@ -136,20 +134,20 @@ export const resolveInBackground = internalAction({
     if (!url) error = "short link did not lead to an Amazon product";
     else if (!byAsin)
       try {
-        resolved = await ctx.runAction(internal.data.sources.stores.resolve.resolveUrl, { url, title: args.title, retailer: args.retailer });
+        resolved = await ctx.runAction(internal.data.sources.stores.resolve.resolveUrl, { url, retailer: args.retailer });
       } catch (e) {
         error = `resolver: ${String(e).slice(0, 200)}`;
       }
-    const title = resolved?.title ?? args.title;
+    const title = resolved?.title;
     let productId = byAsin?._id ?? resolved?.productId;
-    // Fallback when the page gave no product: the title alone, never across a color code, and a new product only
-    // from a trusted product title, named with the link's code so it stays apart from the other colors.
+    // Fallback when the store page gave a title but no product: match it, never across a color code, or create a
+    // product named with the link's code so it stays apart from the other colors. Screen text is never used here.
     if (!productId && title) {
       const decision = decideMatch(await ctx.runQuery(internal.data.catalog.matchProduct, { title, limit: 6 }));
       const conflict = decision.kind === "match" && otherVariant(decision.candidate.product, parsed);
       if (decision.kind === "match" && !conflict) productId = decision.candidate.product._id;
-      else if (args.startFullRun && productTitle(title) && (!args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok))
-        productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title: otherVariant({ title }, parsed) ? `${title} ${parsed!.productCode}` : title });
+      else if (args.startFullRun && (!args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok))
+        productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title: variantTitle(title, parsed) });
     }
     await ctx.runMutation(internal.agent.urls.settle, { url: key, productId, error: productId ? undefined : (error ?? "no product found"), now: Date.now() });
     if (!productId || !args.startFullRun) return productId ?? null;
