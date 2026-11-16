@@ -23,6 +23,15 @@ enum ScanDiagnostics {
         #endif
     }
 
+    // A tap on More Details reached the app, and whether its check was still here. Key `checkprice.opens`.
+    static func recordOpen(found: Bool) {
+        #if DEBUG
+        Logger(subsystem: "com.ycconsumerhackathon.checkprice", category: "scan").info("open found=\(found, privacy: .public)")
+        let opens = (UserDefaults.standard.array(forKey: "checkprice.opens") ?? []) + [["found": found, "at": Date().timeIntervalSince1970]]
+        UserDefaults.standard.set(Array(opens.suffix(50)), forKey: "checkprice.opens")
+        #endif
+    }
+
     static func facts(source: String, result: Result<CheckResult, ShopperError>, handoff: ScreenshotFile.Handoff?,
                       ocr: Double, network: Double, total: Double) -> [String: Any] {
         var run: [String: Any] = ["source": source, "ocr": ocr, "network": network, "total": total]

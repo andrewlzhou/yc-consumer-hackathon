@@ -1,7 +1,8 @@
 // Shortcut actions. Back Tap runs a shortcut: Take Screenshot, then "Scan Screen with Check Price" (named apart from the Worth It
 // test app's "Check Price in Screenshot", so the two can't be mixed up in Shortcuts). The check runs in
 // the background so the store app stays in front, and iOS shows the compact result (CompactVerdictView) as a
-// snippet. Tapping it (More Details) runs OpenProductIntent, which brings Check Price forward on that product's thread.
+// snippet. Tapping it (More Details) runs OpenProductIntent, which brings Check Price forward, on that check's thread
+// when the phone still has it.
 // The system's own Done button and the platter around the snippet are drawn by iOS and can't be changed.
 // A failed check, or a build with no backend key, shows the failure: never a demo verdict.
 // iOS 26+: interactive snippets (SnippetIntent) and supportedModes are new there.
@@ -56,17 +57,18 @@ struct VerdictSnippetIntent: SnippetIntent {
     @Parameter(title: "Verdict") var verdict: String?
     @Parameter(title: "Failure") var failure: String?
     @Parameter(title: "Sample data", default: false) var isSampleData: Bool
-    @Parameter(title: "Product") var productId: String?
+    // The saved check's own id (its thread), so More Details opens exactly this check.
+    @Parameter(title: "Check") var checkId: String?
 
     init() {}
 
     func perform() async throws -> some IntentResult & ShowsSnippetView {
         .result(view: CompactVerdictView(verdict: verdict.flatMap(Verdict.init(rawValue:)), failure: failure,
-                                         isSampleData: isSampleData, productId: productId))
+                                         isSampleData: isSampleData, checkId: checkId))
     }
 
-    // Keeps a successful check as a new thread (fetching its report), then builds the snippet. A failure makes
-    // no thread and has no verdict or More Details button; neither does a check the backend couldn't match.
+    // Keeps a successful check as a new thread (fetching its report), then builds the snippet. Every verdict gets
+    // More Details, also one the backend couldn't match to a product. A failure makes no thread and has no button.
     @MainActor
     static func record(_ result: Result<CheckResult, ShopperError>, in store: ThreadStore = .shared) -> VerdictSnippetIntent {
         var snippet = VerdictSnippetIntent()
@@ -77,7 +79,7 @@ struct VerdictSnippetIntent: SnippetIntent {
             store.loadReport(for: id)
             snippet.verdict = product.verdict.rawValue
             snippet.isSampleData = product.isSampleData
-            snippet.productId = product.productId
+            snippet.checkId = id.uuidString
         case let .failure(error):
             snippet.failure = error.message
         }
@@ -85,24 +87,25 @@ struct VerdictSnippetIntent: SnippetIntent {
     }
 }
 
-// The snippet's More Details button. Runs in the app in the foreground and opens the product's thread.
+// The snippet's More Details button. Foreground: iOS brings Check Price forward whatever happens next (Ruhaan,
+// 2026-11-15: the tap must always reach the app). Then it opens the check's thread if the phone still has it.
 @available(iOS 26.0, *)
 struct OpenProductIntent: AppIntent {
     static let title: LocalizedStringResource = "Open Product"
     static let isDiscoverable = false
     static let supportedModes: IntentModes = .foreground
 
-    @Parameter(title: "Product") var productId: String
+    @Parameter(title: "Check") var checkId: String
 
     init() {}
 
-    init(productId: String) {
-        self.productId = productId
+    init(checkId: String) {
+        self.checkId = checkId
     }
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        ThreadStore.shared.openProduct(productId)
+        ScanDiagnostics.recordOpen(found: ThreadStore.shared.openCheck(checkId))
         return .result()
     }
 }

@@ -1,12 +1,14 @@
-# 2026-11-15 — Check Price: screenshot Shortcut action renamed
+# 2026-11-15 — Check Price: screenshot action renamed; More Details on every verdict
 
-- Author: Capy (Fable 5.2), thread YCCO-13 for Captain Ruhaan, branch `ruhaan_action_rename` from `main` 90edc6c.
-- Instructions: Ruhaan: the Check Price app's screenshot action must not share a name with the Worth It test app's;
-  it is titled exactly "Scan Screen with Check Price". Saved in [ios/AGENTS.md](../../../../ios/AGENTS.md) and
-  [status](../../../ios/bridge-status.md).
-- Changed: the action's title only. Same action type, Screenshot field, check, popup and More Details route; "Check
-  Price of Link" keeps its name. An existing shortcut that already holds the action keeps working and shows the new
-  title. The status doc's branch line and device steps were brought up to date.
-- Checks: `python3 scripts/check_docs.py` passed. Not compiled after this one-string change; `main` 90edc6c built and
-  passed 20 app tests and 23 ShopperKit tests on a cloud runner just before it.
-- Next: YCCO-10 rebuilds and reinstalls, then one Back Tap on the phone.
+- Author: Capy (Fable 5.2), thread YCCO-13 for Captain Ruhaan (CON-18), branch `ruhaan_action_rename`, PR #4.
+- Instructions: Ruhaan: (1) the Check Price app's screenshot action must not share a name with the Worth It test
+  app's; it is titled exactly "Scan Screen with Check Price". (2) Reduced acceptance for now: double tap gives the
+  verdict word, and More Details gets into the Check Price app; exact report behaviour inside the app is not
+  required. The four words stay. Saved in [ios/AGENTS.md](../../../../ios/AGENTS.md),
+  [decisions](../../../project/decisions.md) and [status](../../../ios/bridge-status.md).
+- Changed: the action's title (same action type, so existing shortcuts keep working). More Details is now on every
+  verdict; before, a check the backend matched to no product had no button, so the popup had no way into the app.
+  The tap opens the app and that check's own saved thread (by the check's id, not the product's). Debug builds note
+  each tap that reaches the app under `checkprice.opens`. No layout, backend or contract change.
+- Checks: `python3 scripts/check_docs.py`; app tests and ShopperKit tests on a cloud runner with no key: see the PR.
+- Not verified: Back Tap and the tap on a real iPhone (YCCO-10).

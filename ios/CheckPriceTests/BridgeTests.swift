@@ -11,7 +11,7 @@ final class CompactVerdictTests: XCTestCase {
         XCTAssertEqual(Check_Price.Verdict.alternative.compactSpokenLabel, "Look Elsewhere")
     }
 
-    // Decision only: the popup carries the verdict, the product to open and the sample-data mark, and no reason.
+    // Decision only: the popup carries the verdict, the check to open and the sample-data mark, and no reason.
     @MainActor
     func testTheSnippetCarriesOnlyTheDecision() throws {
         guard #available(iOS 26.0, *) else { throw XCTSkip("needs iOS 26") }
@@ -19,7 +19,7 @@ final class CompactVerdictTests: XCTestCase {
         store.fetchReport = { _ in throw ShopperError.network }
         let snippet = VerdictSnippetIntent.record(.success(CheckResult(response: try Fixture.response())), in: store)
         XCTAssertEqual(snippet.verdict, Check_Price.Verdict.wait.rawValue)
-        XCTAssertEqual(snippet.productId, "p1")
+        XCTAssertEqual(snippet.checkId, store.threads.first?.id.uuidString)
         XCTAssertNil(snippet.failure)
         XCTAssertFalse(snippet.isSampleData)
         XCTAssertEqual(store.threads.first?.product.summary, "Usually drops for Black Friday.")
@@ -241,18 +241,21 @@ final class RealCheckTests: XCTestCase {
         let store = ThreadStore(threads: [])
         let snippet = VerdictSnippetIntent.record(.failure(.notConfigured), in: store)
         XCTAssertNil(snippet.verdict)
-        XCTAssertNil(snippet.productId)
+        XCTAssertNil(snippet.checkId)
         XCTAssertEqual(snippet.failure, ShopperError.notConfigured.message)
         XCTAssertTrue(store.threads.isEmpty)
     }
 
-    func testAnUnmatchedCheckHasNoDetailsButton() throws {
+    // More Details must reach the app on every verdict, also when the backend matched no product.
+    func testMoreDetailsOpensAnUnmatchedChecksOwnThread() throws {
         guard #available(iOS 26.0, *) else { throw XCTSkip("needs iOS 26") }
         let store = ThreadStore(threads: [])
         let snippet = VerdictSnippetIntent.record(.success(CheckResult(response: try Fixture.response(productId: nil, verdict: "INVESTIGATE"))), in: store)
         XCTAssertEqual(snippet.verdict, Check_Price.Verdict.investigate.rawValue)
-        XCTAssertNil(snippet.productId)
-        XCTAssertEqual(store.threads.count, 1)
+        let checkId = try XCTUnwrap(snippet.checkId)
+        XCTAssertTrue(store.openCheck(checkId))
+        XCTAssertEqual(store.openThreadID, store.threads.first?.id)
+        XCTAssertNil(store.threads.first?.product.productId)
     }
 
     func testABuildWithoutAKeyFailsInsteadOfShowingADemo() async throws {
@@ -280,6 +283,7 @@ final class OpenProductTests: XCTestCase {
     func testAProductNeverCheckedHereOpensNothing() {
         let store = ThreadStore(threads: DemoThreads.all)
         store.openProduct("missing")
+        XCTAssertFalse(store.openCheck(UUID().uuidString) || store.openCheck("") || store.openCheck(DemoThreads.all[0].id.uuidString))
         XCTAssertNil(store.openThreadID)
         XCTAssertEqual(store.threads.count, DemoThreads.all.count)
     }
@@ -297,7 +301,7 @@ final class OpenProductTests: XCTestCase {
         XCTAssertEqual(kept.map(\.id), [id])
         let after = ThreadStore(threads: kept + DemoThreads.all, archive: archive)
         after.fetchReport = { _ in throw ShopperError.network }
-        after.openProduct("p1")
+        XCTAssertTrue(after.openCheck(id.uuidString))
 
         let thread = try XCTUnwrap(after.thread(id))
         XCTAssertEqual(after.openThreadID, id)

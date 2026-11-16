@@ -110,8 +110,17 @@ final class ThreadStore {
         loadReport(for: id)
     }
 
-    // Opens the newest check of a backend product: the Back Tap result's Details button and
-    // checkprice://product/<id> land here. Checks are kept across restarts (ScanArchive), so the thread is the
+    // Opens one saved check by its own id: the Back Tap result's More Details lands here. False when the phone
+    // no longer has that check; the app is in front either way.
+    @discardableResult
+    func openCheck(_ checkId: String) -> Bool {
+        guard let id = UUID(uuidString: checkId), thread(id)?.product.check != nil else { return false }
+        openThreadID = id
+        loadReportIfNeeded(for: id)
+        return true
+    }
+
+    // Opens the newest check of a backend product: checkprice://product/<id> lands here. Checks are kept across restarts (ScanArchive), so the thread is the
     // check itself, with its own price and verdict. A product never checked on this phone opens nothing.
     func openProduct(_ productId: String) {
         guard let id = threads.first(where: { $0.product.check != nil && $0.product.productId == productId })?.id else { return }

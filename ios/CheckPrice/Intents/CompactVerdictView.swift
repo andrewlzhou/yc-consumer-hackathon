@@ -1,7 +1,7 @@
 // The compact result after Back Tap, drawn by iOS as an App Intents snippet over the store app. Decision only
 // (Ruhaan, 2026-11-15): the verdict colour as the background, the verdict word, and a blue More Details button.
-// No reason, title, confidence or timings: those are in the product's thread, which a tap anywhere on the result
-// opens. "Sample data" appears only when the evidence is seeded, since an unmarked verdict would pass for real.
+// No reason, title, confidence or timings: those are in the check's thread. A tap anywhere on a verdict brings
+// Check Price forward, on that thread when the phone still has it. "Sample data" appears only when the evidence is seeded, since an unmarked verdict would pass for real.
 // A failed check shows its message on grey, with no word and no button. iOS adds its own Done button below.
 // Dark ink on the verdict colours stays above 8:1 in light and dark mode.
 import AppIntents
@@ -12,24 +12,20 @@ struct CompactVerdictView: View {
     let verdict: Verdict?
     let failure: String?
     let isSampleData: Bool
-    let productId: String?
+    let checkId: String?
 
     private let ink = Palette.canvas
     // Darker than system blue so its white label stays above 4.5:1 (Ruhaan asked for a blue way into the app).
     private let detailsBlue = Color(hex: 0x0B5FD3)
 
     var body: some View {
-        if let verdict, let productId {
-            // The whole result is the button.
-            Button(intent: OpenProductIntent(productId: productId)) { card(verdict, showsDetails: true) }
+        if let verdict {
+            // The whole result is the button, on every verdict.
+            Button(intent: OpenProductIntent(checkId: checkId ?? "")) { card(verdict) }
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .ignore)
                 .accessibilityLabel(spoken(verdict) + ", More Details")
-                .accessibilityHint("Opens this product in Check Price")
-        } else if let verdict {
-            card(verdict, showsDetails: false)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(spoken(verdict))
+                .accessibilityHint("Opens Check Price")
         } else {
             Text(failure ?? "")
                 .font(.hiragino(.w3, size: 15))
@@ -38,7 +34,7 @@ struct CompactVerdictView: View {
         }
     }
 
-    private func card(_ verdict: Verdict, showsDetails: Bool) -> some View {
+    private func card(_ verdict: Verdict) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .center, spacing: 8) {
                 Text(verdict.compactLabel)
@@ -46,16 +42,14 @@ struct CompactVerdictView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 Spacer(minLength: 0)
-                if showsDetails {
-                    Text("More Details")
-                        .font(.hiragino(.w6, size: 15, relativeTo: .callout))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 36)
-                        .background(detailsBlue, in: Capsule())
-                }
+                Text("More Details")
+                    .font(.hiragino(.w6, size: 15, relativeTo: .callout))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .fixedSize()
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(detailsBlue, in: Capsule())
             }
             if isSampleData {
                 Text("Sample data")

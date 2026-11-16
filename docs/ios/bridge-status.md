@@ -1,14 +1,14 @@
 # iPhone app integration status (resume here)
 
 - Goal (CON-14): store screen -> Back Tap -> Shortcut -> on-device text reading -> live backend -> one-word verdict ->
-  More Details -> that product's report in the Check Price app on `main`.
+  More Details -> the Check Price app. Ruhaan, 2026-11-15: reaching the app is enough for now; the exact report is a bonus.
 - On `main` since PR #2, with the owner's redesigned screens since 90edc6c. Source owner: YCCO-13. Device tests: YCCO-10
   on Ruhaan's Mac and iPhone. Nobody merges without Ruhaan. App rules: [ios/AGENTS.md](../../ios/AGENTS.md).
 
 ## Works (unit tests and a cloud simulator with a mock backend, fake key)
 
 - Shortcut actions "Scan Screen with Check Price" and "Check Price of Link" (iOS 26+) return a decision-only popup:
-  BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE on the verdict colour, with a blue More Details button.
+  BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE on the verdict colour, each with a blue More Details button.
 - A tap on the popup opens Check Price on that check's thread; the popup stays on top until Done is tapped. Checks
   are saved on the phone, so this also works when iOS closed the app in between.
 - A failed check or a missing key shows the failure, never a demo verdict.
@@ -17,8 +17,7 @@
 
 ## Not proven yet
 
-- This candidate on a real iPhone: Back Tap, the popup over a store app, More Details, temp-file deletion, timing.
-  An earlier build (bf21d72) was installed by YCCO-10 as `dev.ruhaan.checkprice`.
+- On a real iPhone (installed as `dev.ruhaan.checkprice`): Back Tap, the popup, More Details, file deletion, timing.
 - iOS adds its own Done button under a result popup. Apple documents no way to rename or remove it. A different
   popup type (a confirmation, `requestConfirmation(actionName:snippetIntent:)`) lets the app name the system button;
   it would change the flow (cancel instead of Done) and is untried.
@@ -40,12 +39,13 @@
 4. On a store product page, double-tap the back. Expect a coloured one-word popup with More Details; tap it.
 5. Read the proof: `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id>
    --source Library/Preferences/<bundle id>.plist`, key `checkprice.scans`. Each run has `fileKind` (expect
-   `shortcutsTemp`), `deleted` (expect true), `bytes`, and `ocr`, `network`, `total` seconds.
+   `shortcutsTemp`), `deleted` (expect true), `bytes`, and `ocr`, `network`, `total` seconds. Key `checkprice.opens`
+   gains an entry each time a More Details tap reaches the app (`found`: its check was still there).
 
 ## Known limits (honest list)
 
 - Backend scan fixes are on `main` (a0146e1); YCCO-12 owns deploying them. With them, a screenshot of a product the
-  backend doesn't know gives INDETERMINATE with no More Details: new products come only from links.
+  backend doesn't know gives INDETERMINATE; More Details then opens a thread with the verdict and no chart.
 - Demo threads still sit in Threads and Home next to real checks, unlabelled; chat replies are canned.
 - A finished report without a chart, or six failed fetches, leaves the thread with its verdict and no chart.
 - Saved state is not kept across restarts. Report freshness uses a fixed 7-day window.
