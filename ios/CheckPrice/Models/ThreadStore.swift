@@ -40,6 +40,8 @@ final class ThreadStore {
     var openThreadID: UUID?
     // The id of the reply currently being "typed", so the detail view can stream it.
     var replyingIn: UUID?
+    // GET /report; tests swap it for a stub.
+    @ObservationIgnored var fetchReport: (String) async throws -> ReportResponse = { try await Backend.client.report(productId: $0) }
 
     init(threads: [ShoppingThread] = DemoThreads.all) {
         self.threads = threads
@@ -80,7 +82,7 @@ final class ThreadStore {
         Task { @MainActor in
             for attempt in 0..<6 {
                 if attempt > 0 { try? await Task.sleep(for: .seconds(3)) }
-                guard let report = try? await Backend.client.report(productId: productId) else { continue }
+                guard let report = try? await fetchReport(productId) else { continue }
                 update(id) {
                     $0.report = report
                     $0.product = $0.product.updated(with: report)
@@ -88,6 +90,30 @@ final class ThreadStore {
                 if !report.pending { return }
             }
         }
+    }
+
+    // Opens the newest thread for a backend product: the Back Tap result's Details button and
+    // checkprice://product/<id> land here. When this phone has no thread for it (the app was relaunched since the
+    // check), one is made from GET /report. An id the backend doesn't know opens nothing.
+    func openProduct(_ productId: String) async {
+        if let id = newestThread(productId: productId) {
+            openThreadID = id
+            loadReport(for: id)
+            return
+        }
+        guard let report = try? await fetchReport(productId), report.product.productId == productId else { return }
+        // Another open may have made the thread while the report loaded.
+        let id = newestThread(productId: productId) ?? startThread(for: Product(report: report))
+        update(id) {
+            $0.report = report
+            $0.product = $0.product.updated(with: report)
+        }
+        openThreadID = id
+        if report.pending { loadReport(for: id) }
+    }
+
+    private func newestThread(productId: String) -> UUID? {
+        threads.first { $0.product.productId == productId }?.id
     }
 
     // Appends the user's message, then a canned reply after a short pause.

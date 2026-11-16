@@ -52,6 +52,16 @@ extension ThreadDetailFigures {
 }
 
 extension Product {
+    // A product known only by its report, when a link opens one this phone has no thread for. The store is the
+    // one whose latest price the report shows as today's.
+    init(report: ReportResponse) {
+        let store = report.chart?.series.min { $0.latest < $1.latest }
+        self.init(name: report.product.title, retailer: store?.retailer ?? "", price: store.map { Money.text($0.latest) } ?? "",
+                  icon: "tag", verdict: report.analysis.map { Verdict($0.verdict) } ?? .investigate,
+                  summary: report.analysis?.reason ?? "", projectedLow: "", productId: report.product.productId,
+                  isSampleData: report.analysis?.isSampleData ?? report.product.isSample ?? false)
+    }
+
     // Fills blanks from the report: today's price from the chart, the predicted low from the forecast,
     // and the backend's latest verdict and reason once the full analysis is in.
     func updated(with report: ReportResponse) -> Product {

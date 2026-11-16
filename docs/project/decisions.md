@@ -20,6 +20,9 @@
 - 2026-11-15 (Ruhaan): seeded or simulated data is always labeled as sample data and never fires real notifications.
 - 2026-11-15 (Ruhaan): backend work lands on branch `ruhaan_backend`. See [orchestration](../backend/orchestration.md).
 - 2026-11-15: the teammate's Check Price SwiftUI prototype is the main iPhone app, at `ios/`. Its screens, flow and content stay; it gets Not Yet's look and interaction design (Worldscape language). `notyet/ios/` stays for reference until the owner decides. See [ios/AGENTS.md](../../ios/AGENTS.md).
+- 2026-11-15 (Ruhaan): the compact Back Tap result says BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE, one word per
+  backend verdict; the backend's four verdicts and API are unchanged. Details opens the product's thread in Check Price.
+  The App Intents need iOS 26 (the app still targets iOS 18 elsewhere). See [ios/AGENTS.md](../../ios/AGENTS.md).
 
 ## Initial setup choices
 

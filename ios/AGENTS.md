@@ -1,6 +1,6 @@
 # Check Price iPhone app (`ios/`)
 
-- This is the main iPhone app (owner decision, 2026-11-15). It started as a teammate's SwiftUI prototype: capture → analyzing → verdict reveal → report → watchlist, now wired to the Convex backend (see Backend below). No Shortcut, App Intents or push notifications yet; don't describe them as working.
+- This is the main iPhone app (owner decision, 2026-11-15). It started as a teammate's SwiftUI prototype: capture → analyzing → verdict reveal → report → watchlist, now wired to the Convex backend (see Backend below). Shortcut actions exist (see Back Tap result below) but are not yet proven on a real iPhone; no push notifications yet. Don't describe unproven parts as working.
 - It supersedes `notyet/ios/`. Not Yet stays in the repo for reference until the owner decides what to do with it. Don't edit it for Check Price work.
 - Direction: keep this app's screens, flow and content; give them Not Yet's look and interaction design (the Worldscape design language). No new features or screens unless the owner asks. More specific instructions are coming, so keep changes reversible.
 
@@ -24,6 +24,13 @@
 - Key: copy `Config/Secrets.example.xcconfig` to `Config/Secrets.xcconfig` (git-ignored) with the dev `APP_API_KEY`. Debug builds only; Release never carries it. Without a key, Check price runs the demo, as do `-autoReveal YES` and demo threads.
 - ShopperKit tests with only Command Line Tools: `cd ios/ShopperKit && F=/Library/Developer/CommandLineTools/Library/Developer; DYLD_LIBRARY_PATH=$F/usr/lib swift test -Xswiftc -F$F/Frameworks -Xlinker -F$F/Frameworks -Xlinker -rpath -Xlinker $F/Frameworks -Xlinker -rpath -Xlinker $F/usr/lib`.
 
+## Back Tap result (App Intents, iOS 26+)
+
+- Shortcut actions in `CheckPrice/Intents/`: Check Price in Screenshot (Back Tap: Take Screenshot, then this) and Check Price of Link. They run in the background, start a thread, and return a compact snippet (`CompactVerdictView`): the verdict colour as background, one word, a reason of at most about 64 characters (`ShortReason`, whole clauses), "Sample data" only when seeded, and a blue Details button. Title, confidence and timings stay in the thread.
+- Words (Ruhaan, 2026-11-15): BUY, WAIT, LOOK ELSEWHERE, INDETERMINATE, one per backend verdict (`Verdict.compactLabel`). The island keeps its own words.
+- Details runs `OpenProductIntent` (foreground): `ThreadStore.openProduct` opens the newest thread for that `productId`, or builds one from `GET /report` after a relaunch; an unknown id opens nothing. `checkprice://product/<productId>` does the same; links carry only the opaque id.
+- iOS draws the platter and its Done button; we can't restyle or move them. The screenshot is read in memory and Shortcuts' temporary copy deleted.
+
 ## Live Activity (Dynamic Island)
 
 - Two stages: `checking` (warm grey wisps with an orange edge, a playful word that changes each update, e.g. "Bargainating", from `CheckingWords` in `Shared/CheckAttributes.swift`: random start, +1 per `phase`; no "…"; compact trailing capped at 100 pt, shrinks to 75%) and `decided` (the same wisps re-hued to the verdict, the verdict word, a reason of about 8 words at most). Words: Buy Now, Buy Later (yellow), Look Around, Check First. Never a "don't buy" (owner, 2026-11-15).
@@ -38,6 +45,7 @@
 - `CheckPrice/Screens/`: `Home/HomeView` (first screen `Home/PrimaryCheckArea`: capture, analyzing, reveal, swappable as one view; below it `Home/HomeSummary`: totals, verdicts, recent threads), `Threads/ThreadsView` (laid out like the Claude app's sidebar, owner 2026-11-15: Watchlist and Hearted nav rows, then Recents, every thread newest first as one line of product name with no tags; swipe or long-press to heart or save), `Threads/ThreadDetailView` (pushed or sheet: report from `ThreadDetailReport`, demo chart history from `ThreadDetailHistory`, chat from `ChatColumn` and `ChatInputBar`), `Account/AccountView` (its gear opens `Account/AccountSettingsView` as a sheet, laid out like the Claude app's Settings, owner 2026-11-15: X and centred title, account card, Account and App cards; a chevron only on rows that open something).
 - `CheckPrice/Components/`: `Card` (a padded `FlatCard`), `Metric` (label over value), `SignalRow` (product row on a flat card, optional trailing note), restyled in Worldscape. `Badge` is retired.
 - `CheckPrice/Models/Demo.swift`: `Verdict`, `Product`, `Demo` data.
+- `CheckPrice/Intents/`: Shortcut actions, the compact snippet, `ProductLink`. `CheckPriceTests/`: unit tests (labels, short reason, links, which thread opens).
 - `CheckPrice/LiveActivity/CheckActivity.swift` starts and updates the pop-up (also from Home's reveal); `Shared/CheckAttributes.swift` (app and widget) holds its state; `Widget/` is the widget extension `CheckPriceWidgets` with the views and wisp art.
 - When agents work in parallel, each owns its screen files. `Components/`, `DesignSystem/` and `Models/` are shared: add new pieces freely, but change or remove an existing one only by agreement, since other screens use it.
 
@@ -46,4 +54,5 @@
 - `cd ios && xcodegen generate` (XcodeGen from Homebrew). The generated `CheckPrice.xcodeproj` is not committed.
 - Simulator build: `xcodebuild -project CheckPrice.xcodeproj -scheme CheckPrice -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath build build`. The app lands in `build/Build/Products/Debug-iphonesimulator/Check Price.app`. iOS 18+, unsigned.
 - Launch arguments (`xcrun simctl launch booted com.ycconsumerhackathon.checkprice <args>`): `-startTab home|threads|account`, `-autoReveal YES` (runs the capture → reveal demo on launch; screenshot within 3.5s for analyzing, after for the reveal), `-openThread YES` (opens the newest thread's detail sheet), `-demoLiveActivity YES` with optional `-demoVerdict wait|buy|alternative|investigate` (default wait: checking words for 6 s with the wisps moving every 1.5 s, then the verdict with an alert). iOS hides an app's own Dynamic Island while the app is open, so swipe home right after launch. `-autoReveal YES` also plays the pop-up over 3.5 s.
+- Tests: `xcodebuild test -project CheckPrice.xcodeproj -scheme CheckPrice -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.5' CODE_SIGNING_ALLOWED=NO` (or the same on Revyl's runner). `xcrun simctl openurl booted checkprice://product/<productId>` opens a real product's thread.
 - Without full Xcode, run `scripts/typecheck.sh`: it type-checks the app and the widget extension as Mac Catalyst iOS 18. ActivityKit and WidgetKit are marked unavailable on Catalyst, so it builds stand-ins from the macOS SDK's interface files with those bans removed. This is not an iOS build.

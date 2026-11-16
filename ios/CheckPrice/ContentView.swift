@@ -34,6 +34,11 @@ struct ContentView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(Palette.canvas)
         }
+        // checkprice://product/<productId> (ProductLink) opens that product's thread.
+        .onOpenURL { url in
+            guard let productId = ProductLink.productId(from: url) else { return }
+            Task { await store.openProduct(productId) }
+        }
         .onAppear {
             guard !didHandleLaunch else { return }
             didHandleLaunch = true
