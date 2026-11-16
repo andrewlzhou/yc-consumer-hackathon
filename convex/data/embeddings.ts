@@ -17,13 +17,14 @@ export function productEmbeddingText(p: Pick<Doc<"products">, "title" | "brand" 
   return [p.brand, p.title, p.model, variant, p.category, p.aliases.join(", "), specs].filter(Boolean).join(" | ");
 }
 
-export async function embedTexts(texts: string[]): Promise<number[][] | null> {
+export async function embedTexts(texts: string[], timeoutMs?: number): Promise<number[][] | null> {
   const key = process.env.OPENAI_API_KEY;
   if (!key || texts.length === 0) return null;
   const res = await fetch("https://api.openai.com/v1/embeddings", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
     body: JSON.stringify({ model: MODEL, input: texts }),
+    signal: timeoutMs === undefined ? undefined : AbortSignal.timeout(timeoutMs),
   });
   if (!res.ok) throw new Error(`OpenAI embeddings failed: HTTP ${res.status}`);
   const json = (await res.json()) as { data: { index: number; embedding: number[] }[] };
@@ -136,10 +137,11 @@ export function fuse(text: Candidate[], vector: { product: Doc<"products">; scor
     .sort((a, b) => b.fused - a.fused);
 }
 
-export async function hybridSearch(ctx: ActionCtx, title: string, opts: { category?: string; limit?: number } = {}): Promise<HybridResult> {
+// A failed or slow embedding call (timeoutMs) falls back to text-only candidates instead of failing the search.
+export async function hybridSearch(ctx: ActionCtx, title: string, opts: { category?: string; limit?: number; timeoutMs?: number } = {}): Promise<HybridResult> {
   const limit = Math.min(opts.limit ?? 5, 25);
   const text: Candidate[] = await ctx.runQuery(internal.data.catalog.matchProduct, { title, category: opts.category, limit: 10 });
-  const vectors = await embedTexts([title]);
+  const vectors = await embedTexts([title], opts.timeoutMs).catch(() => null);
   if (!vectors) return { mode: "text", candidates: text.slice(0, limit).map((c) => ({ ...c, vectorScore: null, fused: c.score })) };
   const hits = await ctx.vectorSearch("productEmbeddings", "by_embedding", {
     vector: vectors[0],

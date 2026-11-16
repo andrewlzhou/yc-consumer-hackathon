@@ -4,8 +4,9 @@ import type { Id } from "../_generated/dataModel";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { normalizeRetailer } from "../data/retailers";
 import { parseUrl } from "../data/sources/stores/url";
-import { decideMatch } from "./identify";
+import { decideMatch, otherVariant } from "./identify";
 import { rateLimiter } from "./limits";
+import { productTitle } from "./screenText";
 
 const RETRY_PENDING_MS = 5 * 60_000;
 
@@ -141,11 +142,14 @@ export const resolveInBackground = internalAction({
       }
     const title = resolved?.title ?? args.title;
     let productId = byAsin?._id ?? resolved?.productId;
+    // Fallback when the page gave no product: the title alone, never across a color code, and a new product only
+    // from a trusted product title, named with the link's code so it stays apart from the other colors.
     if (!productId && title) {
       const decision = decideMatch(await ctx.runQuery(internal.data.catalog.matchProduct, { title, limit: 6 }));
-      if (decision.kind === "match") productId = decision.candidate.product._id;
-      else if (args.startFullRun && (!args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok))
-        productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title });
+      const conflict = decision.kind === "match" && otherVariant(decision.candidate.product, parsed);
+      if (decision.kind === "match" && !conflict) productId = decision.candidate.product._id;
+      else if (args.startFullRun && productTitle(title) && (!args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok))
+        productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title: otherVariant({ title }, parsed) ? `${title} ${parsed!.productCode}` : title });
     }
     await ctx.runMutation(internal.agent.urls.settle, { url: key, productId, error: productId ? undefined : (error ?? "no product found"), now: Date.now() });
     if (!productId || !args.startFullRun) return productId ?? null;

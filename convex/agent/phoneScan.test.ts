@@ -12,8 +12,8 @@ import xm5 from "../data/sources/fixtures/serpapi-product-xm5.json";
 import pages from "../data/sources/stores/fixtures/store-pages.json";
 import { checkCard, EvidenceLedger, relationIssues } from "./evidence";
 import { keyFacts } from "./facts";
-import { usableTitle } from "./screenText";
-import { expandShortLink, isAmazonShortLink } from "./urls";
+import { productTitle, usableTitle } from "./screenText";
+import { expandShortLink, isAmazonShortLink, normalizeUrl } from "./urls";
 
 // Regressions from real iPhone 14 scans (YCCO-10) and the iOS review (YCCO-11 H3): CON-10 and CON-11.
 
@@ -75,6 +75,41 @@ describe("XM5 at $179 on Amazon: price relations in the reason must hold", () =>
     expect(relationIssues("$90 is 40% below $100.")[0]).toMatch(/gap is 10%/);
   });
 
+  const withFacts = (facts: Record<string, unknown>) => {
+    const ledger = new EvidenceLedger();
+    ledger.add("key_facts", {}, facts);
+    return ledger;
+  };
+  const below = withFacts({ priceVsLowest: "below_lowest_recorded", currentPrice: 179, lowestPrice: 198 });
+  const near = withFacts({ priceVsLowest: "within_3_percent_above_lowest", currentPrice: 199, lowestPrice: 198 });
+  const equal = withFacts({ priceVsLowest: "equals_lowest_recorded", currentPrice: 198, lowestPrice: 198 });
+
+  test("review M1: correct sentences are not rejected", () => {
+    const ok: [string, EvidenceLedger][] = [
+      ["$179 is 10% below the typical $199 and 9.6% below the lowest $198.", below],
+      ["$198 matches its all-time low of $198.", equal],
+      ["$199 is within 1% of its record low of $198.", near],
+      ["$199 is not a new low, but it is within 1% of the $198 low.", near],
+      ["Best Buy's $249 is the same as Walmart's, under the typical $279.", near],
+      ["Sony XM4 at $248 is below the lowest XM5 price.", near],
+      ["$179 is $19 below the $198 low.", below],
+      ["It's within 1% of the low.", near],
+    ];
+    for (const [text, ledger] of ok) expect([text, relationIssues(text, ledger)]).toEqual([text, []]);
+  });
+
+  test("review M2: one-price and dollar-gap phrasings are checked", () => {
+    const bad: [string, EvidenceLedger, RegExp][] = [
+      ["Today's $179 is within 3% of the low.", below, /differ by 9\.6%/],
+      ["It's within 3% of the lowest price ($198) at $179.", below, /differ by 9\.6%/],
+      ["$179 is $19 above the $198 low.", below, /direction is wrong/],
+      ["$179 is $25 below the $198 low.", below, /gap is \$19/],
+      ["It's a new low.", near, /not below the lowest/],
+      ["$199 is at a record low.", near, /not below the lowest/],
+    ];
+    for (const [text, ledger, issue] of bad) expect([text, relationIssues(text, ledger).join(" ")]).toEqual([text, expect.stringMatching(issue)]);
+  });
+
   test("key_facts label a scan below every recorded price as below, never within 3%", () => {
     const ledger = new EvidenceLedger();
     const summary = { observationCount: 49, prices: { median: 278, min: 198, minLastSeenAt: "2026-11-14", spanDays: 365, latest: { price: 198, retailerSlug: "bestbuy", observedAt: "2026-11-15" } }, current: { price: 179 } };
@@ -113,6 +148,17 @@ describe("XM5 at $179 on Amazon: price relations in the reason must hold", () =>
     expect(stored!.groundingIssues.filter((i) => i.startsWith("heuristic:"))).toEqual([]);
     const facts = JSON.parse(stored!.evidence.find((e) => e.tool === "key_facts")!.result);
     expect(facts).toMatchObject({ currentPriceSource: "scan", priceVsLowest: "below_lowest_recorded", lowestPrice: 198 });
+  });
+
+  test("review L4: a stored analysis with a false relation is not served from the cache", async () => {
+    await realXm5();
+    const first = await scan({ title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", retailer: "Amazon", currentPrice: 179 });
+    const stored = (await t.run((ctx) => ctx.db.query("analyses").collect())) as { _id: Id<"analyses">; tier: string }[];
+    for (const a of stored) await t.run((ctx) => ctx.db.patch(a._id, { reason: XM5_REASON }));
+    const again = await scan({ title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", retailer: "Amazon", currentPrice: 179 });
+    expect(first.productId).toBe(again.productId);
+    expect(again.path).not.toBe("cache");
+    expect(again.reason).not.toMatch(/within 3%/);
   });
 
   test("a correct model reason for the same scan is kept", async () => {
@@ -157,12 +203,37 @@ describe("AE Baggy Jean link: variant boundaries", () => {
     expect(card.reason).toMatch(/only 1 price for this exact item \(latest \$24\.99 on 2026-06-12\)/);
   });
 
+  test("review H1: with the page blocked, the background title fallback never resolves the link to Black", async () => {
+    const { productId: black } = await t.mutation(internal.data.demo.ensureDemoProduct, { key: "ae-baggy-jean" });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("Access Denied", { status: 403 })));
+    const first = await scan({ url: AE_914, title: "AE Baggy Jean", retailer: "American Eagle", currentPrice: 35.97 });
+    expect(first.productId).not.toBe(black);
+    await settle();
+    const link = await t.query(internal.agent.urls.lookup, { url: AE_914 });
+    expect(link?.productId).not.toBe(black);
+    const again = await scan({ url: AE_914 });
+    expect(again.productId).not.toBe(black);
+    const onBlack = await t.run((ctx) => ctx.db.query("priceObservations").filter((q) => q.eq(q.field("productId"), black)).collect());
+    expect(onBlack).toEqual([]);
+    if (again.productId) expect(again.matchedTitle).toMatch(/1114_7364_914/);
+  });
+
+  test("review H1: a link cached to another color before this fix is not trusted", async () => {
+    const { productId: black } = await t.mutation(internal.data.demo.ensureDemoProduct, { key: "ae-baggy-jean" });
+    await t.mutation(internal.agent.urls.settle, { url: normalizeUrl(AE_914)!, productId: black, now: SEED_NOW });
+    const card = await scan({ url: AE_914, currentPrice: 35.97, retailer: "American Eagle" });
+    expect(card.productId).not.toBe(black);
+    const onBlack = await t.run((ctx) => ctx.db.query("priceObservations").filter((q) => q.eq(q.field("productId"), black)).collect());
+    expect(onBlack).toEqual([]);
+  });
+
   test("a Nike link keeps the title match only when its style-color is the catalog model", async () => {
     const { productId: zenvy } = await t.mutation(internal.data.demo.ensureDemoProduct, { key: "nike-zenvy-leggings" });
     const base = "https://www.nike.com/t/zenvy-womens-high-waisted-full-length-leggings-with-no-front-seam-PrjzuxGX/";
     const title = "Nike Zenvy Women's High-Waisted Full-Length Leggings";
     expect((await scan({ url: base + "II2862-010", title, retailer: "Nike", currentPrice: 105 })).productId).toBe(zenvy);
     expect((await scan({ url: base + "II2862-011", title, retailer: "Nike", currentPrice: 105 })).productId).not.toBe(zenvy);
+    expect((await scan({ url: base + "ii2862-010", title, retailer: "Nike", currentPrice: 105 })).productId).toBe(zenvy);
   });
 });
 
@@ -228,6 +299,9 @@ describe("OCR-only and personal screen text (CON-10)", () => {
     ["notification banner as the title", { title: "Messages now Mom: are you picking up Sam at 5 today", currentPrice: 24.99, retailer: "Target" }],
     ["account header as the title", { title: "Hello, Ruhaan Singh 1600 Amphitheatre Pkwy apt 4", currentPrice: 24.99 }],
     ["store home screen as the title", { title: "Best Buy App", retailer: "Best Buy", currentPrice: 9.99 }],
+    ...["Welcome, Ruhaan", "Ruhaan Singh", "Mom", "Messages", "Ruhaan's Cart", "Hello Ruhaan Singh", "Call 4155550100", "(415)555-0100",
+      "San Francisco CA 94107", "1 Infinite Loop Cupertino", "Deliver-to Ruhaan", "Hi\u{1F44B} Ruhaan", "\uFF28\uFF45\uFF4C\uFF4C\uFF4F, Ruhaan",
+      "Deliver\u200B to Ruhaan", "Target Circle", "Amazon Prime", "Best Buy - Deals of the Day"].map((title): [string, Record<string, unknown>] => [`review H2 title "${title}"`, { title, retailer: "Target", currentPrice: 24.99 }]),
   ];
   for (const [name, extract] of notProducts)
     test(`${name}: INVESTIGATE, no product, no stored text, no paid call`, async () => {
@@ -250,6 +324,12 @@ describe("OCR-only and personal screen text (CON-10)", () => {
       expect(prices).toEqual([]);
     });
 
+  test("a real product with a greeting-like brand still becomes a provisional product", async () => {
+    const card = await scan({ title: "Hello Kitty Plush Toy 12 inch", retailer: "Target", currentPrice: 19.99 });
+    expect(card).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "pending" });
+    expect(card.productId).toBeDefined();
+  });
+
   test("OCR lines that clearly name a catalog product still match, without the banner reaching the analysis", async () => {
     const card = await scan({ ocrLines: ["Messages now Mom: are you there", "Sony WH-1000XM5 Wireless Noise Canceling Over-Ear Headphones", "$248.00"], retailer: "Best Buy", currentPrice: 248 });
     expect(card.productId).toBe(ids["sony-xm5"]);
@@ -259,10 +339,43 @@ describe("OCR-only and personal screen text (CON-10)", () => {
     expect(rows[0].title).toBeUndefined();
   });
 
-  test("real product titles and aliases are never treated as screen chrome or personal text", () => {
-    const titles = [...SEED_PRODUCTS, ...DEMO_PRODUCTS].flatMap((p) => [p.title, ...p.aliases]);
-    titles.push("Amazon Echo Dot (5th Gen) Smart Speaker", "Best Buy Essentials 6ft HDMI Cable", "Apple AirPods Pro 3", "Target Up&Up Cotton Rounds 100 ct", "Nike Pegasus 42 Men's Road Running Shoes");
-    expect(titles.filter((x) => usableTitle(x) === null)).toEqual([]);
+  test("real product titles are trusted, and aliases are never treated as screen chrome or personal text", () => {
+    const titles = [...SEED_PRODUCTS, ...DEMO_PRODUCTS].map((p) => p.title);
+    titles.push("Amazon Echo Dot (5th Gen) Smart Speaker", "Best Buy Essentials 6ft HDMI Cable", "Apple AirPods Pro 3", "Target Up&Up Cotton Rounds 100 ct",
+      "Nike Pegasus 42 Men's Road Running Shoes", "Hello Kitty Plush Toy 12 inch", "Hey Dude Wally Sox Shoes", "Hi-Res Audio Wireless Headphones");
+    expect(titles.filter((x) => productTitle(x) === null)).toEqual([]);
+    expect([...SEED_PRODUCTS, ...DEMO_PRODUCTS].flatMap((p) => p.aliases).filter((x) => usableTitle(x) === null)).toEqual([]);
     for (const chrome of ["Best Buy App", "Amazon", "walmart.com", "Target Home", "Shop Nike", "Apple Store"]) expect(usableTitle(chrome)).toBeNull();
+  });
+});
+
+describe("live budget (review M3)", () => {
+  // Network calls that take delayMs unless their abort signal fires first.
+  const slow = (delayMs: number, body: unknown) => (init?: RequestInit) =>
+    new Promise<Response>((resolve, reject) => {
+      const timer = setTimeout(() => resolve(new Response(JSON.stringify(body))), delayMs);
+      init?.signal?.addEventListener("abort", () => {
+        clearTimeout(timer);
+        reject(new Error("aborted"));
+      });
+    });
+
+  test("a slow embedding and a slow match pick still return the card inside 4.3 s", async () => {
+    vi.useRealTimers();
+    vi.stubEnv("AGENT_PROVIDER", "");
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    const embedding = slow(2500, { data: [{ index: 0, embedding: new Array(1536).fill(0.01) }] });
+    const responses = slow(2400, { output: [{ type: "message", content: [{ type: "output_text", text: JSON.stringify({ productId: null }) }] }] });
+    vi.stubGlobal("fetch", vi.fn((url: string | URL, init?: RequestInit) => (String(url).includes("/embeddings") ? embedding(init) : responses(init))));
+    const card = await scan({ title: "Sony noise cancelling headphones", retailer: "Best Buy", currentPrice: 299 });
+    expect(card.verdict).toBe("INVESTIGATE");
+    expect(card.latencyMs).toBeLessThan(4300);
+  }, 15_000);
+
+  test("an embedding HTTP error falls back to text matching instead of failing the scan", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 500 })));
+    const card = await scan({ title: "Sony noise cancelling headphones 2026", retailer: "Best Buy", currentPrice: 299 });
+    expect(card.verdict).toBeDefined();
   });
 });

@@ -45,7 +45,7 @@ export function dataPort(ctx: ActionCtx, now: number) {
     now,
     sampleDataSeen: () => sample,
     matchProduct: (title: string, limit = 6) => ctx.runQuery(internal.data.catalog.matchProduct, { title, limit }),
-    hybridMatch: (title: string) => hybridSearch(ctx, title, { limit: 6 }),
+    hybridMatch: (title: string, timeoutMs?: number) => hybridSearch(ctx, title, { limit: 6, timeoutMs }),
     searchCatalog: async (query: string) => present(await ctx.runQuery(internal.data.catalog.matchProduct, { title: query, limit: 6 })),
     product: (productId: string): Promise<ProductView | null> => ctx.runQuery(internal.data.catalog.getProduct, { productId: id(productId) }),
     stats: async (productId: string, o: { retailer?: string; days?: number; currentPrice?: number; originalPrice?: number }) =>

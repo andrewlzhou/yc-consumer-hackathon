@@ -1,8 +1,19 @@
 import type { scoreCandidate } from "../data/catalog";
+import type { ParsedUrl } from "../data/sources/stores/url";
 
 export type MatchCandidate = ReturnType<typeof scoreCandidate>;
 
 export type HybridCandidate = MatchCandidate & { vectorScore: number | null };
+
+// Store codes that name one color (AE 1114_7364_914, Nike FD2722-001). A product is that link's variant only when its
+// model is the same code or its title carries the code (a product created for that link); otherwise another color's
+// history would be shown for the link and the scan price recorded on it.
+const COLOR_CODED_STORES = new Set(["ae", "nike"]);
+export function otherVariant(product: { model?: string; title: string }, parsed: ParsedUrl | null): boolean {
+  const code = parsed?.productCode?.toUpperCase();
+  if (!code || !COLOR_CODED_STORES.has(parsed!.retailer)) return false;
+  return product.model?.toUpperCase() !== code && !product.title.toUpperCase().includes(code);
+}
 
 // Measured on the deployment (2026-11-15): OCR-mangled titles of the right product score 0.64-0.79, while
 // wrong look-alikes reach 0.52 (WH-1000XM4 -> Bose) and 0.65 (AirPods Pro 2 -> Pro 3).

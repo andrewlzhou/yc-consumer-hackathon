@@ -4,12 +4,12 @@ import { internalAction, type ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { analyzeResponseValidator, productExtractValidator, type AnalyzeResponse, type Verdict } from "../lib/contract";
 import { KNOWN_RETAILERS, normalizeRetailer } from "../data/retailers";
-import { parseUrl, type ParsedUrl } from "../data/sources/stores/url";
+import { parseUrl } from "../data/sources/stores/url";
 import { rateLimiter } from "./limits";
-import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
+import { checkCard, checkGrounding, EvidenceLedger, relationIssues, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
 import { heuristicAnalysis, isThin, staleStoredPrice } from "./heuristic";
-import { decideMatch, hybridViable, type MatchCandidate } from "./identify";
+import { decideMatch, hybridViable, otherVariant, type MatchCandidate } from "./identify";
 import type { LlmProvider, Usage } from "./llm";
 import { reportSpec, runAgent, type OutputSpec } from "./loop";
 import { openAiProvider } from "./openai";
@@ -18,7 +18,7 @@ import { dataPort, type DataPort } from "./port";
 import { keyFacts } from "./facts";
 import { buildInsights } from "./insights";
 import { systemPrompt } from "./prompt";
-import { looksPersonal, usableTitle } from "./screenText";
+import { looksPersonal, productTitle, usableTitle } from "./screenText";
 import { COMPETITOR_TOOLS } from "./tools";
 
 const HOUR = 3_600_000;
@@ -177,22 +177,18 @@ async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Sca
 }
 
 // A clear catalog match by title, or the fast model's pick among close full-text or hybrid candidates. Text that is
-// only OCR lines or a URL slug gets the clear match alone: no embedding or model call sees it, and it stays fast.
-async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, title: string, trusted: boolean, timeoutMs: number): Promise<MatchCandidate | null> {
+// not a trusted product title (OCR lines, URL slugs, titles with no product signal) gets the clear match alone: no
+// embedding or model call sees it. The embedding and the pick each get only what is left of the live budget.
+async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, title: string, trusted: boolean, remaining: () => number): Promise<MatchCandidate | null> {
   const decision = decideMatch(await data.matchProduct(title));
   if (decision.kind === "match") return decision.candidate;
-  if (!trusted || timeoutMs < MIN_MODEL_MS) return null;
-  const hybrid = await data.hybridMatch(title);
+  if (!trusted || remaining() < 2 * MIN_MODEL_MS) return null;
+  const hybrid = await data.hybridMatch(title, Math.min(1500, remaining() - 2 * MIN_MODEL_MS));
   const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates, title) : decision.kind === "ambiguous" ? decision.candidates : [];
-  return viable.length ? pickCandidate(config.provider, config.fast.model, title, viable, timeoutMs) : null;
+  const left = remaining() - MIN_MODEL_MS;
+  return viable.length && left >= MIN_MODEL_MS ? pickCandidate(config.provider, config.fast.model, title, viable, left) : null;
 }
 
-// Store codes that name one color (AE 1114_7364_914, Nike FD2722-001): a product matched by title or slug is that
-// variant only when its model is the same code, so another color's history is never shown for this link.
-const COLOR_CODED_STORES = new Set(["ae", "nike"]);
-function otherVariant(product: MatchCandidate["product"], parsed: ParsedUrl | null): boolean {
-  return !!parsed?.productCode && COLOR_CODED_STORES.has(parsed.retailer) && product.model !== parsed.productCode;
-}
 
 const pathValidator = v.union(v.literal("cache"), v.literal("live"), v.literal("heuristic"), v.literal("unknown"));
 const evaluationValidator = v.object({ source: v.union(v.literal("model"), v.literal("heuristic")), groundingIssues: v.array(v.string()), usage: v.object({ inputTokens: v.number(), outputTokens: v.number() }) });
@@ -216,10 +212,11 @@ export const analyzeScan = internalAction({
     const config = agentConfig();
     const data = dataPort(ctx, now);
     const parsedUrl = args.url ? parseUrl(args.url) : null;
-    // Only a usable phone title is trusted text. OCR lines (minus personal-looking lines) and URL slugs may find a
-    // clear catalog match, but never create a product, reach a model, or get stored with the scan.
-    const extractedTitle = usableTitle(args.title);
-    const ocrText = extractedTitle ? null : usableTitle((args.ocrLines ?? []).filter((l) => !looksPersonal(l)).join(" "));
+    // Only a phone title with a product signal is trusted (screenText.ts). Other screen text (a signal-less title, OCR
+    // lines minus personal-looking ones) and URL slugs may find a clear catalog match, but never create a product,
+    // reach a model or embedding, or get stored with the scan.
+    const extractedTitle = productTitle(args.title);
+    const ocrText = extractedTitle ? null : usableTitle([usableTitle(args.title), ...(args.ocrLines ?? []).filter((l) => !looksPersonal(l))].filter(Boolean).join(" "));
     const title = extractedTitle ?? ocrText ?? parsedUrl?.titleHint ?? null;
     const remaining = () => LIVE_BUDGET_MS - (Date.now() - started);
     const scan: Scan = { title: extractedTitle ?? (ocrText ? null : title), retailer: normalizeRetailer(args.retailer) ?? parsedUrl?.retailer ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
@@ -243,7 +240,7 @@ export const analyzeScan = internalAction({
     let match: MatchCandidate | null = null;
     if (link?.productId) {
       const product = await data.product(link.productId);
-      if (product) match = { product, score: 1, matchedTokens: [], sizeConflict: false } as MatchCandidate;
+      if (product && !otherVariant(product, parsedUrl)) match = { product, score: 1, matchedTokens: [], sizeConflict: false } as MatchCandidate;
     }
     let byAsin = false;
     if (!match && parsedUrl?.retailer === "amazon" && parsedUrl.productCode) {
@@ -252,7 +249,7 @@ export const analyzeScan = internalAction({
       byAsin = !!product;
     }
     if (!match && title) {
-      match = await identify(data, config, title, title === extractedTitle, remaining());
+      match = await identify(data, config, title, title === extractedTitle, remaining);
       if (match && otherVariant(match.product, parsedUrl)) match = null;
     }
     if (args.url && !link && !byAsin && !evaluation)
@@ -264,7 +261,7 @@ export const analyzeScan = internalAction({
         return finish({ verdict: "INVESTIGATE", reason: "We're looking this product up from its link. Check again in a moment.", confidence: 0.1, isSampleData: false, reportStatus: "pending", path: "unknown" });
       if (args.url && !extractedTitle)
         return finish({ verdict: "INVESTIGATE", reason: "We couldn't identify this product from its link: the store page gave us no name or price we could verify.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
-      if (!extractedTitle) return finish({ verdict: "INVESTIGATE", reason: "We couldn't find a product name on the screen. Open the product page and try again.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
+      if (!extractedTitle) return finish({ verdict: "INVESTIGATE", reason: "We couldn't recognize a product name on the screen. Open the product page and try again.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
       if (evaluation) return finish({ verdict: "INVESTIGATE", reason: NO_HISTORY, confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
       const allowed = !args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok;
       if (!allowed) return finish({ verdict: "INVESTIGATE", reason: NO_HISTORY, confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
@@ -279,8 +276,10 @@ export const analyzeScan = internalAction({
     const fresh = (a: typeof live, maxAge: number) =>
       !!a && Math.abs(now - a.createdAt) < maxAge && (scan.currentPrice === null || (a.scanPrice !== undefined && Math.abs(a.scanPrice - scan.currentPrice) / scan.currentPrice <= PRICE_TOLERANCE));
     lap("cacheAndRecord");
-    const fullFresh = fresh(full, FULL_CACHE_MS);
-    const cached = evaluation ? null : fullFresh ? full : fresh(live, LIVE_CACHE_MS) ? live : null;
+    // Analyses stored before the relation check (a false "within 3%") are not served again.
+    const sound = (a: typeof live) => !!a && relationIssues(a.reason).length === 0;
+    const fullFresh = fresh(full, FULL_CACHE_MS) && sound(full);
+    const cached = evaluation ? null : fullFresh ? full : fresh(live, LIVE_CACHE_MS) && sound(live) ? live : null;
     if (cached) {
       const pending = cached.tier === "live" && (await queueFullRun(ctx, productId, scan, now));
       return finish({ productId, matchedTitle: match.product.title, verdict: cached.verdict, reason: cached.reason, confidence: cached.confidence, isSampleData: cached.isSampleData, reportStatus: cached.tier === "full" ? "ready" : pending ? "pending" : "ready", path: "cache" });
