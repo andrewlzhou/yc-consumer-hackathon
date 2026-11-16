@@ -12,4 +12,5 @@
   Simulator build on Revyl (Xcode 27); unsigned device build on the Mac (Xcode 26.3). `check_docs.py` passes.
 - Device: Back Tap -> Shortcut -> intent proven on Ruhaan's iPhone 14 (8+ runs, intent p50 2.25 s, p95 3.70 s);
   Shortcuts' temp PNG is now deleted (proven). "Best Buy App" title defect fixed. Popup/deep link moved to YCCO-13.
+- Popup (Ruhaan's pick C): verdict word + one short line; no title, confidence or timings.
 - Next: Ruhaan to confirm Photos is unchanged; backend defects (AE link, Amazon /dp/, reason math) are CON-10/YCCO-12.

@@ -28,8 +28,9 @@
 - The intent reads the image bytes, runs Vision OCR and the rules ([extraction](extraction.md)), and sends only
   title, store and prices (or pruned lines when no title was read) to `POST /analyze`. If Shortcuts hands over a
   temp file, the intent deletes it after reading, success or failure.
-- It answers with a dialog plus a small snippet (verdict, reason, confidence, sample-data label, timings), set to
-  run in the background so the store app should stay in front. Not yet verified on a real phone.
+- It answers with a compact snippet only: a colored word (BUY, WAIT, LOOK ELSEWHERE, INDETERMINATE), one short
+  reason line and "sample" when evidence is sample data. It runs in the background; on the real phone the store app
+  stays in front and the result shows as a system popup whose outer size iOS decides. Full details stay in the app.
 - Foundation Models are tried only when Apple Intelligence is available and the rules missed a field; the model's
   answer is kept only if its title is on screen and its price was also parsed. Ruhaan's A15 iPhone can't run it.
 

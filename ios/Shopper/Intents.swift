@@ -4,7 +4,7 @@ import ShopperKit
 import SwiftUI
 import UniformTypeIdentifiers
 
-// Shortcut path: "Take Screenshot" -> this intent. Runs without opening the app and answers with a dialog and snippet.
+// Shortcut path: "Take Screenshot" -> this intent. Runs without opening the app and answers with a small snippet.
 struct CheckScreenshotIntent: AppIntent {
     static let title: LocalizedStringResource = "Check Price in Screenshot"
     static let description = IntentDescription("Reads the product on screen on this iPhone and asks whether it is worth buying now. The screenshot never leaves the phone.")
@@ -13,13 +13,13 @@ struct CheckScreenshotIntent: AppIntent {
     @Parameter(title: "Screenshot", supportedContentTypes: [.image])
     var screenshot: IntentFile
 
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    func perform() async throws -> some IntentResult & ShowsSnippetView {
         let (bytes, cleanup) = readOnce(screenshot)
         var outcome = await ScanPipeline.run(imageData: bytes, deviceId: DeviceIdentity.current())
         outcome.tempFileDeleted = cleanup
         let finished = outcome
         await MainActor.run { AppModel.shared.remember(finished) }
-        return .result(dialog: IntentDialog(stringLiteral: finished.dialog), view: ResultSnippet(outcome: finished))
+        return .result(view: ResultSnippet(outcome: finished))
     }
 }
 
@@ -74,10 +74,10 @@ struct CheckLinkIntent: AppIntent {
     @Parameter(title: "Link")
     var url: URL
 
-    func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
+    func perform() async throws -> some IntentResult & ShowsSnippetView {
         let outcome = await ScanPipeline.run(url: url, deviceId: DeviceIdentity.current())
         await MainActor.run { AppModel.shared.remember(outcome) }
-        return .result(dialog: IntentDialog(stringLiteral: outcome.dialog), view: ResultSnippet(outcome: outcome))
+        return .result(view: ResultSnippet(outcome: outcome))
     }
 }
 
@@ -90,26 +90,52 @@ struct ShopperShortcuts: AppShortcutsProvider {
     }
 }
 
+// The popup over the store app: a colored verdict word and one short line. iOS decides the outer popup size.
 struct ResultSnippet: View {
     let outcome: ScanOutcome
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             if let response = outcome.response {
-                VerdictBadge(verdict: response.verdict)
-                if let title = response.matchedTitle { Text(title).font(.subheadline).lineLimit(2) }
-                Text(response.reason).font(.footnote)
-                HStack {
-                    Text("Confidence \(Int((response.confidence * 100).rounded()))%")
-                    if response.isSampleData { Text("Sample data").foregroundStyle(.orange) }
-                }
-                .font(.caption)
+                Text(Self.word(response.verdict))
+                    .font(.headline.weight(.heavy))
+                    .foregroundStyle(Self.color(response.verdict))
+                Text(Self.short(response.reason) + (response.isSampleData ? " · sample" : ""))
+                    .font(.footnote)
+                    .lineLimit(1)
             } else {
-                Text(outcome.error?.message ?? ShopperError.noProduct.message).font(.footnote)
+                Text(Self.short(outcome.error?.message ?? ShopperError.noProduct.message))
+                    .font(.footnote)
+                    .lineLimit(1)
             }
-            Text(String(format: "OCR %.2fs · network %.2fs · total %.2fs", outcome.times.ocr, outcome.times.network, outcome.times.total))
-                .font(.caption2).foregroundStyle(.secondary)
         }
-        .padding()
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
+    static func word(_ verdict: Verdict) -> String {
+        switch verdict {
+        case .buyNow: "BUY"
+        case .wait: "WAIT"
+        case .considerAlternative: "LOOK ELSEWHERE"
+        case .investigate: "INDETERMINATE"
+        }
+    }
+
+    static func color(_ verdict: Verdict) -> Color {
+        switch verdict {
+        case .buyNow: .green
+        case .wait: .orange
+        case .considerAlternative: .blue
+        case .investigate: .gray
+        }
+    }
+
+    // First sentence, cut at a word boundary to about 60 characters.
+    static func short(_ text: String) -> String {
+        let sentence = text.components(separatedBy: ". ").first?.trimmingCharacters(in: CharacterSet(charactersIn: ". ")) ?? text
+        guard sentence.count > 60 else { return sentence }
+        let cut = sentence.prefix(60)
+        return String(cut[..<(cut.lastIndex(of: " ") ?? cut.endIndex)]) + "…"
     }
 }
