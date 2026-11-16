@@ -1,4 +1,5 @@
-// Home's first screen: the app's main function, capture → analyzing → verdict reveal. Self-contained so the final animation (not decided yet) can replace it whole.
+// Home: the app's main function, capture → analyzing → verdict reveal. Ready is a question and a
+// hint over the aurora, and the whole screen is the button. Self-contained so it can be replaced whole.
 // Check price sends a store link on the clipboard, or else a picked screenshot, to the backend
 // (Backend/Backend.swift). Builds without a backend key, and `-autoReveal YES`, run the demo on `Demo.headphones`.
 import PhotosUI
@@ -8,6 +9,8 @@ import SwiftUI
 struct PrimaryCheckArea: View {
     // Set by the `-autoReveal YES` launch argument; runs the demo once, then clears.
     @Binding var autoReveal: Bool
+    // True while a check runs, so Home's light can quicken.
+    @Binding var isAnalyzing: Bool
     @Environment(ThreadStore.self) private var store
     @State private var phase: Phase = .ready
     @State private var progress = 0.0
@@ -37,6 +40,7 @@ struct PrimaryCheckArea: View {
         .onAppear {
             if autoReveal { autoReveal = false; startDemo() }
         }
+        .onChange(of: phase) { _, new in isAnalyzing = new == .analyzing }
         .photosPicker(isPresented: $pickingScreenshot, selection: $screenshot, matching: .screenshots)
         .onChange(of: screenshot) { _, item in
             guard let item else { return }
@@ -47,15 +51,32 @@ struct PrimaryCheckArea: View {
 
     // MARK: Ready
 
+    // The whole screen is one button, "Check a price"; the words over it are for sighted readers.
+    // The failure note stays tappable on top.
     private var ready: some View {
-        VStack(alignment: .leading, spacing: Spacing.titleToForm) {
-            Text("See a price you like?")
-                .textStyle(.statement(size: 30))
-                .foregroundStyle(Palette.textPrimary)
-            Button("Check price", action: start)
-                .buttonStyle(KeyButtonStyle())
-            if let failure {
-                FailureNote(message: failure, action: start, onDismiss: { self.failure = nil })
+        ZStack(alignment: .leading) {
+            Button(action: start) {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.horizontal, -Spacing.screenMargin)
+            .accessibilityLabel("Check a price")
+            VStack(alignment: .leading, spacing: Spacing.titleToForm) {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Worth buying now?")
+                        .textStyle(.statement(size: 34))
+                        .foregroundStyle(Palette.textPrimary)
+                    Text("Tap anywhere to check.")
+                        .textStyle(.body)
+                        .foregroundStyle(Palette.textSecondary)
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+                if let failure {
+                    FailureNote(message: failure, action: start, onDismiss: { self.failure = nil })
+                }
             }
         }
     }
