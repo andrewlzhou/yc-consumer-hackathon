@@ -1,60 +1,48 @@
-// The Account tab, laid out the way Instagram's profile page is: handle and a gear (opens the
-// Settings sheet) in the top bar, avatar beside three counts, name and bio (each only when set),
-// Edit profile and Share profile keys, then a grid of the user's saved threads. The counts are
-// Check Price's own: checks, saved threads, and the money saved by waiting on saved threads.
+// The Account tab is the Settings page (owner, 2026-11-15), laid out after Grok's iOS Settings:
+// "Settings" small and centred in the bar, a profile card (avatar, name, @handle, chevron) that
+// opens EditProfileSheet, then "App" over one card of plain rows (Notifications, Shortcut, Back
+// Tap, Version). None of the App rows opens anything yet, so they have no chevrons and aren't
+// buttons. ContentView draws the backdrop behind the tab; nothing here paints over it.
 import SwiftUI
 
 struct AccountView: View {
     @AppStorage(ProfileKeys.name) private var name = ""
     @AppStorage(ProfileKeys.handle) private var handle = ""
-    @AppStorage(ProfileKeys.bio) private var bio = ""
     @State private var editing = false
-    @State private var settingsOpen = false
-
-    @Environment(ThreadStore.self) private var store
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 0) {
-                    header
-                    actions.padding(.top, 16)
-                    ProfileGrid(threads: store.saved)
-                        .padding(.top, 24)
+                    Button { editing = true } label: { profileCard }
+                        .buttonStyle(SettingsCardButtonStyle())
+                        .accessibilityHint("Edit profile")
+                    SettingsSection(title: "App") {
+                        SettingsRow(title: "Notifications", symbol: "bell")
+                        SettingsSeparator()
+                        SettingsRow(title: "Shortcut", symbol: "plus.circle")
+                        SettingsSeparator()
+                        SettingsRow(title: "Back Tap", symbol: "hand.tap")
+                        SettingsSeparator()
+                        SettingsRow(title: "Version", symbol: "info.circle", value: Self.version)
+                    }
                 }
                 .padding(.horizontal, Spacing.screenMargin)
+                .padding(.top, 12)
                 .padding(.bottom, 32)
             }
-            // ContentView draws the backdrop behind every tab; keep the stack see-through.
+            .scrollContentBackground(.hidden)
             .containerBackground(.clear, for: .navigation)
             .toolbar {
-                // The handle is profile info, as on Instagram, not a screen title, so it stays.
-                // With no handle set the corner is empty rather than saying "Account".
-                ToolbarItem(placement: .topBarLeading) {
-                    if !handle.isEmpty {
-                        Text(handle)
-                            .font(.hiragino(.w6, size: 20, relativeTo: .title3))
-                            .tracking(-0.2)
-                            .foregroundStyle(Palette.textPrimary)
-                            .lineLimit(1)
-                            .accessibilityAddTraits(.isHeader)
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button { settingsOpen = true } label: {
-                        Image(systemName: "gearshape")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(Palette.textPrimary)
-                    }
-                    .accessibilityLabel("Settings")
+                ToolbarItem(placement: .principal) {
+                    Text("Settings")
+                        .font(.hiragino(.w7, size: 16, relativeTo: .headline))
+                        .foregroundStyle(Palette.textPrimary)
+                        .accessibilityAddTraits(.isHeader)
                 }
             }
             .toolbarColorScheme(.dark, for: .navigationBar)
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $settingsOpen) {
-                AccountSettingsView()
-                    .presentationBackground { AppBackdrop() }
-            }
             .sheet(isPresented: $editing) {
                 EditProfileSheet()
                     .presentationDragIndicator(.visible)
@@ -63,55 +51,131 @@ struct AccountView: View {
         }
     }
 
-    // Avatar and the three counts on one row, then the name and bio under them.
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 20) {
-                ProfileAvatar(name: name, size: 84)
-                HStack(spacing: 0) {
-                    ProfileStat(value: Text("\(store.threads.count)"), number: Double(store.threads.count), label: "Checks")
-                    ProfileStat(value: Text("\(store.saved.count)"), number: Double(store.saved.count), label: "Saved")
-                    let waited = SavedByWaiting.total(store.saved)
-                    ProfileStat(value: Text(SavedByWaiting.format(waited)), number: Double(waited), label: "Saved by waiting")
+    // Avatar, then the name (semibold) over the @handle (secondary). With only a handle, it takes
+    // the top line; with neither, the avatar's person symbol stands alone.
+    private var profileCard: some View {
+        HStack(spacing: Spacing.rowIconToText) {
+            ProfileAvatar(name: name, size: 56)
+            VStack(alignment: .leading, spacing: 4) {
+                if !name.isEmpty {
+                    Text(name)
+                        .font(.hiragino(.w6, size: 17, relativeTo: .body))
+                        .foregroundStyle(Palette.textPrimary)
+                }
+                if !handle.isEmpty {
+                    Text("@\(handle)")
+                        .font(name.isEmpty ? .hiragino(.w6, size: 17, relativeTo: .body) : .hiragino(.w4, size: 14, relativeTo: .subheadline))
+                        .foregroundStyle(name.isEmpty ? Palette.textPrimary : Palette.textSecondary)
                 }
             }
-            if !name.isEmpty {
-                Text(name)
-                    .textStyle(.cardTitle)
-                    .foregroundStyle(Palette.textPrimary)
-                    .padding(.top, 14)
-            }
-            if !bio.isEmpty {
-                Text(bio)
+            .lineLimit(1)
+            Spacer(minLength: 8)
+            SettingsChevron()
+        }
+        .padding(.horizontal, SettingsRow.horizontal)
+        .padding(.vertical, 16)
+        .background(SettingsSurface.fill, in: SettingsSurface.shape)
+        .accessibilityElement(children: .combine)
+    }
+
+    private static var version: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+    }
+}
+
+// A muted label over a card of rows.
+private struct SettingsSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(title)
+                .textStyle(.label)
+                .foregroundStyle(Palette.textSecondary)
+                .accessibilityAddTraits(.isHeader)
+                .padding(.horizontal, SettingsRow.horizontal)
+            SettingsCard { content }
+        }
+        .padding(.top, 32)
+    }
+}
+
+// The cards' look: warm grey a step lighter than the bar fill so it reads over the backdrop's
+// gradient, large corners, no border or shadow.
+private enum SettingsSurface {
+    static let fill = Color.white.opacity(0.08)
+    static let shape = RoundedRectangle(cornerRadius: 24, style: .continuous)
+}
+
+// A grouped card of rows.
+private struct SettingsCard<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) { content }
+            .background(SettingsSurface.fill, in: SettingsSurface.shape)
+    }
+}
+
+// The profile card's press: the whole card dims slightly while held.
+private struct SettingsCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(SettingsSurface.shape)
+            .opacity(configuration.isPressed ? 0.7 : 1)
+            .animation(Motion.hover, value: configuration.isPressed)
+    }
+}
+
+// The line between rows, starting where the row labels start rather than at the symbols.
+private struct SettingsSeparator: View {
+    var body: some View {
+        Hairline().padding(.leading, SettingsRow.labelLeading)
+    }
+}
+
+private struct SettingsChevron: View {
+    var body: some View {
+        Image(systemName: "chevron.right")
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundStyle(Palette.textTertiary)
+            .accessibilityHidden(true)
+    }
+}
+
+// One row: a thin outline symbol, the label, and an optional value on the right.
+private struct SettingsRow: View {
+    let title: String
+    let symbol: String
+    var value: String?
+
+    static let horizontal = Spacing.cardLeading
+    static let symbolWidth: CGFloat = 24
+    static let labelLeading = horizontal + symbolWidth + Spacing.rowIconToText
+
+    var body: some View {
+        HStack(spacing: Spacing.rowIconToText) {
+            Image(systemName: symbol)
+                .font(.system(size: 18, weight: .light))
+                .foregroundStyle(Palette.textPrimary)
+                .frame(width: Self.symbolWidth)
+                .accessibilityHidden(true)
+            Text(title)
+                .textStyle(.body)
+                .foregroundStyle(Palette.textPrimary)
+            Spacer(minLength: 8)
+            if let value, !value.isEmpty {
+                Text(value)
                     .textStyle(.body)
-                    .lineSpacing(4)
+                    .monospacedDigit()
                     .foregroundStyle(Palette.textSecondary)
-                    .padding(.top, 6)
             }
         }
-    }
-
-    // Edit profile and Share profile, side by side at equal width, as on Instagram.
-    private var actions: some View {
-        HStack(spacing: 8) {
-            Button {
-                editing = true
-            } label: {
-                Text("Edit profile").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(KeyButtonStyle(tone: .secondary))
-
-            ShareLink(item: shareText) {
-                Text("Share profile").frame(maxWidth: .infinity)
-            }
-            .buttonStyle(KeyButtonStyle(tone: .secondary))
-        }
-    }
-
-    // There is no profile web page yet, so sharing sends a line of text, not a link.
-    private var shareText: String {
-        let who = handle.isEmpty ? (name.isEmpty ? "I'm" : "\(name) is") : "@\(handle) is"
-        return "\(who) checking prices with Check Price."
+        .lineLimit(1)
+        .padding(.horizontal, Self.horizontal)
+        .frame(minHeight: 52)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -152,34 +216,6 @@ struct ProfileAvatar: View {
         .frame(width: size, height: size)
         .overlay { Circle().strokeBorder(.white.opacity(0.16), lineWidth: 1) }
         .accessibilityHidden(true)
-    }
-}
-
-// One count in the stats row: the number on top, its name under it, centred.
-private struct ProfileStat: View {
-    let value: Text
-    let number: Double
-    let label: String
-
-    var body: some View {
-        VStack(spacing: 4) {
-            value
-                .font(.hiragino(.w6, size: 19, relativeTo: .title3))
-                .monospacedDigit()
-                .foregroundStyle(Palette.textPrimary)
-                .contentTransition(.numericText(value: number))
-                .animation(Motion.valueChange, value: number)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-            Text(label)
-                .textStyle(.caption)
-                .foregroundStyle(Palette.textSecondary)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .top)
-        .accessibilityElement(children: .combine)
     }
 }
 

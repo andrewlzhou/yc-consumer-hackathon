@@ -7,8 +7,8 @@ import Charts
 import ShopperKit
 import SwiftUI
 
-// Three counts in equal tiles: money saved by waiting on saved threads (`SavedByWaiting`, as on
-// Account), how many threads are saved, and how many checks were made this month.
+// Three counts in equal tiles: money saved by waiting on saved threads (`SavedByWaiting`, kept in
+// Account/AccountView.swift), how many threads are saved, and how many checks were made this month.
 struct HomeSummaryRow: View {
     let threads: [ShoppingThread]
     let saved: [ShoppingThread]
