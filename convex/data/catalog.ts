@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, type QueryCtx } from "../_generated/server";
 import type { Doc, Id } from "../_generated/dataModel";
-import { buildSearchText, sizeTokens, tokenize, variantConflict } from "./text";
+import { buildSearchText, ocrVariants, sizeTokens, tokenize, variantConflict } from "./text";
 
 // What the agent sees of a product: everything except the internal search text.
 export function productView(p: Doc<"products">) {
@@ -18,18 +18,27 @@ type Candidate = {
 };
 
 // Deterministic re-rank of full-text hits: share of the query's tokens the product carries,
-// with size tokens (128gb, 4qt) and model-like tokens (digits) weighted higher.
+// with size tokens (128gb, 4qt) and model-like tokens (digits) weighted higher. A token and its OCR readings
+// ("afl0l", "af101") count as one token, hit when any reading is, so OCR fixes never dilute the score.
 export function scoreCandidate(queryTokens: string[], product: Doc<"products">): Candidate {
   const productTokens = new Set(product.searchText.split(" "));
   const weight = (t: string) => (sizeTokens([t]).length ? 3 : /\d/.test(t) ? 2 : 1);
+  const groups: string[][] = [];
+  for (const t of queryTokens) {
+    const group = groups.find((g) => ocrVariants(g[0]).includes(t));
+    if (group) group.push(t);
+    else groups.push([t]);
+  }
   let total = 0;
   let hit = 0;
   const matched: string[] = [];
-  for (const t of queryTokens) {
-    total += weight(t);
-    if (productTokens.has(t)) {
-      hit += weight(t);
-      matched.push(t);
+  for (const group of groups) {
+    const w = Math.max(...group.map(weight));
+    total += w;
+    const found = group.find((t) => productTokens.has(t));
+    if (found) {
+      hit += w;
+      matched.push(found);
     }
   }
   const unit = (s: string) => s.replace(/^[\d.]+/, "");
@@ -89,6 +98,18 @@ export const getProduct = internalQuery({
   args: { productId: v.id("products") },
   handler: async (ctx, args) => {
     const p = await ctx.db.get(args.productId);
+    return p ? productView(p) : null;
+  },
+});
+
+// An Amazon link's ASIN names one exact catalog product (one color, one size), so it needs no title match.
+export const productByAsin = internalQuery({
+  args: { asin: v.string() },
+  handler: async (ctx, args) => {
+    const p = await ctx.db
+      .query("products")
+      .withIndex("by_identifiers_asin", (q) => q.eq("identifiers.asin", args.asin))
+      .first();
     return p ? productView(p) : null;
   },
 });

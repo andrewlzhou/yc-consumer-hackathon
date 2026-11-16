@@ -6,15 +6,16 @@
 ## How a scan flows
 
 - `POST /analyze` validates the extract by hand, then calls `agent/analyze:analyzeScan` (internal action).
-- Identify: `matchProduct` re-ranks full-text hits; clear matches (score >= 0.75, 0.15 lead, no size conflict) are
-  taken in code. Otherwise `hybridSearch` (text + vector, text-only without a key) feeds the fast model, which picks one or none.
-  Vector-only suggestions need 0.6 similarity and a brand match; model/size conflicts are rejected. Failed model picks return no match.
+- Identify: links first (cached link, exact Amazon ASIN), then the title, then OCR lines and slug (must agree on one
+  product). Screen text needs a clear local match (score >= 0.75, 0.15 lead) naming brand or model; it never reaches
+  embeddings, a model pick or SerpApi ([scan safety](agent-scan-safety.md)). OCR readings of one token count once.
 - Record: every priced scan goes through `data/prices:recordObservation` as `source: "scan"`.
-- No match: a provisional product is created, the phone gets INVESTIGATE at once, and a full run is queued.
+- No match: INVESTIGATE at once. Only a product link creates a provisional product (background resolver, full run queued).
 - Links: a `url` resolved earlier identifies the product exactly; a new one is resolved off the live path (see [report](agent-report.md)).
 - Cached: a full analysis under 12 hours old (or a live one under 30 minutes) made within 2% of today's price is returned as is.
 - Otherwise the live pass: stats, promo patterns, competitors and exact `key_facts` are fetched in code, then one small
   structured call (verdict, confidence, reason, evidence ids) to the fast model (default `gpt-5.4-mini`, reasoning none), no tools.
+  The whole live path has a 4 s budget (the phone waits 5 s); with under 0.8 s left the deterministic analyst answers.
 - The full run is queued on first sight, in parallel with the live pass (one per product at a time, `analysisJobs`).
 
 ## The full run
@@ -31,6 +32,7 @@
 - Output follows one JSON schema (`output.ts`), enforced by OpenAI strict mode and re-checked in code.
 - Every tool result gets an evidence id (E1, E2, ...). Each text field cites ids; `evidence.ts` checks that every
   number in it appears in a cited result (display rounding allowed) and that competitors came from a competitor tool.
+  Stated price relations must also hold ("within N% of", "N% below", "matches", "new low"); see [scan safety](agent-scan-safety.md).
 - Problems go back to the model for a repair turn. Still failing, or a confident verdict on thin history
   (< 5 observations or < 30 days), falls back to the deterministic analyst in `heuristic.ts`, whose text only copies numbers.
 - When any evidence is seed data, the reason ends with "(sample data)" and `isSampleData` is true.

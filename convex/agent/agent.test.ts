@@ -116,11 +116,22 @@ describe("live scans of seeded products (fake provider)", () => {
 });
 
 describe("unknown products and the background run", () => {
-  test("an unknown product returns INVESTIGATE fast and queues a full analysis", async () => {
-    const r = await scan({ title: "Zorblax Hyperwidget 9000 Turbo", retailer: "Target", currentPrice: 59.99 });
-    expect(r).toMatchObject({ verdict: "INVESTIGATE", path: "unknown", reportStatus: "pending" });
+  // Unknown products are discovered only from a product link whose store page names them (CON-10): screen text alone
+  // never creates a product. The page below stands in for the store; tests never touch the network.
+  const ZORBLAX = "https://www.amazon.com/dp/B0ZORBLAX1";
+  const discover = async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response('<script type="application/ld+json">{"@type":"Product","name":"Zorblax Hyperwidget 9000 Turbo","offers":{"@type":"Offer","price":59.99,"priceCurrency":"USD","availability":"https://schema.org/InStock"}}</script>')));
+    const r = await scan({ url: ZORBLAX, deviceId: "d1" });
     await t.finishAllScheduledFunctions(vi.runAllTimers);
-    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products">, now: SEED_NOW });
+    vi.unstubAllGlobals();
+    const link = await t.query(internal.agent.urls.lookup, { url: ZORBLAX });
+    return { r, productId: link!.productId as Id<"products"> };
+  };
+
+  test("an unknown product returns INVESTIGATE fast and queues a full analysis", async () => {
+    const { r, productId } = await discover();
+    expect(r).toMatchObject({ verdict: "INVESTIGATE", path: "unknown", reportStatus: "pending" });
+    const report = await t.query(internal.agent.store.report, { productId, now: SEED_NOW });
     expect(report!.product.provisional).toBe(true);
     expect(report!.analysis).toMatchObject({ tier: "full", verdict: "INVESTIGATE" });
   });
@@ -137,9 +148,8 @@ describe("unknown products and the background run", () => {
   });
 
   test("an unknown product's full run tries the real-data lookup (skipped without a SerpApi key)", async () => {
-    const r = await scan({ title: "Zorblax Hyperwidget 9000 Turbo", retailer: "Target", currentPrice: 59.99 });
-    await t.finishAllScheduledFunctions(vi.runAllTimers);
-    const report = await t.query(internal.agent.store.report, { productId: r.productId as Id<"products">, now: SEED_NOW });
+    const { productId } = await discover();
+    const report = await t.query(internal.agent.store.report, { productId, now: SEED_NOW });
     const sources = report!.analysis!.evidence.find((e: { tool: string }) => e.tool === "price_sources");
     expect(sources!.result).toMatchObject({ realDataLookup: "no_key" });
   });
@@ -153,7 +163,7 @@ describe("HTTP", () => {
     const res = await post({ deviceId: "d1", title: "Zorblax Hyperwidget 9000", retailer: "Target", currentPrice: 20 });
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(Object.keys(body).sort()).toEqual(["confidence", "isSampleData", "productId", "reason", "reportStatus", "verdict"]);
+    expect(Object.keys(body).sort()).toEqual(["confidence", "isSampleData", "reason", "reportStatus", "verdict"]);
   });
 
   test("regression H2: routes fail closed without APP_API_KEY unless explicitly opened", async () => {

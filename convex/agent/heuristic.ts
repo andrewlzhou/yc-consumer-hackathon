@@ -75,7 +75,10 @@ export function heuristicAnalysis(input: HeuristicInput): AgentOutput {
 
   if (!stats || isThin(stats)) {
     const n = stats?.overall.observationCount ?? 0;
-    const why = `We have only ${n} price observations for this product, too few to judge this price.`;
+    const latest = stats?.overall.prices?.latest;
+    const why = latest?.observedAt
+      ? `We have only ${n} price${n === 1 ? "" : "s"} for this exact item (latest ${usd(latest.price)} on ${latest.observedAt}), too few to judge today's price.`
+      : `We have only ${n} price observations for this product, too few to judge this price.`;
     return { ...base, reason: why, reasonEvidenceIds: ids(input.stats), recommendation: { reasoning: `${why} We'll keep tracking it.`, evidenceIds: ids(input.stats) } };
   }
   const staleSince = staleStoredPrice(stats, input.scanPrice, input.today);
@@ -181,7 +184,15 @@ export function heuristicAnalysis(input: HeuristicInput): AgentOutput {
   } else if (cur.atOrBelowLow || cur.vsMinPercent <= 3 || cur.percentileRankPercent <= 10) {
     verdict = "BUY_NOW";
     confidence = o.observationCount >= 30 ? 0.8 : 0.65;
-    reason = `${usd(current)} matches the lowest price we've seen (${usd(prices.min)}), well under the typical ${usd(prices.median)}.`;
+    const vsLow = cur.vsMinPercent;
+    const lowText = cur.atOrBelowLow && Math.abs(vsLow) < 0.05
+      ? `matches the lowest price we've seen (${usd(prices.min)})`
+      : vsLow < 0
+        ? `is ${Math.abs(vsLow)}% below the lowest price we've recorded (${usd(prices.min)})`
+        : vsLow <= 3
+          ? `is ${vsLow}% above the lowest price we've seen (${usd(prices.min)})`
+          : `is in the cheapest ${cur.percentileRankPercent}% of prices we've seen (low ${usd(prices.min)})`;
+    reason = `${usd(current)} ${lowText}, well under the typical ${usd(prices.median)}.`;
     reasonIds = ids(input.stats);
   } else if (cur.vsMedianPercent > 0) {
     verdict = "WAIT";

@@ -11,7 +11,7 @@ const STOP_WORDS = new Set(["the", "and", "with", "for", "new", "by", "of", "a",
 
 // Common OCR swaps: digits read inside words ("Pr0" -> "pro") and letters read inside model numbers
 // ("AFl0l" -> "af101"). Both readings are kept as extra search tokens.
-function ocrVariants(token: string): string[] {
+export function ocrVariants(token: string): string[] {
   const out: string[] = [];
   const letters = token.replace(/[^a-z]/g, "").length;
   if (/[01]/.test(token) && letters >= 2 && !/[2-9]/.test(token) && !/\d{2,}/.test(token)) {
