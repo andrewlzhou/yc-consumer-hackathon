@@ -87,7 +87,7 @@ private struct IslandField: View {
 private enum Canvas {
     static let compact = CGRect(x: 0, y: 10, width: 480, height: 44)
     static func expanded(_ state: CheckAttributes.ContentState) -> CGRect {
-        CGRect(x: 0, y: 10, width: 480, height: state.isChecking ? 96 : 116)
+        CGRect(x: 0, y: 10, width: 480, height: state.isChecking ? 88 : 110)
     }
 }
 
@@ -130,7 +130,7 @@ struct CheckLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.trailing) { Color.clear.frame(height: 30).islandField(s, big) }
                 DynamicIslandExpandedRegion(.bottom) {
                     VerdictStack(state: s)
-                        .frame(height: s.isChecking ? 40 : 60)
+                        .frame(height: s.isChecking ? 32 : 54)
                         .islandField(s, big)
                 }
             } compactLeading: {
