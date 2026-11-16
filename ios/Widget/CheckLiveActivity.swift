@@ -68,31 +68,39 @@ private struct LockScreenView: View {
 // art lines up and they read as one continuous field. Only the camera cutout stays black.
 private struct IslandField: View {
     let state: CheckAttributes.ContentState
-    let canvas: CGSize
+    let canvas: CGRect
 
     var body: some View {
         GeometryReader { proxy in
             let origin = proxy.frame(in: .global).origin
             WispField(palette: state.palette, phase: state.phase)
                 .frame(width: canvas.width, height: canvas.height)
-                .offset(x: -origin.x, y: -origin.y)
+                .offset(x: canvas.minX - origin.x, y: canvas.minY - origin.y)
         }
     }
 }
 
-// Canvas sizes in screen points, from the top-left of the screen; wider than any iPhone so
-// every region finds its slice. The island's top sits about 11 pt down.
+// Where the field sits, in screen points. Wider than any iPhone so every region finds its slice;
+// the island's top is about 14 pt down.
 private enum Canvas {
-    static let compact = CGSize(width: 480, height: 52)
-    static func expanded(_ state: CheckAttributes.ContentState) -> CGSize {
-        CGSize(width: 480, height: state.isChecking ? 130 : 160)
+    static let compact = CGRect(x: 0, y: 10, width: 480, height: 44)
+    static func expanded(_ state: CheckAttributes.ContentState) -> CGRect {
+        CGRect(x: 0, y: 10, width: 480, height: state.isChecking ? 96 : 116)
     }
 }
 
+private enum Compact {
+    static let width: CGFloat = 96
+}
+
 private extension View {
-    func islandField(_ state: CheckAttributes.ContentState, _ canvas: CGSize) -> some View {
-        frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background { IslandField(state: state, canvas: canvas) }
+    // The field behind this region, reaching `bleed` points past it on every side.
+    func islandField(_ state: CheckAttributes.ContentState, _ canvas: CGRect, bleed: CGFloat = 24) -> some View {
+        background {
+            IslandField(state: state, canvas: canvas)
+                .padding(-bleed)
+                .ignoresSafeArea()
+        }
     }
 }
 
@@ -106,29 +114,31 @@ struct CheckLiveActivity: Widget {
             let s = context.state
             let big = Canvas.expanded(s)
             return DynamicIsland {
-                // Leading, trailing and centre carry only the field (the leading slot is kept
-                // for a future logo); the words sit centred in the bottom region.
+                // Leading and trailing carry only the field (the leading slot is kept for a
+                // future logo); the words sit centred in the bottom region.
                 DynamicIslandExpandedRegion(.leading) { Color.clear.islandField(s, big) }
                 DynamicIslandExpandedRegion(.trailing) { Color.clear.islandField(s, big) }
-                DynamicIslandExpandedRegion(.center) { Color.clear.islandField(s, big) }
                 DynamicIslandExpandedRegion(.bottom) {
                     VerdictStack(state: s)
-                        .padding(.vertical, 8)
+                        .frame(height: s.isChecking ? 40 : 60)
                         .islandField(s, big)
                 }
             } compactLeading: {
-                // Field only: reserved for a future logo, and it balances the word on the right.
-                Color.clear.islandField(s, Canvas.compact)
+                // Field only, as wide as the word's slot: reserved for a future logo, and it
+                // keeps the pill even on both sides of the camera.
+                Color.clear
+                    .frame(width: Compact.width)
+                    .islandField(s, Canvas.compact)
             } compactTrailing: {
                 Text(s.word)
                     .font(IslandType.word(13))
                     .foregroundStyle(Color.white.opacity(0.96))
                     .lineLimit(1)
-                    // The longest word ("Markdownmusing") is about 125 pt at 13 pt; cap the slot
-                    // and let it shrink rather than widen the island.
-                    .minimumScaleFactor(0.75)
-                    .frame(maxWidth: 100)
-                    .padding(.horizontal, 8)
+                    // The longest word ("Markdownmusing") is about 125 pt at 13 pt; it shrinks
+                    // to fit rather than widen the island.
+                    .minimumScaleFactor(0.7)
+                    .padding(.horizontal, 6)
+                    .frame(width: Compact.width)
                     .contentTransition(.opacity)
                     .islandField(s, Canvas.compact)
             } minimal: {
