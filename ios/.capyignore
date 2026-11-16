@@ -2,3 +2,4 @@ ShopperKit/.build
 build
 DerivedData
 *.xcodeproj
+Config/Secrets.xcconfig
