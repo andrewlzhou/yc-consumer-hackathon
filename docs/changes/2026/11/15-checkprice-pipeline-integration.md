@@ -11,6 +11,7 @@
   resolved (H5); store-chrome text is rejected as title and fallback (M1); a newer report load replaces an older one
   and opening a product no longer waits on the network (M2). H1 is moot: no reason on the popup. Debug-only scan facts.
 - Checks: on Revyl (Xcode 27, iOS 26.5 simulator, no key): 20 app tests and 23 ShopperKit tests pass; app builds.
-  Docs check passed. Simulator run against a mock backend with a fake key: see the PR.
+  Docs check passed. Simulator with a mock backend and fake key: a link and a screenshot of a mock store page both
+  gave BUY, and More Details opened that product's thread; a blank screenshot gave the failure popup, no request.
 - Not verified: this candidate on a real iPhone (Back Tap, file deletion, timing). iOS's own Done button stays.
 - Next: YCCO-10 device run; maybe try a confirmation popup, which lets the app name the system button.

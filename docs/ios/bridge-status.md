@@ -9,8 +9,8 @@
 
 - Shortcut actions "Check Price in Screenshot" and "Check Price of Link" (iOS 26+) return a decision-only popup:
   BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE on the verdict colour, with a blue More Details button.
-- A tap on the popup opens Check Price on that check's thread. Checks are saved on the phone, so this also works
-  when iOS closed the app in between.
+- A tap on the popup opens Check Price on that check's thread; the popup stays on top until Done is tapped. Checks
+  are saved on the phone, so this also works when iOS closed the app in between.
 - A failed check or a missing key shows the failure, never a demo verdict.
 - The report draws only the checked product's own data; see "How a check and its report fit" below.
 - The temporary screenshot is deleted only from this app's temp or cache folder or Shortcuts' `/var/mobile/tmp`.
@@ -43,12 +43,13 @@
 
 ## Known limits (honest list)
 
-- Backend fixes from PR #1 (true price relations, Amazon links, colour-safe links) are not deployed.
+- Backend scan fixes are on `main` (a0146e1); YCCO-12 owns deploying them. With them, a screenshot of a product the
+  backend doesn't know gives INDETERMINATE with no More Details: new products come only from links.
 - Demo threads still sit in Threads and Home next to real checks, unlabelled; chat replies are canned.
 - A finished report without a chart, or six failed fetches, leaves the thread with its verdict and no chart.
 - Saved and hearted state is not kept across restarts. Report freshness uses a fixed 7-day window.
 - The island's reason still trims hedge words (`PrimaryCheckArea.islandReason`); the popup no longer shows a reason.
-- Simulator runs can't prove Back Tap or where a real iPhone puts the screenshot file.
+- Simulator runs can't prove Back Tap or where a real iPhone puts the screenshot file (there it is `other`, kept).
 
 ## Checks
 
