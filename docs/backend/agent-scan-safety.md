@@ -52,3 +52,5 @@
 - Amazon /dp/B09XS7JWHH: 0.16 s live card for the XM5. OCR banner and "Best Buy App": 0.02-0.04 s INVESTIGATE.
 - Budget: the live path no longer embeds or picks for screen text, so identify is local reads only.
 - Not measured: real OpenAI latency on the shared deployment, and a real a.co link (none was available).
+- Known limits (review, low): a brand plus a partial name ("Apple AirPods") still matches AirPods Pro 3, and the
+  brand check has no word boundary ("Pineapple Pro 3" names Apple). Not fixed before the UI demo.
