@@ -204,7 +204,7 @@ public enum ProductExtractor {
         let scored = blocks.compactMap { block -> (String, Double)? in
             let text = block.map { $0.text.trimmingCharacters(in: .whitespaces) }.joined(separator: " ")
             let words = text.split(separator: " ").count
-            guard words >= 3 || text.count >= 15, text.count <= 240 else { return nil }
+            guard words >= 3 || text.count >= 15, text.count <= 240, !isStoreChrome(text) else { return nil }
             let height = block.map(\.h).reduce(0, +) / Double(block.count)
             // With no price on screen only headline-sized text counts as a title.
             if price == nil && candidates.count >= 3 && height < medianHeight * 1.25 { return nil }
@@ -219,6 +219,16 @@ public enum ProductExtractor {
         }
         guard let best = scored.max(by: { $0.1 < $1.1 }), best.1 >= 1.1 else { return nil }
         return best.0
+    }
+
+    private static let chromeWords: Set<String> = ["app", "store", "shop", "online", "deals", "official", "site", "home", "the", "welcome", "to"]
+
+    // "Best Buy App", "Welcome to Target": a store name plus generic words is screen chrome, not a product.
+    static func isStoreChrome(_ text: String) -> Bool {
+        var rest = text.lowercased()
+        for (word, _) in storeNames { rest = rest.replacingOccurrences(of: word, with: " ") }
+        let words = rest.split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        return rest != text.lowercased() && words.allSatisfy(chromeWords.contains)
     }
 
     private static let domains: [(String, String)] = [

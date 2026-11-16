@@ -80,6 +80,12 @@ private let title = [line("AE Dreamy Drape Baggy Jean", 0.05, 0.50, 0.7, 0.024)]
     #expect(!r.hasProduct && r.currentPrice == nil)
 }
 
+// Seen on the real phone: a Best Buy home screen sent "Best Buy App" as a product title.
+@Test func storeChromeIsNotATitle() {
+    let r = ProductExtractor.extract([line("Best Buy App", 0.05, 0.45, 0.5, 0.03), line("$49.99", 0.05, 0.50, 0.2, 0.035)])
+    #expect(r.title == nil)
+}
+
 @Test func storeNameInsideTheTitleIsNotTheRetailer() {
     let r = ProductExtractor.extract([line("Amazon Echo Dot (5th Gen) Smart Speaker", 0.05, 0.45, 0.8, 0.022), line("$49.99", 0.05, 0.50, 0.2, 0.035)])
     #expect(r.title?.contains("Echo Dot") == true && r.retailer == nil)

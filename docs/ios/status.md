@@ -26,13 +26,21 @@
     total, 3.7 s network, fresh analysis); AirPods page title only -> BUY_NOW 0.39 s; bot-check, carousel and
     AppleCare screens -> "No product found" with no network call. Test images were deleted after reading.
 
+- Back Tap -> Shortcut -> intent on the real phone (Ruhaan, 16:15-16:28): 8 runs reached the app with real
+  full-screen screenshots (1.2-1.6 MB PNG). Intent time (OCR + backend): p50 2.25 s, p95 3.70 s (n=7 with a
+  product); OCR p50 0.16 s, p95 0.43 s; backend p50 2.0 s, p95 3.6 s. One non-product screen correctly sent nothing.
+- Handoff: Shortcuts passes a PNG file it owns, with `removedOnCompletion` off, so the first build left it in place.
+  The current build deletes handed-over files in temp/cache folders (never Documents or Files) and records which.
+- Defect found and fixed: a Best Buy home screen sent "Best Buy App" as a title (store chrome is now rejected).
+
 ## In progress
 
-- Back Tap -> Shortcut -> intent inside a store app needs Ruhaan's hands: steps in [device test](device-test.md).
+- Ruhaan's observations (store app stays in front?, where the result shows, Photos unchanged?) and one re-run to
+  confirm the temp file is deleted.
 
 ## Not verified yet
 
-- Shortcut screenshot handoff from a store app, Photos untouched, result shown in place, intent time limit.
+- Photos untouched and result shown in place (awaiting Ruhaan); the intent's time limit.
 
 ## Gotchas
 
