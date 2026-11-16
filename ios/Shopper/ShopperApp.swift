@@ -8,6 +8,9 @@ struct ShopperApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(model)
+                #if DEBUG
+                .task { await DebugHook.runIfRequested(model) }
+                #endif
         }
     }
 }

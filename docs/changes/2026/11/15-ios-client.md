@@ -10,4 +10,5 @@
   geometry, banner/address text, variant and cart prices, store names in titles, intent file handling, analyze retry).
 - Checks: `swift test` in ios/ShopperKit: 22 tests pass; fixture accuracy in [extraction](../../../ios/extraction.md).
   Simulator build on Revyl (Xcode 27); unsigned device build on the Mac (Xcode 26.3). `check_docs.py` passes.
-- Next: signing team and Developer Mode, then the physical iPhone Shortcut and link tests (not done yet).
+- Device: debug build installed on Ruhaan's iPhone 14; link and in-app screenshot checks measured (see status).
+- Next: Back Tap Shortcut test in a store app with Ruhaan; Photos check; more timing samples for p50/p95.

@@ -27,7 +27,10 @@ struct CheckScreenshotIntent: AppIntent {
 // app's own container or temp folder. Files owned by Shortcuts or the user are left to their owner
 // (Shortcuts removes its temporary files itself when removedOnCompletion is set).
 func readOnce(_ file: IntentFile) -> (Data, Bool?) {
-    guard let url = file.fileURL else { return (file.data, nil) }
+    guard let url = file.fileURL else {
+        recordHandoff(["fileBacked": false, "bytes": file.data.count])
+        return (file.data, nil)
+    }
     let scoped = url.startAccessingSecurityScopedResource()
     let bytes = file.data.withUnsafeBytes { Data($0) }
     var deleted: Bool?
@@ -40,8 +43,17 @@ func readOnce(_ file: IntentFile) -> (Data, Bool?) {
         deleted = !FileManager.default.fileExists(atPath: path)
     }
     if scoped { url.stopAccessingSecurityScopedResource() }
+    recordHandoff(["fileBacked": true, "bytes": bytes.count, "owned": owned, "deleted": deleted ?? false,
+                   "removedOnCompletion": file.removedOnCompletion, "type": file.type?.identifier ?? "unknown"])
     log.info("screenshot file: bytes=\(bytes.count, privacy: .public) owned=\(owned, privacy: .public) deleted=\(deleted ?? false, privacy: .public) removedOnCompletion=\(file.removedOnCompletion, privacy: .public)")
     return (bytes, deleted)
+}
+
+// How Shortcuts handed the screenshot over (no image content), kept for the device test in docs/ios/device-test.md.
+func recordHandoff(_ facts: [String: Any]) {
+    var entry = facts
+    entry["at"] = Date().timeIntervalSince1970
+    UserDefaults.standard.set(entry, forKey: "shopper.lastHandoff")
 }
 
 // Share-sheet path: a Shortcut that receives a link from Safari or a store app, or any link the user passes in.
