@@ -1,6 +1,6 @@
 # Check Price iPhone prototype
 
-This SwiftUI prototype demonstrates the consumer-facing flow with demo data only. It does not yet connect to Convex, capture a screenshot, create a Shortcut, or send notifications. A Live Activity (Dynamic Island) plays the demo check: launch with `-demoLiveActivity YES` and swipe home.
+This SwiftUI app checks a store link (from the clipboard) or a picked screenshot against the Convex backend and shows the verdict and report. It needs the dev key in `Config/Secrets.xcconfig` (see `Config/Secrets.example.xcconfig`); without it, it runs a demo. No Shortcut or notifications yet. A Live Activity (Dynamic Island) plays the demo check: launch with `-demoLiveActivity YES` and swipe home.
 
 ## Run
 

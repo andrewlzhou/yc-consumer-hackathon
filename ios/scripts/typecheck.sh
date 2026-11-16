@@ -19,5 +19,7 @@ for m in ActivityKit WidgetKit; do
   swiftc -frontend -compile-module-from-interface -module-name "$m" "$T/$m.swiftinterface" -o "$T/$m.swiftmodule" "${FLAGS[@]}"
 done
 
+# The app imports ShopperKit; build its module first.
+swiftc -emit-module -parse-as-library -module-name ShopperKit -emit-module-path "$T/ShopperKit.swiftmodule" "${FLAGS[@]}" $(find ShopperKit/Sources/ShopperKit -name '*.swift')
 echo "App:"; swiftc -typecheck "${FLAGS[@]}" $(find CheckPrice Shared -name '*.swift') && echo "  ok"
 echo "Widget:"; swiftc -typecheck -parse-as-library "${FLAGS[@]}" $(find Widget Shared -name '*.swift') && echo "  ok"

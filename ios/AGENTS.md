@@ -1,6 +1,6 @@
 # Check Price iPhone app (`ios/`)
 
-- This is the main iPhone app (owner decision, 2026-11-15). It started as a teammate's SwiftUI prototype: capture → analyzing → verdict reveal → report → watchlist, with demo data only. No Convex, screenshot capture, Shortcut or notifications yet; don't describe them as working. The Live Activity (below) runs on demo data only.
+- This is the main iPhone app (owner decision, 2026-11-15). It started as a teammate's SwiftUI prototype: capture → analyzing → verdict reveal → report → watchlist, now wired to the Convex backend (see Backend below). No Shortcut, App Intents or push notifications yet; don't describe them as working.
 - It supersedes `notyet/ios/`. Not Yet stays in the repo for reference until the owner decides what to do with it. Don't edit it for Check Price work.
 - Direction: keep this app's screens, flow and content; give them Not Yet's look and interaction design (the Worldscape design language). No new features or screens unless the owner asks. More specific instructions are coming, so keep changes reversible.
 
@@ -16,6 +16,13 @@
 - The tab bar is icons only, no names under them (owner, 2026-11-15): outline when not selected, filled when selected (`house`, `bubble.left.and.text.bubble.right`, `person.crop.circle`). Titles stay on the items, drawn clear, so VoiceOver reads them.
 - Verdicts: `Verdict.word`, `.symbol`, `.color` (`DesignSystem/VerdictStyle.swift`): Buy green, Wait amber, Look around lavender, Check first coral.
 - How Not Yet drew similar screens: `notyet/ios/Views/` (for example `ProductReportView.swift`, `HomeView.swift`, `HistoryView.swift`).
+
+## Backend
+
+- `ShopperKit/` is Ruhaan's Swift package from branch `ruhaan_ios`: contract models, HTTP client (one bounded retry), anonymous device id, on-device screenshot reading. The app uses it through `CheckPrice/Backend/`.
+- Check price: a store link on the clipboard goes to `POST /analyze`; otherwise the user picks a screenshot, read on the phone (the image never leaves it). The verdict starts a thread; its report polls `GET /report` until the full analysis is in. Save calls `/watchlist/save` and `/remove`.
+- Key: copy `Config/Secrets.example.xcconfig` to `Config/Secrets.xcconfig` (git-ignored) with the dev `APP_API_KEY`. Debug builds only; Release never carries it. Without a key, Check price runs the demo, as do `-autoReveal YES` and demo threads.
+- ShopperKit tests with only Command Line Tools: `cd ios/ShopperKit && F=/Library/Developer/CommandLineTools/Library/Developer; DYLD_LIBRARY_PATH=$F/usr/lib swift test -Xswiftc -F$F/Frameworks -Xlinker -F$F/Frameworks -Xlinker -rpath -Xlinker $F/Frameworks -Xlinker -rpath -Xlinker $F/usr/lib`.
 
 ## Live Activity (Dynamic Island)
 

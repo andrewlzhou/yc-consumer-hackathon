@@ -1,6 +1,7 @@
 // The numbers behind a thread's report: today's price and the predicted low read from the demo
 // `Product` strings, plus a demo year of price history for the chart, built from the product's own
-// numbers and seeded by its name, so a thread shows the same chart every time it opens. Replace `ThreadDetailDemoHistory` when a backend sends real history.
+// numbers and seeded by its name, so a thread shows the same chart every time it opens. Checked
+// products use the backend's history instead (Backend/ReportFigures.swift).
 import Foundation
 
 struct ThreadDetailFigures {
@@ -16,6 +17,9 @@ struct ThreadDetailFigures {
     // Chart inputs.
     let history: [PricePoint]
     let sales: [SaleWindow]
+    // Real reports may have no forecast; then the report hides the Expected row and the projection.
+    var hasForecast = true
+    var isSampleData = false
 
     var predictedMid: Double { (predictedLow.lowerBound + predictedLow.upperBound) / 2 }
     var lowest: PriceLow { PriceLow(price: low, date: ThreadDetailDemoHistory.dayString(lowDate)) }

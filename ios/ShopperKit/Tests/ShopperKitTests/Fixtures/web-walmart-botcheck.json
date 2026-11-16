@@ -1,0 +1,77 @@
+{
+ "name": "web-walmart-botcheck",
+ "expected": {
+  "note": "Walmart bot check page",
+  "titleContains": null,
+  "retailer": "Walmart",
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": false,
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0207,
+   "text": "Robot or human?",
+   "w": 0.4237,
+   "x": 0.4263,
+   "y": 0.1178
+  },
+  {
+   "h": 0.0141,
+   "text": "Activate and hold the button to confirm",
+   "w": 0.6975,
+   "x": 0.2856,
+   "y": 0.1721
+  },
+  {
+   "h": 0.0184,
+   "text": "that you're human. Thank You.",
+   "w": 0.5212,
+   "x": 0.3746,
+   "y": 0.1984
+  },
+  {
+   "h": 0.0235,
+   "text": "PRESS & HOLD",
+   "w": 0.4712,
+   "x": 0.4627,
+   "y": 0.3032
+  },
+  {
+   "h": 0.0117,
+   "text": "Terms of Use",
+   "w": 0.1983,
+   "x": 0.5364,
+   "y": 0.6749
+  },
+  {
+   "h": 0.0156,
+   "text": "Privacy Policy.",
+   "w": 0.2093,
+   "x": 0.5331,
+   "y": 0.7167
+  },
+  {
+   "h": 0.0156,
+   "text": "Do Not Sell My Personal Information",
+   "w": 0.5593,
+   "x": 0.3568,
+   "y": 0.7586
+  },
+  {
+   "h": 0.0156,
+   "text": "Request My Personal Information",
+   "w": 0.5068,
+   "x": 0.3831,
+   "y": 0.8005
+  },
+  {
+   "h": 0.0121,
+   "text": "02026 Walmart Stores, Inc.",
+   "w": 0.361,
+   "x": 0.4559,
+   "y": 0.8412
+  }
+ ]
+}

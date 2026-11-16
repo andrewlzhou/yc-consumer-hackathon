@@ -1,5 +1,8 @@
 // Home's first screen: the app's main function, capture → analyzing → verdict reveal. Self-contained so the final animation (not decided yet) can replace it whole.
-// The run is a demo on `Demo.headphones`; nothing is captured or analysed.
+// Check price sends a store link on the clipboard, or else a picked screenshot, to the backend
+// (Backend/Backend.swift). Builds without a backend key, and `-autoReveal YES`, run the demo on `Demo.headphones`.
+import PhotosUI
+import ShopperKit
 import SwiftUI
 
 struct PrimaryCheckArea: View {
@@ -11,9 +14,14 @@ struct PrimaryCheckArea: View {
     @State private var threadID: UUID?
     // Flips once the reveal is on screen, so its parts can rise in one after another.
     @State private var arrived = false
+    @State private var product = Demo.headphones
+    // While analyzing a link: its store's domain, since the product isn't known yet.
+    @State private var checkingLabel: String?
+    @State private var pickingScreenshot = false
+    @State private var screenshot: PhotosPickerItem?
+    @State private var failure: String?
 
     private enum Phase { case ready, analyzing, reveal }
-    private let product = Demo.headphones
 
     var body: some View {
         // Each phase is one block, centred vertically in the first screen.
@@ -27,7 +35,13 @@ struct PrimaryCheckArea: View {
         .padding(.horizontal, Spacing.screenMargin)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .onAppear {
-            if autoReveal { autoReveal = false; start() }
+            if autoReveal { autoReveal = false; startDemo() }
+        }
+        .photosPicker(isPresented: $pickingScreenshot, selection: $screenshot, matching: .screenshots)
+        .onChange(of: screenshot) { _, item in
+            guard let item else { return }
+            screenshot = nil
+            Task { await checkScreenshot(item) }
         }
     }
 
@@ -40,6 +54,9 @@ struct PrimaryCheckArea: View {
                 .foregroundStyle(Palette.textPrimary)
             Button("Check price", action: start)
                 .buttonStyle(KeyButtonStyle())
+            if let failure {
+                FailureNote(message: failure, action: start, onDismiss: { self.failure = nil })
+            }
         }
     }
 
@@ -48,12 +65,12 @@ struct PrimaryCheckArea: View {
     private var analyzing: some View {
         VStack(alignment: .leading, spacing: 16) {
                 HStack(spacing: Spacing.rowIconToText) {
-                    Image(systemName: product.icon)
+                    Image(systemName: checkingLabel == nil ? product.icon : "tag")
                         .font(.system(size: 18, weight: .semibold))
                         .foregroundStyle(Palette.textPrimary)
                         .frame(width: ControlHeight.avatar, height: ControlHeight.avatar)
                         .background { Circle().fill(.white.opacity(0.1)) }
-                    Text(product.name)
+                    Text(checkingLabel ?? product.name)
                         .textStyle(.cardTitle)
                         .foregroundStyle(Palette.textPrimary)
                         .lineLimit(2)
@@ -93,7 +110,9 @@ struct PrimaryCheckArea: View {
                 HStack(alignment: .top) {
                     Metric(title: "Today", value: product.price)
                     Spacer()
-                    Metric(title: "Predicted low", value: product.projectedLow)
+                    if !product.projectedLow.isEmpty {
+                        Metric(title: "Predicted low", value: product.projectedLow)
+                    }
                 }
                 .padding(.leading, Spacing.cardLeading)
                 .padding(.trailing, Spacing.cardLeading)
@@ -114,7 +133,60 @@ struct PrimaryCheckArea: View {
         FlatCard(cornerRadius: Radius.glassCard) { Color.clear }
     }
 
+    // A store link on the clipboard is checked right away; otherwise the user picks a screenshot.
     private func start() {
+        failure = nil
+        guard !(Backend.config.apiKey ?? "").isEmpty else { return startDemo() }
+        if UIPasteboard.general.hasURLs, let url = UIPasteboard.general.url, url.scheme?.hasPrefix("http") == true {
+            checkingLabel = url.host()?.replacingOccurrences(of: "www.", with: "")
+            run { await CheckRunner.run(url: url) }
+        } else {
+            pickingScreenshot = true
+        }
+    }
+
+    private func checkScreenshot(_ item: PhotosPickerItem) async {
+        guard let data = try? await item.loadTransferable(type: Data.self) else {
+            failure = ShopperError.unreadableImage.message
+            return
+        }
+        checkingLabel = nil
+        run { await CheckRunner.run(imageData: data) }
+    }
+
+    // Analyzing while the backend answers (the line fills to 90%, then completes), then the reveal and a
+    // new thread, or back to ready with the failure. The pop-up checks alongside and shows the verdict.
+    private func run(_ check: @escaping () async -> Result<CheckResult, ShopperError>) {
+        product = Product(name: "", retailer: "", price: "", icon: "tag", verdict: .investigate, summary: "", projectedLow: "")
+        progress = 0
+        withAnimation(Motion.rise) { phase = .analyzing }
+        withAnimation(.easeOut(duration: 6)) { progress = 0.9 }
+        Task { @MainActor in
+            let activity = await CheckActivity.start()
+            switch await check() {
+            case let .success(result):
+                product = result.product
+                if let activity {
+                    await CheckActivity.decide(activity, verdict: product.verdict, reason: Self.islandReason(product.summary), phase: 1)
+                }
+                withAnimation(.easeOut(duration: 0.3)) { progress = 1 }
+                try? await Task.sleep(for: .seconds(0.3))
+                let id = store.startThread(for: product)
+                threadID = id
+                store.loadReport(for: id)
+                arrived = false
+                withAnimation(Motion.screenSwap) { phase = .reveal }
+            case let .failure(error):
+                if let activity { await activity.end(nil, dismissalPolicy: .immediate) }
+                failure = error.message
+                withAnimation(Motion.rise) { phase = .ready }
+            }
+        }
+    }
+
+    private func startDemo() {
+        product = Demo.headphones
+        checkingLabel = nil
         withAnimation(Motion.rise) { phase = .analyzing }
         withAnimation(.easeInOut(duration: 3.4)) { progress = 1 }
         // The same run in the pop-up (Live Activity), seen once the user leaves the app.
@@ -128,8 +200,11 @@ struct PrimaryCheckArea: View {
 
     // The island wants a few words: the summary without its hedge word or full stop,
     // "Likely ~$40 less by Cyber Monday." → "~$40 less by Cyber Monday".
+    // Backend reasons run longer, so it keeps the first eight words.
     static func islandReason(_ summary: String) -> String {
         var reason = summary.trimmingCharacters(in: .whitespaces)
+        let words = reason.split(separator: " ")
+        if words.count > 8 { reason = words.prefix(8).joined(separator: " ") }
         for hedge in ["Likely ", "Usually "] where reason.hasPrefix(hedge) {
             reason = String(reason.dropFirst(hedge.count))
             reason = reason.prefix(1).uppercased() + reason.dropFirst()

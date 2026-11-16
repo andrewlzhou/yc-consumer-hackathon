@@ -31,7 +31,7 @@ struct ThreadDetailView: View {
         return ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
-                    ThreadDetailReport(product: thread.product, revealed: revealed)
+                    ThreadDetailReport(product: thread.product, report: thread.report, revealed: revealed)
                     ThreadDetailActions(thread: thread,
                                         onHeart: { store.toggleHeart(thread.id) },
                                         onSave: { store.toggleSave(thread.id) })

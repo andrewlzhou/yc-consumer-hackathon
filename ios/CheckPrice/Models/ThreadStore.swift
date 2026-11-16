@@ -1,7 +1,9 @@
 // Threads: one per time the app was triggered while shopping. Shared contract for Home, Threads,
-// the thread detail, and Account. Chat replies are canned until a chat backend exists.
+// the thread detail, and Account. Chat replies are canned until a chat backend exists. Checked
+// products fetch their report and sync Save with the backend watchlist.
 import SwiftUI
 import Observation
+import ShopperKit
 
 struct ChatMessage: Identifiable, Hashable {
     let id: UUID
@@ -19,11 +21,13 @@ struct ChatMessage: Identifiable, Hashable {
 
 struct ShoppingThread: Identifiable {
     let id: UUID
-    let product: Product
+    var product: Product
     let startedAt: Date
     var isHearted: Bool
     var isSaved: Bool
     var messages: [ChatMessage]
+    // GET /report for checked products; nil for demo threads and until it arrives.
+    var report: ReportResponse? = nil
 }
 
 @MainActor @Observable
@@ -54,7 +58,37 @@ final class ThreadStore {
     }
 
     func toggleHeart(_ id: UUID) { update(id) { $0.isHearted.toggle() } }
-    func toggleSave(_ id: UUID) { update(id) { $0.isSaved.toggle() } }
+
+    // Save is the backend watchlist for checked products; it flips back if the backend refuses.
+    func toggleSave(_ id: UUID) {
+        update(id) { $0.isSaved.toggle() }
+        guard let thread = thread(id), let productId = thread.product.productId else { return }
+        let saved = thread.isSaved
+        Task { @MainActor in
+            do {
+                if saved { try await Backend.client.save(productId: productId) }
+                else { try await Backend.client.remove(productId: productId) }
+            } catch {
+                update(id) { $0.isSaved = !saved }
+            }
+        }
+    }
+
+    // Fetches the report, then again every few seconds while the full analysis is still running.
+    func loadReport(for id: UUID) {
+        guard let productId = thread(id)?.product.productId else { return }
+        Task { @MainActor in
+            for attempt in 0..<6 {
+                if attempt > 0 { try? await Task.sleep(for: .seconds(3)) }
+                guard let report = try? await Backend.client.report(productId: productId) else { continue }
+                update(id) {
+                    $0.report = report
+                    $0.product = $0.product.updated(with: report)
+                }
+                if !report.pending { return }
+            }
+        }
+    }
 
     // Appends the user's message, then a canned reply after a short pause.
     func send(_ text: String, in id: UUID) {

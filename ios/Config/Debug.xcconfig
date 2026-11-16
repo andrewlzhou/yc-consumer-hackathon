@@ -1,0 +1,5 @@
+// Debug builds talk to the shared Convex dev deployment. The app key comes only from the git-ignored
+// Secrets.xcconfig (copy Secrets.example.xcconfig). Without a key the app runs its demo check.
+CHECKPRICE_BACKEND_HOST = scintillating-caterpillar-190.convex.site
+CHECKPRICE_API_KEY =
+#include? "Secrets.xcconfig"

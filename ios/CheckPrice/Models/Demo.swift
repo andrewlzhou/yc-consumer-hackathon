@@ -1,18 +1,21 @@
-// The prototype's data: four verdicts, a product, and the demo products every screen shows.
+// Four verdicts, a product, and the demo products the screens start with.
 // Verdict words, symbols and colours live in DesignSystem/VerdictStyle.swift.
 import SwiftUI
 
 enum Verdict: String { case buyNow = "BUY NOW", wait = "WAIT", alternative = "CONSIDER ALTERNATIVE", investigate = "INVESTIGATE" }
 
+// Demo products have no `productId`; checked ones carry the backend's catalog id (Backend/Backend.swift).
 struct Product: Identifiable {
     let id = UUID()
     let name: String
     let retailer: String
-    let price: String
+    var price: String
     let icon: String
-    let verdict: Verdict
-    let summary: String
-    let projectedLow: String
+    var verdict: Verdict
+    var summary: String
+    var projectedLow: String
+    var productId: String? = nil
+    var isSampleData = false
 }
 
 enum Demo {

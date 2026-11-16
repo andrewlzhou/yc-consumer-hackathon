@@ -1,0 +1,66 @@
+{
+ "name": "synthetic-walmart-strikethrough",
+ "expected": {
+  "note": "Walmart style: Now price with an unlabeled crossed-out price beside it",
+  "titleContains": [
+   "Sony",
+   "XM5"
+  ],
+  "retailer": "Walmart",
+  "currentPrice": 198.0,
+  "originalPrice": 349.99,
+  "product": true,
+  "source": "synthetic, hand-written lines modelled on the store layout"
+ },
+ "lines": [
+  {
+   "text": "Walmart",
+   "x": 0.05,
+   "y": 0.06,
+   "w": 0.2,
+   "h": 0.018
+  },
+  {
+   "text": "Sony WH-1000XM5 Wireless Industry Leading Noise",
+   "x": 0.05,
+   "y": 0.52,
+   "w": 0.85,
+   "h": 0.018
+  },
+  {
+   "text": "Canceling Headphones, Black",
+   "x": 0.05,
+   "y": 0.543,
+   "w": 0.5,
+   "h": 0.018
+  },
+  {
+   "text": "Now $198.00",
+   "x": 0.05,
+   "y": 0.585,
+   "w": 0.35,
+   "h": 0.03
+  },
+  {
+   "text": "$349.99",
+   "x": 0.45,
+   "y": 0.592,
+   "w": 0.18,
+   "h": 0.016
+  },
+  {
+   "text": "$18/mo with Affirm",
+   "x": 0.05,
+   "y": 0.625,
+   "w": 0.35,
+   "h": 0.013
+  },
+  {
+   "text": "Free shipping, arrives tomorrow",
+   "x": 0.05,
+   "y": 0.65,
+   "w": 0.5,
+   "h": 0.013
+  }
+ ]
+}

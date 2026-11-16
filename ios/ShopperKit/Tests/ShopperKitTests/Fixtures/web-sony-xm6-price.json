@@ -1,0 +1,164 @@
+{
+ "name": "web-sony-xm6-price",
+ "expected": {
+  "note": "Sony store web below the title; financing and savings lines",
+  "titleContains": null,
+  "retailer": null,
+  "currentPrice": 379.99,
+  "originalPrice": null,
+  "product": true,
+  "knownMiss": [
+   "title"
+  ],
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0156,
+   "text": "Crystal Clear Call Quality",
+   "w": 0.4051,
+   "x": 0.2407,
+   "y": 0.0696
+  },
+  {
+   "h": 0.0149,
+   "text": "Up to 30-Hour B",
+   "w": 0.2686,
+   "x": 0.7144,
+   "y": 0.07
+  },
+  {
+   "h": 0.0117,
+   "text": "View more",
+   "w": 0.1619,
+   "x": 0.5186,
+   "y": 0.1643
+  },
+  {
+   "h": 0.0207,
+   "text": "$379.99",
+   "w": 0.1847,
+   "x": 0.3195,
+   "y": 0.2238
+  },
+  {
+   "h": 0.0207,
+   "text": "$32/mo",
+   "w": 0.1864,
+   "x": 0.7661,
+   "y": 0.2375
+  },
+  {
+   "h": 0.0133,
+   "text": "Starting",
+   "w": 0.111,
+   "x": 0.6415,
+   "y": 0.2457
+  },
+  {
+   "h": 0.0113,
+   "text": "Save $80.00",
+   "w": 0.1636,
+   "x": 0.3432,
+   "y": 0.259
+  },
+  {
+   "h": 0.011,
+   "text": "or O% APR affirm",
+   "w": 0.2415,
+   "x": 0.6415,
+   "y": 0.2703
+  },
+  {
+   "h": 0.0156,
+   "text": "Join My Sony and get 5% back in pointso",
+   "w": 0.7085,
+   "x": 0.2788,
+   "y": 0.3239
+  },
+  {
+   "h": 0.0145,
+   "text": "Color: Black",
+   "w": 0.2297,
+   "x": 0.0525,
+   "y": 0.3752
+  },
+  {
+   "h": 0.0153,
+   "text": "Free Pickup",
+   "w": 0.1941,
+   "x": 0.6449,
+   "y": 0.5027
+  },
+  {
+   "h": 0.0153,
+   "text": "Free Delivery",
+   "w": 0.2237,
+   "x": 0.1517,
+   "y": 0.5039
+  },
+  {
+   "h": 0.0145,
+   "text": "Ready within 2 hrs",
+   "w": 0.2847,
+   "x": 0.6,
+   "y": 0.5442
+  },
+  {
+   "h": 0.0145,
+   "text": "Est. Delivery Nov 17-18",
+   "w": 0.3407,
+   "x": 0.0924,
+   "y": 0.5454
+  },
+  {
+   "h": 0.0125,
+   "text": "ADD TO CART",
+   "w": 0.228,
+   "x": 0.522,
+   "y": 0.6322
+  },
+  {
+   "h": 0.0168,
+   "text": "Benefits of Buying Directly From Sony",
+   "w": 0.6907,
+   "x": 0.0534,
+   "y": 0.748
+  },
+  {
+   "h": 0.0153,
+   "text": "Easy Returns",
+   "w": 0.2,
+   "x": 0.1144,
+   "y": 0.793
+  },
+  {
+   "h": 0.0153,
+   "text": "Join Now to My Sony Membership",
+   "w": 0.5415,
+   "x": 0.111,
+   "y": 0.8271
+  },
+  {
+   "h": 0.0156,
+   "text": "Free Shipping",
+   "w": 0.2136,
+   "x": 0.1144,
+   "y": 0.8607
+  },
+  {
+   "h": 0.0156,
+   "text": "Starting O% APR with Affirm",
+   "w": 0.439,
+   "x": 0.1127,
+   "y": 0.8948
+  },
+  {
+   "h": 0.0153,
+   "text": "Up to 5% Back in My Sony Points",
+   "w": 0.5153,
+   "x": 0.1136,
+   "y": 0.9292
+  }
+ ]
+}

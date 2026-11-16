@@ -1,0 +1,175 @@
+{
+ "name": "web-apple-applecare-monthly",
+ "expected": {
+  "note": "Apple Store web, AppleCare section: only monthly and yearly prices",
+  "titleContains": null,
+  "retailer": null,
+  "currentPrice": null,
+  "originalPrice": null,
+  "product": false,
+  "source": "public product web page, headless Chrome at iPhone size, OCR on Mac (Vision fast)"
+ },
+ "lines": [
+  {
+   "h": 0.0156,
+   "text": "Personalize them for free",
+   "w": 0.5059,
+   "x": 0.0831,
+   "y": 0.0082
+  },
+  {
+   "h": 0.0192,
+   "text": "Add Engraving",
+   "w": 0.2924,
+   "x": 0.122,
+   "y": 0.0763
+  },
+  {
+   "h": 0.0133,
+   "text": "Engrave a mix of emoji, names, initials, and",
+   "w": 0.5983,
+   "x": 0.1229,
+   "y": 0.1049
+  },
+  {
+   "h": 0.0133,
+   "text": "numbers to make AirPods Pro 3 unmistakably",
+   "w": 0.6364,
+   "x": 0.122,
+   "y": 0.1236
+  },
+  {
+   "h": 0.0133,
+   "text": "yours. It's free and delivers just as fast.",
+   "w": 0.5466,
+   "x": 0.1212,
+   "y": 0.1424
+  },
+  {
+   "h": 0.0192,
+   "text": "No Engraving",
+   "w": 0.2661,
+   "x": 0.1237,
+   "y": 0.2394
+  },
+  {
+   "h": 0.0192,
+   "text": "AppleCare coverage. Peace of mind in every",
+   "w": 0.8924,
+   "x": 0.0805,
+   "y": 0.3627
+  },
+  {
+   "h": 0.0184,
+   "text": "AppleCare+",
+   "w": 0.239,
+   "x": 0.1754,
+   "y": 0.4347
+  },
+  {
+   "h": 0.0153,
+   "text": "Cover this product only",
+   "w": 0.3763,
+   "x": 0.1297,
+   "y": 0.4648
+  },
+  {
+   "h": 0.016,
+   "text": "$1.991mo. or $19.99/yr. until cancelled",
+   "w": 0.6136,
+   "x": 0.1305,
+   "y": 0.4922
+  },
+  {
+   "h": 0.0129,
+   "text": "Unlimited repairs for accidents like drops and spills",
+   "w": 0.7136,
+   "x": 0.1661,
+   "y": 0.5626
+  },
+  {
+   "h": 0.0133,
+   "text": "2417 priority support f rom Apple experts",
+   "w": 0.5644,
+   "x": 0.1653,
+   "y": 0.5931
+  },
+  {
+   "h": 0.0133,
+   "text": "Express Replacement Service - we'll ship you a replaceme",
+   "w": 0.8271,
+   "x": 0.1661,
+   "y": 0.6236
+  },
+  {
+   "h": 0.0133,
+   "text": "don't have to wait for a repair",
+   "w": 0.4102,
+   "x": 0.1653,
+   "y": 0.6424
+  },
+  {
+   "h": 0.0184,
+   "text": "AppleCare One",
+   "w": 0.3051,
+   "x": 0.1754,
+   "y": 0.7281
+  },
+  {
+   "h": 0.0153,
+   "text": "Cover multiple products, including this one with",
+   "w": 0.7678,
+   "x": 0.1297,
+   "y": 0.7582
+  },
+  {
+   "h": 0.0153,
+   "text": "AppleCare One Individual",
+   "w": 0.4076,
+   "x": 0.1288,
+   "y": 0.7817
+  },
+  {
+   "h": 0.016,
+   "text": "$19.991mo. until cancelled",
+   "w": 0.4212,
+   "x": 0.1305,
+   "y": 0.8091
+  },
+  {
+   "h": 0.0133,
+   "text": "All the benefits of AppleCare+ for up to 3 products, includi",
+   "w": 0.8195,
+   "x": 0.1644,
+   "y": 0.8795
+  },
+  {
+   "h": 0.0133,
+   "text": "you already own, at one low price",
+   "w": 0.4669,
+   "x": 0.1644,
+   "y": 0.8983
+  },
+  {
+   "h": 0.0133,
+   "text": "Theft and loss coverage for iPhone, iPad, and Apple Watch",
+   "w": 0.8229,
+   "x": 0.1644,
+   "y": 0.9288
+  },
+  {
+   "h": 0.0133,
+   "text": "3 total claims every 12 months",
+   "w": 0.4254,
+   "x": 0.1653,
+   "y": 0.9476
+  },
+  {
+   "h": 0.0137,
+   "text": "Add more products anytime for $5.99lmo. each",
+   "w": 0.6636,
+   "x": 0.1644,
+   "y": 0.9777
+  }
+ ]
+}

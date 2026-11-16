@@ -22,7 +22,8 @@ An AI shopping assistant that tells you whether a product is worth buying right 
 
 ## What exists today
 
-- Product idea chosen 2026-11-15. Everything above is the plan; no product features are built yet. The Convex backend is set up and empty.
+- Product idea chosen 2026-11-15. The Convex backend (branch `main`) returns verdicts, reports and watchlists.
+- The iPhone app (`ios/`) now sends a store link or screenshot to that backend and shows the real verdict and report (2026-11-15). Not yet tried on a phone with the real key.
 
 ## Where this goes
 

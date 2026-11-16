@@ -1,19 +1,26 @@
 // A thread's report in Not Yet's report style (notyet/ios/Views/ProductReportView.swift). Top to
 // bottom: the verdict and its reason on glass over warm grey light, today's price against the expected
-// price, and the last 12 months of prices (demo history from ThreadDetailHistory.swift).
+// price, and the last 12 months of prices: the backend's history for checked products
+// (Backend/ReportFigures.swift), demo history from ThreadDetailHistory.swift for demo ones.
 import SwiftUI
+import ShopperKit
 
 struct ThreadDetailReport: View {
     let product: Product
     // Sections rise in one after another once this turns true.
     var revealed: Bool
-    private let figures: ThreadDetailFigures
+    // nil while a checked product's report is still on its way.
+    private let figures: ThreadDetailFigures?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(product: Product, revealed: Bool) {
+    init(product: Product, report: ReportResponse?, revealed: Bool) {
         self.product = product
         self.revealed = revealed
-        self.figures = ThreadDetailDemoHistory.figures(for: product)
+        if product.productId == nil {
+            self.figures = ThreadDetailDemoHistory.figures(for: product)
+        } else {
+            self.figures = report.flatMap { ThreadDetailFigures(report: $0, product: product) }
+        }
     }
 
     private var verdict: Verdict { product.verdict }
@@ -22,10 +29,17 @@ struct ThreadDetailReport: View {
         VStack(alignment: .leading, spacing: 28) {
             ThreadDetailHero(product: product)
                 .modifier(ThreadDetailArrive(index: 1, revealed: revealed, reduceMotion: reduceMotion))
-            priceSection
-                .modifier(ThreadDetailArrive(index: 2, revealed: revealed, reduceMotion: reduceMotion))
-            chartSection
-                .modifier(ThreadDetailArrive(index: 3, revealed: revealed, reduceMotion: reduceMotion))
+            if !product.price.isEmpty {
+                priceSection
+                    .modifier(ThreadDetailArrive(index: 2, revealed: revealed, reduceMotion: reduceMotion))
+            }
+            if let figures {
+                chartSection(figures)
+                    .modifier(ThreadDetailArrive(index: 3, revealed: revealed, reduceMotion: reduceMotion))
+            } else {
+                ThinkingLine(step: nil)
+                    .padding(.horizontal, 4)
+            }
         }
     }
 
@@ -47,30 +61,33 @@ struct ThreadDetailReport: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .accessibilityElement(children: .combine)
-                Hairline()
-                PriceRow(label: "Expected", detail: expectedDate, value: product.projectedLow, valueColor: verdict.color)
+                if !product.projectedLow.isEmpty {
+                    Hairline()
+                    PriceRow(label: "Expected", detail: expectedDate, value: product.projectedLow, valueColor: verdict.color)
+                }
             }
         }
     }
 
     // "Nov 30", when the summary names a time.
     private var expectedDate: String? {
-        figures.predictedDate?.formatted(.dateTime.month(.abbreviated).day())
+        figures?.predictedDate?.formatted(.dateTime.month(.abbreviated).day())
     }
 
     // MARK: Chart
 
-    private var chartSection: some View {
+    private func chartSection(_ figures: ThreadDetailFigures) -> some View {
         PriceChartView(
             history: figures.history,
             current: figures.current,
             // A Buy needs no line pointing lower.
-            projected: verdict == .buyNow ? nil : figures.predictedMid,
+            projected: verdict == .buyNow || !figures.hasForecast ? nil : figures.predictedMid,
             projectedDate: figures.predictedDate,
             accent: verdict.color,
             typicalPrice: figures.typical,
             lowest: figures.lowest,
-            saleEvents: figures.sales
+            saleEvents: figures.sales,
+            isSampleData: figures.isSampleData
         )
         .padding(.horizontal, 12)
         .padding(.top, 16)
