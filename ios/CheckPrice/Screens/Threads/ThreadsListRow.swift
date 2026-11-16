@@ -1,96 +1,87 @@
-// One thread in the Threads list: product name, verdict word and price, and on the right the time
-// plus heart and save marks. Layout follows Worldscape's list row (design catalog I).
+// One thread in a Threads list: the product name on one line, nothing else, with no fill or
+// separator (like a Recents row in the Claude app's sidebar). Swipe right to heart, left to save
+// (watch the price), or long-press for both; tapping opens the thread. Also the plain List row and
+// List styling the Threads screens share.
 import SwiftUI
 
 struct ThreadsListRow: View {
     let thread: ShoppingThread
     let open: () -> Void
-
-    // Marks pop in with an overshoot and leave with a plain fade (springy arrival, quiet exit).
-    static let markSpring = Animation.spring(response: 0.34, dampingFraction: 0.5)
-
-    // Where the row text starts, so the list's separators line up with it.
-    static let textLeading = Spacing.rowHorizontal
+    @Environment(ThreadStore.self) private var store
 
     var body: some View {
-        let product = thread.product
         Button(action: open) {
-            HStack(spacing: Spacing.rowIconToText) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(product.name)
-                        .textStyle(.item)
-                        .foregroundStyle(Palette.textPrimary)
-                        .lineLimit(1)
-                    HStack(spacing: 6) {
-                        Text(product.verdict.word)
-                            .font(.hiragino(.w6, size: TextStyle.caption.size, relativeTo: .caption))
-                            .foregroundStyle(product.verdict.color)
-                        Text("·").foregroundStyle(Palette.textTertiary)
-                        Text(product.price)
-                            .textStyle(.caption)
-                            .monospacedDigit()
-                            .foregroundStyle(Palette.textSecondary)
-                    }
-                    .lineLimit(1)
-                }
-                Spacer(minLength: 8)
-                VStack(alignment: .trailing, spacing: 6) {
-                    Text(timeLabel)
-                        .textStyle(.footnote)
-                        .monospacedDigit()
-                        .foregroundStyle(Palette.textTertiary)
-                    marks
-                }
-            }
-            .padding(.horizontal, Spacing.rowHorizontal)
-            .padding(.vertical, 12)
-            .frame(minHeight: ControlHeight.row)
-            .accessibilityElement(children: .combine)
-            .accessibilityValue(accessibilityState)
+            Text(thread.product.name)
+                .textStyle(.body)
+                .foregroundStyle(Palette.textPrimary)
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .threadsRowPadding()
+                .accessibilityValue(accessibilityState)
         }
         .buttonStyle(ListRowButtonStyle())
-        .alignmentGuide(.listRowSeparatorLeading) { _ in Self.textLeading }
-    }
-
-    private var marks: some View {
-        HStack(spacing: 6) {
-            if thread.isSaved {
-                Image(systemName: "bookmark.fill")
-                    .foregroundStyle(Palette.textSecondary)
-                    .transition(.asymmetric(insertion: .scale(scale: 0.3).combined(with: .opacity), removal: .opacity))
-            }
-            if thread.isHearted {
-                Image(systemName: "heart.fill")
-                    .foregroundStyle(Palette.textPrimary)
-                    .transition(.asymmetric(insertion: .scale(scale: 0.3).combined(with: .opacity), removal: .opacity))
-            }
+        .threadsPlainRow()
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button(action: toggleHeart) { heartLabel }
+                .tint(Palette.iris)
         }
-        .font(.hiragino(.w6, size: 11))
-        .frame(height: 12)
-        .animation(Self.markSpring, value: thread.isHearted)
-        .animation(Self.markSpring, value: thread.isSaved)
-        .accessibilityHidden(true)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(action: toggleSave) { saveLabel }
+                .tint(Palette.electric)
+        }
+        .contextMenu {
+            Button(action: open) { Label("Open", systemImage: "arrow.up.right") }
+            Button(action: toggleHeart) { heartLabel }
+            Button(action: toggleSave) { saveLabel }
+        }
     }
 
+    private var heartLabel: some View {
+        Label(thread.isHearted ? "Unheart" : "Heart", systemImage: thread.isHearted ? "heart.slash" : "heart")
+    }
+
+    private var saveLabel: some View {
+        Label(thread.isSaved ? "Unsave" : "Save", systemImage: thread.isSaved ? "bookmark.slash" : "bookmark")
+    }
+
+    // On the Watchlist or Hearted screen the row leaves the list, so the change animates.
+    private func toggleHeart() {
+        withAnimation(Motion.rise) { store.toggleHeart(thread.id) }
+    }
+
+    private func toggleSave() {
+        withAnimation(Motion.rise) { store.toggleSave(thread.id) }
+    }
+
+    // The row shows no marks, so VoiceOver still says which lists the thread is in.
     private var accessibilityState: String {
         [thread.isHearted ? "Hearted" : nil, thread.isSaved ? "Saved" : nil]
             .compactMap { $0 }
             .joined(separator: ", ")
     }
+}
 
-    // Rows are already grouped by day: today shows the time, this week the weekday, older the date.
-    private var timeLabel: String {
-        let date = thread.startedAt
-        let cal = Calendar.current
-        if cal.isDateInToday(date) {
-            return date.formatted(date: .omitted, time: .shortened)
-        }
-        if let weekAgo = cal.date(byAdding: .day, value: -7, to: cal.startOfDay(for: .now)), date >= weekAgo {
-            return date.formatted(.dateTime.weekday(.abbreviated))
-        }
-        if cal.isDate(date, equalTo: .now, toGranularity: .year) {
-            return date.formatted(.dateTime.month(.abbreviated).day())
-        }
-        return date.formatted(.dateTime.month(.abbreviated).day().year())
+extension View {
+    // Inside a Threads row: room for the pressed fill, and a generous touch height.
+    func threadsRowPadding() -> some View {
+        padding(.horizontal, Spacing.rowHorizontal)
+            .padding(.vertical, 12)
+            .frame(minHeight: ControlHeight.minTouch)
+    }
+
+    // A List row with nothing drawn around it. The inset puts row text on the screen margin.
+    func threadsPlainRow() -> some View {
+        let inset = Spacing.screenMargin - Spacing.rowHorizontal
+        return listRowInsets(EdgeInsets(top: 0, leading: inset, bottom: 0, trailing: inset))
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    // A plain, see-through List whose rows set their own height.
+    func threadsPlainList() -> some View {
+        listStyle(.plain)
+            .environment(\.defaultMinListRowHeight, 0)
+            .scrollContentBackground(.hidden)
+            .contentMargins(.top, 8, for: .scrollContent)
     }
 }

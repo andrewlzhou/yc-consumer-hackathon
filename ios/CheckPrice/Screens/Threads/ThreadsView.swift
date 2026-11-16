@@ -1,118 +1,123 @@
-// The Threads tab: one thread per time the app was triggered while shopping, newest first, grouped
-// Today / This week / Earlier. Chips filter to All / Hearted / Saved; there is no search (the owner
-// leaves that to a general agent). Swipe right to heart, left to save (watch the price), or
-// long-press for both. Tapping a row opens ThreadDetailView. It is a List rather than Not Yet's
-// ScrollView of FlatCards because swipe actions only exist on List rows; the rows carry the
-// FlatCard fill and Worldscape dividers.
+// The Threads tab, laid out like the Claude app's sidebar: nav rows for Watchlist and Hearted on
+// top, then "Recents": every thread, newest first, as one line of product name. A nav row pushes
+// ThreadsFilteredView, the same rows limited to that list. Tapping a thread opens
+// ThreadDetailView. There is no search (the owner leaves that to a general agent). It is a List
+// because swipe actions (heart, save) only exist on List rows.
 import SwiftUI
+
+enum ThreadsRoute: Hashable {
+    case filtered(ThreadsListFilter)
+    case thread(UUID)
+}
 
 struct ThreadsView: View {
     @Environment(ThreadStore.self) private var store
-    @State private var filter: ThreadsListFilter = .all
-    @State private var path: [UUID] = []
-
-    private var sections: [ThreadsListSection] {
-        ThreadsListSection.group(store.threads.filter(filter.includes))
-    }
+    @State private var path: [ThreadsRoute] = []
 
     var body: some View {
         NavigationStack(path: $path) {
             List {
-                header
-                if sections.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(sections) { section in
-                        Section {
-                            ForEach(section.threads) { thread in
-                                row(thread)
-                            }
-                        } header: {
-                            SectionLabel(section.title)
-                                .textCase(nil)
-                                .padding(.leading, 4)
-                        }
-                    }
+                ForEach(ThreadsListFilter.allCases) { filter in
+                    ThreadsNavRow(filter: filter) { path.append(.filtered(filter)) }
+                }
+                recentsLabel
+                ForEach(store.threads) { thread in
+                    ThreadsListRow(thread: thread) { path.append(.thread(thread.id)) }
                 }
             }
-            .listStyle(.insetGrouped)
-            .listSectionSpacing(20)
-            .environment(\.defaultMinListRowHeight, ControlHeight.row)
-            .contentMargins(.horizontal, Spacing.screenMargin, for: .scrollContent)
-            .scrollContentBackground(.hidden)
+            .threadsPlainList()
             // ContentView draws the backdrop behind every tab; keep the stack see-through.
             .containerBackground(.clear, for: .navigation)
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(for: UUID.self) { ThreadDetailView(threadID: $0) }
-        }
-    }
-
-    // The chips sit in the content, as the first unstyled row, so they scroll with the list. No
-    // screen title (owner, 2026-11-15).
-    private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                ForEach(ThreadsListFilter.allCases) { f in
-                    Chip(title: f.title, selected: filter == f) {
-                        withAnimation(Motion.rise) { filter = f }
-                    }
+            .navigationDestination(for: ThreadsRoute.self) { route in
+                switch route {
+                case .filtered(let filter):
+                    ThreadsFilteredView(filter: filter) { path.append(.thread($0)) }
+                case .thread(let id):
+                    ThreadDetailView(threadID: id)
                 }
             }
         }
-        .padding(.top, 8)
-        .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 
-    private func row(_ thread: ShoppingThread) -> some View {
-        ThreadsListRow(thread: thread) { path.append(thread.id) }
-            .listRowInsets(EdgeInsets())
-            .listRowBackground(Palette.fillCard)
-            .listRowSeparatorTint(Palette.divider)
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                Button { toggleHeart(thread) } label: { heartLabel(thread) }
-                    .tint(Palette.iris)
+    private var recentsLabel: some View {
+        Text("Recents")
+            .textStyle(.label)
+            .foregroundStyle(Palette.textSecondary)
+            .accessibilityAddTraits(.isHeader)
+            .padding(.horizontal, Spacing.rowHorizontal)
+            .padding(.top, 24)
+            .padding(.bottom, 4)
+            .threadsPlainRow()
+    }
+}
+
+// A nav row: a thin outline symbol and the list's name in large regular text.
+private struct ThreadsNavRow: View {
+    let filter: ThreadsListFilter
+    let open: () -> Void
+
+    var body: some View {
+        Button(action: open) {
+            HStack(spacing: Spacing.rowIconToText) {
+                Image(systemName: filter.symbol)
+                    .font(.system(size: 19, weight: .light))
+                    .frame(width: 24)
+                    .accessibilityHidden(true)
+                Text(filter.title)
+                    .textStyle(.statement(size: 18))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
             }
-            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                Button { toggleSave(thread) } label: { saveLabel(thread) }
-                    .tint(Palette.electric)
+            .foregroundStyle(Palette.textPrimary)
+            .threadsRowPadding()
+        }
+        .buttonStyle(ListRowButtonStyle())
+        .threadsPlainRow()
+    }
+}
+
+// Watchlist or Hearted, pushed from its nav row: the matching threads, newest first, in the same
+// plain rows, with the list's name in the bar.
+struct ThreadsFilteredView: View {
+    let filter: ThreadsListFilter
+    let open: (UUID) -> Void
+    @Environment(ThreadStore.self) private var store
+
+    var body: some View {
+        let threads = store.threads.filter(filter.includes)
+        List {
+            if threads.isEmpty {
+                emptyState
+            } else {
+                ForEach(threads) { thread in
+                    ThreadsListRow(thread: thread) { open(thread.id) }
+                }
             }
-            .contextMenu {
-                Button { path.append(thread.id) } label: { Label("Open", systemImage: "arrow.up.right") }
-                Button { toggleHeart(thread) } label: { heartLabel(thread) }
-                Button { toggleSave(thread) } label: { saveLabel(thread) }
+        }
+        .threadsPlainList()
+        .background(Palette.canvas)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarColorScheme(.dark, for: .navigationBar)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(filter.title)
+                    .textStyle(.cardTitle)
+                    .foregroundStyle(Palette.textPrimary)
+                    .accessibilityAddTraits(.isHeader)
             }
+        }
     }
 
-    private func heartLabel(_ thread: ShoppingThread) -> some View {
-        Label(thread.isHearted ? "Unheart" : "Heart", systemImage: thread.isHearted ? "heart.slash" : "heart")
-    }
-
-    private func saveLabel(_ thread: ShoppingThread) -> some View {
-        Label(thread.isSaved ? "Unsave" : "Save", systemImage: thread.isSaved ? "bookmark.slash" : "bookmark")
-    }
-
-    // Under a Hearted or Saved filter the row leaves the list, so the change animates.
-    private func toggleHeart(_ thread: ShoppingThread) {
-        withAnimation(Motion.rise) { store.toggleHeart(thread.id) }
-    }
-
-    private func toggleSave(_ thread: ShoppingThread) {
-        withAnimation(Motion.rise) { store.toggleSave(thread.id) }
-    }
-
-    // Worldscape's empty list: a 22pt light symbol in tertiary, 72pt down.
+    // Worldscape's empty list: the list's symbol, light and tertiary, 72pt down.
     private var emptyState: some View {
-        Image(systemName: filter.emptySymbol)
+        Image(systemName: filter.symbol)
             .font(.hiragino(.w3, size: 22))
             .foregroundStyle(Palette.textTertiary)
             .accessibilityLabel("None")
             .frame(maxWidth: .infinity)
             .padding(.top, 72)
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
+            .threadsPlainRow()
             .transition(.opacity)
     }
 }
-
