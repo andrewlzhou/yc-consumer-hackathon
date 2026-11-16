@@ -29,18 +29,20 @@
 - Back Tap -> Shortcut -> intent on the real phone (Ruhaan, 16:15-16:28): 8 runs reached the app with real
   full-screen screenshots (1.2-1.6 MB PNG). Intent time (OCR + backend): p50 2.25 s, p95 3.70 s (n=7 with a
   product); OCR p50 0.16 s, p95 0.43 s; backend p50 2.0 s, p95 3.6 s. One non-product screen correctly sent nothing.
-- Handoff: Shortcuts passes a PNG file it owns, with `removedOnCompletion` off, so the first build left it in place.
-  The current build deletes handed-over files in temp/cache folders (never Documents or Files) and records which.
+- Handoff: Shortcuts passes a PNG it owns in `/var/mobile/tmp/com.apple.WorkflowKit.BackgroundShortcutRunner/`,
+  with `removedOnCompletion` off. Since 0d24267 the intent deletes that copy after reading it; proven on the phone
+  (later run: deleted = true, 0.94 s total). Files in Documents, Files or Photos are never touched.
+- Result shows as a popup over the store app with a blue system affordance under it (Ruhaan); a compact popup and
+  a deep link into the real app (ios/CheckPrice on main) belong to YCCO-13 on `ruhaan_ios_bridge`.
 - Defect found and fixed: a Best Buy home screen sent "Best Buy App" as a title (store chrome is now rejected).
 
 ## In progress
 
-- Ruhaan's observations (store app stays in front?, where the result shows, Photos unchanged?) and one re-run to
-  confirm the temp file is deleted.
+- Nothing in this branch. Photos before/after count still to be confirmed by Ruhaan.
 
 ## Not verified yet
 
-- Photos untouched and result shown in place (awaiting Ruhaan); the intent's time limit.
+- Photos unchanged after Back Tap (Ruhaan to confirm); the intent's time limit (longest observed run 3.7 s).
 
 ## Gotchas
 
