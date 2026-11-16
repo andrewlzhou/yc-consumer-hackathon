@@ -1,7 +1,7 @@
 // Target membership: widget extension only.
 // The check's pop-up. Checking: warm grey wisps with an orange edge and a playful word that
-// changes on each update (`CheckingWords` in Shared/CheckAttributes.swift). Decided: the same wisps in the
-// verdict's hue, the verdict word, and a very short reason, all centred, in Hiragino Sans.
+// changes on each update (`CheckingWords` in Shared/CheckAttributes.swift). Decided: the same
+// wisps in the verdict's hue, the verdict word, and a very short reason, all centred, in Hiragino Sans.
 // Deliberately absent (owner, 2026-11-15): store, product name, clock or other icon, logo.
 // The compact leading and minimal slots show only the wisps, kept for a future logo.
 // The wisps fill every island region edge to edge (content margins 0); only the camera cutout

@@ -109,8 +109,7 @@ struct PrimaryCheckArea: View {
         .onAppear { arrived = true }
     }
 
-    // FlatCard's surface alone. Glass would read as flat grey here: the backdrop's light is only
-    // at the top of the screen.
+    // FlatCard's surface alone. Glass would read as flat grey over the plain canvas.
     private var flatCard: some View {
         FlatCard(cornerRadius: Radius.glassCard) { Color.clear }
     }
