@@ -26,9 +26,17 @@ extension ThreadDetailFigures {
             lowDate: lowDate,
             history: points,
             sales: (chart.events ?? []).map { SaleWindow(name: $0.name, startsAt: $0.startsAt, endsAt: $0.endsAt) },
+            sources: Self.sources(chart),
             hasForecast: range != nil,
             isSampleData: chart.isSampleData
         )
+    }
+
+    // The report's price sources, most prices first ("serpapi", "12 prices").
+    static func sources(_ chart: ReportResponse.Chart) -> [ProductSource] {
+        (chart.sources ?? [:])
+            .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            .map { ProductSource(name: $0.key, detail: $0.value == 1 ? "1 price" : "\(Int($0.value)) prices") }
     }
 
     // The newest price at this retailer, or the lowest newest price across retailers.
@@ -53,7 +61,7 @@ extension ThreadDetailFigures {
 
 extension Product {
     // Fills blanks from the report: today's price from the chart, the predicted low from the forecast,
-    // and the backend's latest verdict and reason once the full analysis is in.
+    // and the backend's latest verdict, reason and longer reasoning once the full analysis is in.
     func updated(with report: ReportResponse) -> Product {
         var product = self
         if product.price.isEmpty, let chart = report.chart, !chart.series.isEmpty {
@@ -67,6 +75,7 @@ extension Product {
         if let analysis = report.analysis, !report.pending {
             product.verdict = Verdict(analysis.verdict)
             product.summary = analysis.reason
+            product.reasoning = analysis.report?.recommendation?.reasoning ?? ""
             product.isSampleData = analysis.isSampleData
         }
         return product

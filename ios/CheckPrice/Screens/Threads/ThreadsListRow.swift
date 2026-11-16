@@ -1,6 +1,6 @@
 // One thread in the Library, Shazam-style: a square picture on the left, the product name over
 // the retailer, and a save button on the right (orange filled bookmark when saved). No fill or
-// separator. The products carry no image, so the picture is a tile with the product's symbol.
+// separator. The picture is `ProductPicture`: the demo products' images, a symbol tile otherwise.
 // Tapping the row opens the thread; swipe left or long-press also saves. Also the plain List row
 // and List styling the Threads screen shares.
 import SwiftUI
@@ -16,7 +16,7 @@ struct ThreadsListRow: View {
         let product = thread.product
         Button(action: open) {
             HStack(spacing: Spacing.rowIconToText) {
-                ProductPicture(symbol: product.icon, size: Self.pictureSize)
+                ProductPicture(product: product, size: Self.pictureSize)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(product.name)
                         .textStyle(.body)
@@ -70,25 +70,6 @@ struct ThreadsListRow: View {
     // With the Watchlist filter on, an unsaved row leaves the list, so the change animates.
     private func toggleSave() {
         withAnimation(Motion.rise) { store.toggleSave(thread.id) }
-    }
-}
-
-// The product's picture. No product image exists in the app or the backend contract, so it is a
-// rounded tile with the product's symbol.
-private struct ProductPicture: View {
-    let symbol: String
-    let size: CGFloat
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: Radius.key, style: .continuous)
-            .fill(Palette.fillChip)
-            .frame(width: size, height: size)
-            .overlay {
-                Image(systemName: symbol)
-                    .font(.system(size: size * 0.4, weight: .light))
-                    .foregroundStyle(Palette.textSecondary)
-            }
-            .accessibilityHidden(true)
     }
 }
 

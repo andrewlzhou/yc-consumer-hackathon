@@ -1,7 +1,9 @@
-// A thread's report in Not Yet's report style (notyet/ios/Views/ProductReportView.swift). Top to
-// bottom: the verdict and its reason on glass over warm grey light, today's price against the expected
-// price, and the last 12 months of prices: the backend's history for checked products
-// (Backend/ReportFigures.swift), demo history from ThreadDetailHistory.swift for demo ones.
+// A thread's report, top to bottom: the hero (the product's picture, its name large, and the
+// verdict word and symbol in the verdict colour), "Why" (a paragraph giving the reason, from
+// `Product.reasoning`, or the short summary when there is none), "Prediction" (today against the
+// expected price, then the last 12 months of prices with the projection: the backend's history for
+// checked products (Backend/ReportFigures.swift), demo history from ThreadDetailHistory.swift),
+// and "Sources" (where the numbers came from, and the period they cover).
 import SwiftUI
 import ShopperKit
 
@@ -26,21 +28,41 @@ struct ThreadDetailReport: View {
     private var verdict: Verdict { product.verdict }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 28) {
+        VStack(alignment: .leading, spacing: 32) {
             ThreadDetailHero(product: product)
                 .modifier(ThreadDetailArrive(index: 1, revealed: revealed, reduceMotion: reduceMotion))
-            if !product.price.isEmpty {
-                priceSection
-                    .modifier(ThreadDetailArrive(index: 2, revealed: revealed, reduceMotion: reduceMotion))
+            if !reason.isEmpty {
+                ReportSection(title: "Why") {
+                    Text(reason)
+                        .textStyle(.body)
+                        .lineSpacing(7)
+                        .foregroundStyle(Palette.textPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .modifier(ThreadDetailArrive(index: 2, revealed: revealed, reduceMotion: reduceMotion))
             }
-            if let figures {
-                chartSection(figures)
-                    .modifier(ThreadDetailArrive(index: 3, revealed: revealed, reduceMotion: reduceMotion))
-            } else {
-                ThinkingLine(step: nil)
-                    .padding(.horizontal, 4)
+            ReportSection(title: "Prediction") {
+                VStack(alignment: .leading, spacing: 16) {
+                    if !product.price.isEmpty { priceSection }
+                    if let figures {
+                        chartSection(figures)
+                    } else {
+                        ThinkingLine(step: nil)
+                            .padding(.horizontal, 4)
+                    }
+                }
+            }
+            .modifier(ThreadDetailArrive(index: 3, revealed: revealed, reduceMotion: reduceMotion))
+            if let figures, !figures.sources.isEmpty {
+                ReportSection(title: "Sources") { sourcesCard(figures) }
+                    .modifier(ThreadDetailArrive(index: 4, revealed: revealed, reduceMotion: reduceMotion))
             }
         }
+    }
+
+    // The long reasoning when there is one, otherwise the one-line summary.
+    private var reason: String {
+        product.reasoning.isEmpty ? product.summary : product.reasoning
     }
 
     // MARK: Today against the expected price
@@ -101,95 +123,100 @@ struct ThreadDetailReport: View {
                 }
         }
     }
+
+    // MARK: Sources
+
+    private func sourcesCard(_ figures: ThreadDetailFigures) -> some View {
+        FlatCard {
+            VStack(spacing: 0) {
+                ForEach(Array(figures.sources.enumerated()), id: \.offset) { index, source in
+                    if index > 0 { Hairline() }
+                    SourceRow(label: source.name, value: source.detail)
+                }
+                if let period = figures.period {
+                    Hairline()
+                    SourceRow(label: "Period", value: period)
+                }
+            }
+        }
+    }
 }
 
-// MARK: - Verdict hero
+// MARK: - Hero
 
-// The verdict on glass over the hero's grey light: the product, the verdict word and symbol in the verdict
-// colour, and the product summary as the reason. Adapted from Not Yet's `VerdictHero`.
+// The product's picture, its name in large type, and the verdict word and symbol in the verdict
+// colour. Plain on the canvas.
 private struct ThreadDetailHero: View {
     let product: Product
     @State private var popped = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 8) {
-                Image(systemName: product.icon)
-                    .font(.hiragino(.w6, size: 13, relativeTo: .caption))
+        VStack(alignment: .leading, spacing: 18) {
+            ProductPicture(product: product, size: 168, cornerRadius: Radius.glassCard)
+            Text(product.name)
+                .textStyle(.wordmark(size: 30))
+                .lineSpacing(4)
+                .foregroundStyle(Palette.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            HStack(alignment: .center, spacing: 10) {
+                Image(systemName: product.verdict.symbol)
+                    .font(.hiragino(.w6, size: 24, relativeTo: .title))
+                    .symbolEffect(.bounce, value: popped)
                     .accessibilityHidden(true)
-                Text(product.name)
-                    .textStyle(.caption)
-                    .lineLimit(2)
+                Text(product.verdict.word)
+                    .textStyle(.wordmark(size: 28))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
-            .foregroundStyle(Color.white.opacity(0.82))
-
-            VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .center, spacing: 12) {
-                    Image(systemName: product.verdict.symbol)
-                        .font(.hiragino(.w6, size: 34, relativeTo: .largeTitle))
-                        .foregroundStyle(product.verdict.color)
-                        .symbolEffect(.bounce, value: popped)
-                        .accessibilityHidden(true)
-                    Text(product.verdict.word)
-                        .textStyle(.wordmark(size: 46))
-                        .foregroundStyle(product.verdict.color)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .dropShadow(Shadows.labelOnColor)
-                    Spacer(minLength: 0)
-                }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Verdict: \(product.verdict.word)")
-
-                Text(product.summary)
-                    .textStyle(.statement(size: 20))
-                    .lineSpacing(6)
-                    .foregroundStyle(Palette.textPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, Spacing.cardLeading)
-            .padding(.top, 16)
-            .padding(.bottom, 18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .glassSurface()
+            .foregroundStyle(product.verdict.color)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Verdict: \(product.verdict.word)")
         }
-        .padding(16)
-        .background { HeroLight() }
-        .clipShape(RoundedRectangle(cornerRadius: Radius.heroPanel, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: Radius.heroPanel, style: .continuous)
-                .strokeBorder(
-                    LinearGradient(colors: [Color(hex: 0xB0AEA5, opacity: 0.5), Color.white.opacity(0.06)],
-                                   startPoint: .top, endPoint: .bottom),
-                    lineWidth: 0.75
-                )
-        }
-        .dropShadow(Shadows.heroPanel)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { popped = true }
     }
 }
 
-// The hero's light: warm near-black at the top pooling into lighter warm greys below, kept inside the panel.
-private struct HeroLight: View {
+// MARK: - Pieces
+
+// A muted label over a block of the report.
+private struct ReportSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
     var body: some View {
-        MeshGradient(
-            width: 3,
-            height: 3,
-            points: [
-                [0, 0], [0.5, 0], [1, 0],
-                [0, 0.5], [0.55, 0.45], [1, 0.55],
-                [0, 1], [0.5, 1], [1, 1],
-            ],
-            colors: [
-                Color(hex: 0x1A1917), Color(hex: 0x1C1B19), Color(hex: 0x191816),
-                Color(hex: 0x2A2926), Color(hex: 0x34332F), Color(hex: 0x2C2B28),
-                Color(hex: 0x45433E), Color(hex: 0x5A5852), Color(hex: 0x3E3D39),
-            ]
-        )
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .textStyle(.label)
+                .foregroundStyle(Palette.textSecondary)
+                .accessibilityAddTraits(.isHeader)
+            content
+        }
     }
 }
 
-// MARK: - Pieces
+// "Name ............ what it supplied" inside the sources card.
+private struct SourceRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            Text(label)
+                .textStyle(.item)
+                .foregroundStyle(Palette.textPrimary)
+            Spacer(minLength: 8)
+            Text(value)
+                .textStyle(.caption)
+                .foregroundStyle(Palette.textSecondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 13)
+        .accessibilityElement(children: .combine)
+    }
+}
 
 // "Label / detail ............ value" inside a flat card.
 private struct PriceRow: View {
