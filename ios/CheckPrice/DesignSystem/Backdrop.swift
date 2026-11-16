@@ -1,43 +1,40 @@
-// Home's aurora, after Worldscape's world light (worldscape Features/World/WorldBackdrop.swift and
-// WorldLightShader.swift): soft blobs of light drifting slowly under silky folds, with fine grain,
-// never a flat gradient. Worldscape draws it in Metal; this is SwiftUI only (TimelineView + Canvas):
-// radial-gradient blobs in the warm palette (accent orange, cream, stone) on the canvas, a few
-// blurred sine bands with a thin bright crest for the folds, a tiled noise image for grain, and the
-// top darkened so the headline stays readable. The light pools in the lower half. A full drift takes
-// about a minute. While a check runs (`isActive`) the light brightens and moves about twice as fast,
-// easing back after. Under Reduce Motion it is one still frame.
+// The app's backdrop, behind every tab and every pushed or presented screen (owner, 2026-11-15:
+// "apply the gradient background to all pages"). One still frame of what was Home's aurora, after
+// Worldscape's world light (worldscape Features/World/WorldBackdrop.swift and WorldLightShader.swift):
+// soft blobs of light in the warm palette (accent orange, cream, stone) on the canvas, a few blurred
+// bands with a thin bright crest for folds, fine grain, and the top darkened. The light pools in the
+// lower half. It does not move: the drifting version was dropped with the old Home.
 import SwiftUI
 
-struct HomeAurora: View {
-    var isActive = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var clock = AuroraClock()
-
+struct AppBackdrop: View {
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
-            Canvas { context, size in
-                let state = reduceMotion ? (phase: 40.0, level: 0.0) : clock.advance(to: timeline.date, active: isActive)
-                Self.draw(&context, size: size, t: state.phase, level: state.level)
+        Canvas { context, size in Self.draw(&context, size: size) }
+            .overlay { BackdropGrain() }
+            .overlay {
+                // Dark at the top, so the light gathers low.
+                LinearGradient(
+                    stops: [
+                        .init(color: Palette.canvas.opacity(0.92), location: 0),
+                        .init(color: Palette.canvas.opacity(0.55), location: 0.3),
+                        .init(color: .clear, location: 0.62),
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
             }
-        }
-        .overlay { AuroraGrain() }
-        .overlay {
-            // Dark at the top, so the light gathers low and the headline reads.
-            LinearGradient(
-                stops: [
-                    .init(color: Palette.canvas.opacity(0.92), location: 0),
-                    .init(color: Palette.canvas.opacity(0.55), location: 0.3),
-                    .init(color: .clear, location: 0.62),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-        }
-        .background(Palette.canvas)
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+            .background(Palette.canvas)
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
+
+    // How strong the light is, 1 being the aurora as first drawn. At 0.7, secondary text
+    // (`Palette.textSecondary`) on a `FlatCard` keeps at least 4.5:1 contrast over the brightest
+    // spot (estimated from these blobs, not measured on a device); at 1 it fell to about 3.8:1.
+    static let strength = 0.7
+
+    // Where the frame sits in the old drift, which ran from 40 (Worldscape starts partway along).
+    private static let phase = 40.0
 
     private struct Blob {
         let home: CGPoint      // resting centre, as fractions of the screen
@@ -59,11 +56,11 @@ struct HomeAurora: View {
         Blob(home: CGPoint(x: 0.9, y: 0.55), radius: 0.28, color: stone, opacity: 0.35, speed: 0.8),
     ]
 
-    private static func draw(_ context: inout GraphicsContext, size: CGSize, t: Double, level: Double) {
-        let w = size.width, h = size.height
-        let glow = 1 + 0.6 * level
+    private static func draw(_ context: inout GraphicsContext, size: CGSize) {
+        let w = size.width, h = size.height, t = phase
 
-        // Blobs, each on its own slow loop, slightly flattened so they read as low light.
+        // Blobs, each moved off its centre by where it was in the drift, slightly flattened so they
+        // read as low light.
         for (i, blob) in blobs.enumerated() {
             let fi = Double(i)
             let x = blob.home.x + 0.16 * sin(t * 0.09 * blob.speed + fi * 1.9)
@@ -75,7 +72,7 @@ struct HomeAurora: View {
             layer.fill(
                 Path(ellipseIn: CGRect(x: -r, y: -r, width: 2 * r, height: 2 * r)),
                 with: .radialGradient(
-                    Gradient(colors: [blob.color.opacity(min(1, blob.opacity * glow)), blob.color.opacity(0)]),
+                    Gradient(colors: [blob.color.opacity(blob.opacity * strength), blob.color.opacity(0)]),
                     center: .zero, startRadius: 0, endRadius: r
                 )
             )
@@ -85,22 +82,20 @@ struct HomeAurora: View {
         context.drawLayer { layer in
             layer.addFilter(.blur(radius: 26))
             for i in 0..<3 {
-                let band = fold(index: i, size: size, t: t)
-                layer.stroke(band, with: .color(cream.opacity(0.045 * glow)), lineWidth: h * 0.09)
+                layer.stroke(fold(index: i, size: size), with: .color(cream.opacity(0.045 * strength)), lineWidth: h * 0.09)
             }
         }
         context.drawLayer { layer in
             layer.addFilter(.blur(radius: 3))
             for i in 0..<3 {
-                let band = fold(index: i, size: size, t: t)
-                layer.stroke(band, with: .color(cream.opacity(0.07 * glow)), lineWidth: 1.5)
+                layer.stroke(fold(index: i, size: size), with: .color(cream.opacity(0.07 * strength)), lineWidth: 1.5)
             }
         }
     }
 
     // One fold: a gentle wave across the screen, its height and sway set by its index.
-    private static func fold(index i: Int, size: CGSize, t: Double) -> Path {
-        let fi = Double(i)
+    private static func fold(index i: Int, size: CGSize) -> Path {
+        let fi = Double(i), t = phase
         let baseY = size.height * (0.6 + 0.11 * fi)
         let amplitude = size.height * (0.035 + 0.012 * fi)
         let wavelength = size.width * (1.3 + 0.35 * fi)
@@ -118,25 +113,8 @@ struct HomeAurora: View {
     }
 }
 
-// Integrates time so the speed can change without the light jumping, and eases the active level
-// toward its target. A plain class: it changes during drawing and must not trigger a redraw.
-private final class AuroraClock {
-    // Starts partway along, as Worldscape's does, so the first look isn't a resting pose.
-    private var phase = 40.0
-    private var level = 0.0
-    private var last: Date?
-
-    func advance(to date: Date, active: Bool) -> (phase: Double, level: Double) {
-        let dt = min(max(date.timeIntervalSince(last ?? date), 0), 0.1)
-        last = date
-        level += ((active ? 1 : 0) - level) * min(1, dt * 1.5)
-        phase += dt * (1 + level)
-        return (phase, level)
-    }
-}
-
 // Fine grain over the light: a small tile of random speckles, made once and repeated.
-private struct AuroraGrain: View {
+private struct BackdropGrain: View {
     // 256 x 256 grey pixels shown at 3x, so each speckle is one device pixel on most iPhones.
     private static let tile: UIImage = {
         let side = 256

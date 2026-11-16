@@ -53,12 +53,12 @@ struct AccountView: View {
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $settingsOpen) {
                 AccountSettingsView()
-                    .presentationBackground(Palette.canvas)
+                    .presentationBackground { AppBackdrop() }
             }
             .sheet(isPresented: $editing) {
                 EditProfileSheet()
                     .presentationDragIndicator(.visible)
-                    .presentationBackground(Palette.canvas)
+                    .presentationBackground { AppBackdrop() }
             }
         }
     }

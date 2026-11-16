@@ -21,7 +21,7 @@ struct ThreadDetailView: View {
                 missing
             }
         }
-        .background(Palette.canvas.ignoresSafeArea())
+        .background { AppBackdrop() }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
     }

@@ -113,7 +113,8 @@ enum DemoThreads {
             ShoppingThread(id: UUID(), product: Demo.headphones, startedAt: now.addingTimeInterval(-3_600), isSaved: true,
                            messages: [ChatMessage(fromUser: true, text: "Is Cyber Monday really cheaper?", sentAt: now.addingTimeInterval(-3_500)),
                                       ChatMessage(fromUser: false, text: "It dropped about $40 during the last two November sales.", sentAt: now.addingTimeInterval(-3_480))]),
-            ShoppingThread(id: UUID(), product: products[0], startedAt: now.addingTimeInterval(-86_400 * 2), isSaved: false, messages: []),
+            // Saved so Home's Watchlist has an item whose (sample) price dropped recently.
+            ShoppingThread(id: UUID(), product: products[0], startedAt: now.addingTimeInterval(-86_400 * 2), isSaved: true, messages: []),
             ShoppingThread(id: UUID(), product: products[1], startedAt: now.addingTimeInterval(-86_400 * 9), isSaved: true, messages: []),
         ]
     }()

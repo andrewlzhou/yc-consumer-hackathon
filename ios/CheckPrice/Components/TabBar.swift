@@ -3,8 +3,10 @@
 // the same as Not Yet's (`notyet/ios/Views/RootTabView.swift`): dark blur over the content, a
 // faint top hairline, white icons at fixed opacities. No blue in the bar.
 //
-// Each tab keeps its title on the item so VoiceOver still reads "Home", "Threads", "Account"; the
-// title is drawn clear, and `TabBarIconInsets` moves the icons down into the space it leaves.
+// VoiceOver still reads "Home", "Threads", "Account". Before iOS 26 each item keeps its title,
+// drawn clear, and `TabBarItemHook` moves the icons down into the space it leaves. iOS 26's tab bar
+// ignores the clear title colour, so there the items get no title at all (ContentView's labels are
+// the image alone) and `TabBarItemHook` sets each item's spoken name instead.
 import SwiftUI
 import UIKit
 
@@ -31,8 +33,8 @@ enum AppTab: String, Hashable, CaseIterable {
 }
 
 enum TabBarStyle {
-    // How far each icon moves down to sit in the middle of the bar once the title is hidden: half
-    // the space UIKit keeps for the title. Not yet checked on a device or simulator.
+    // Before iOS 26: how far each icon moves down to sit in the middle of the bar once the title is
+    // hidden, half the space UIKit keeps for the title. Not yet checked on a device or simulator.
     static let iconInsets = UIEdgeInsets(top: 6, left: 0, bottom: -6, right: 0)
 
     // UIKit appearance; call before the TabView builds its bar (`CheckPriceApp.init`). Same look
@@ -61,14 +63,15 @@ enum TabBarStyle {
     }
 }
 
-// Applies `TabBarStyle.iconInsets` to every item. `imageInsets` belongs to each UITabBarItem and
-// has no appearance proxy, so this reaches the tab bar controller from inside a tab. It re-applies
-// whenever the selection changes, after SwiftUI has updated the items.
-struct TabBarIconInsets: UIViewControllerRepresentable {
+// Fixes up each UITabBarItem, which has no appearance proxy for these, by reaching the tab bar
+// controller from inside a tab: the spoken name from `AppTab` (items are in `AppTab.allCases`
+// order), and before iOS 26 `TabBarStyle.iconInsets`. It re-applies whenever the selection
+// changes, after SwiftUI has updated the items.
+struct TabBarItemHook: UIViewControllerRepresentable {
     let selection: AppTab
 
     func makeUIViewController(context: Context) -> Controller { Controller() }
-    func updateUIViewController(_ controller: Controller, context: Context) { controller.applyInsets() }
+    func updateUIViewController(_ controller: Controller, context: Context) { controller.apply() }
 
     final class Controller: UIViewController {
         override func viewDidLoad() {
@@ -79,12 +82,16 @@ struct TabBarIconInsets: UIViewControllerRepresentable {
 
         override func viewWillAppear(_ animated: Bool) {
             super.viewWillAppear(animated)
-            applyInsets()
+            apply()
         }
 
-        func applyInsets() {
+        func apply() {
             DispatchQueue.main.async { [weak self] in
-                self?.tabBarController?.tabBar.items?.forEach { $0.imageInsets = TabBarStyle.iconInsets }
+                guard let items = self?.tabBarController?.tabBar.items else { return }
+                for (item, tab) in zip(items, AppTab.allCases) {
+                    item.accessibilityLabel = tab.title
+                    if #unavailable(iOS 26) { item.imageInsets = TabBarStyle.iconInsets }
+                }
             }
         }
     }

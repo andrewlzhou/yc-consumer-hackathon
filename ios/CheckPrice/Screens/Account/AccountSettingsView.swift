@@ -38,11 +38,11 @@ struct AccountSettingsView: View {
                 .padding(.bottom, 32)
             }
         }
-        .background(Palette.canvas.ignoresSafeArea())
+        .background { AppBackdrop() }
         .sheet(isPresented: $editing) {
             EditProfileSheet()
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Palette.canvas)
+                .presentationBackground { AppBackdrop() }
         }
     }
 

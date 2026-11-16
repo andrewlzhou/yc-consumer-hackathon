@@ -78,7 +78,8 @@ struct ThreadsListRow: View {
 // The verdict's symbol on a disc of its colour, ringed in the canvas colour so it stands apart
 // from the picture, and set a few points past the picture's corner. Every verdict symbol is a
 // filled circle with the glyph cut out, so the canvas disc behind shows through as the glyph.
-private struct VerdictBadge: View {
+// Also on Home's Recent checks rows.
+struct VerdictBadge: View {
     let verdict: Verdict
 
     private static let size: CGFloat = 19

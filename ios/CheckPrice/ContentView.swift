@@ -1,12 +1,12 @@
 import SwiftUI
 
 // The root: three tabs (Home, Threads, Account), icons only, and the thread detail sheet. The bar's
-// look lives in `Components/TabBar.swift`. Each tab sits on the flat canvas colour, so screens draw no
-// background of their own. Any screen opens a thread by setting `ThreadStore.openThreadID`; this view
-// presents it and clears it on dismiss.
+// look lives in `Components/TabBar.swift`. Each tab sits on the app backdrop (`AppBackdrop`), so tab
+// screens draw no background of their own. Any screen opens a thread by setting
+// `ThreadStore.openThreadID`; this view presents it and clears it on dismiss.
 //
 // Launch arguments for screenshots and cloud devices: `-startTab home|threads|account` opens on
-// that tab, `-autoReveal YES` runs Home's capture → analyzing → reveal demo on launch, and
+// that tab, `-autoReveal YES` runs Home's check demo (analyzing → reveal sheet) on launch, and
 // `-openThread YES` opens the newest thread's detail on launch.
 struct ContentView: View {
     @Environment(ThreadStore.self) private var store
@@ -17,7 +17,7 @@ struct ContentView: View {
     var body: some View {
         TabView(selection: $tab) {
             Tab(value: AppTab.home) {
-                screen(HomeView(autoReveal: $autoReveal))
+                screen(HomeView(autoReveal: $autoReveal, showLibrary: { tab = .threads }))
             } label: { label(.home) }
             Tab(value: AppTab.threads) {
                 screen(ThreadsView())
@@ -32,7 +32,7 @@ struct ContentView: View {
         .sheet(item: openThread) { thread in
             ThreadDetailView(threadID: thread.id)
                 .presentationDragIndicator(.visible)
-                .presentationBackground(Palette.canvas)
+                .presentationBackground { AppBackdrop() }
         }
         .onAppear {
             guard !didHandleLaunch else { return }
@@ -42,21 +42,24 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
     }
 
-    // Every tab sits on the canvas and carries the hook that centres the bar's icons.
+    // Every tab sits on the backdrop and carries the hook that fixes up the bar's items.
     private func screen(_ content: some View) -> some View {
         content
-            .background { Palette.canvas.ignoresSafeArea() }
-            .background { TabBarIconInsets(selection: tab).frame(width: 0, height: 0) }
+            .background { AppBackdrop() }
+            .background { TabBarItemHook(selection: tab).frame(width: 0, height: 0) }
     }
 
-    // Icon only: the title is kept for VoiceOver and drawn clear by TabBarStyle. The system tab bar
-    // fills every symbol by default; `.none` keeps the outline on tabs that aren't selected.
-    private func label(_ item: AppTab) -> some View {
-        Label {
-            Text(item.title)
-        } icon: {
-            Image(systemName: item.symbol(selected: tab == item))
-                .environment(\.symbolVariants, .none)
+    // Icon only. iOS 26's tab bar draws a title whenever the item has one, whatever its colour, so
+    // there the label is the image alone and `TabBarItemHook` gives each item its spoken name.
+    // Before iOS 26 the title stays on the item for VoiceOver and TabBarStyle draws it clear. The
+    // system tab bar fills every symbol by default; `.none` keeps the outline on unselected tabs.
+    @ViewBuilder private func label(_ item: AppTab) -> some View {
+        let icon = Image(systemName: item.symbol(selected: tab == item))
+            .environment(\.symbolVariants, .none)
+        if #available(iOS 26, *) {
+            icon.accessibilityLabel(item.title)
+        } else {
+            Label { Text(item.title) } icon: { icon }
         }
     }
 
