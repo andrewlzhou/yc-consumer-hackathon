@@ -23,7 +23,6 @@ struct ShoppingThread: Identifiable {
     let id: UUID
     var product: Product
     let startedAt: Date
-    var isHearted: Bool
     var isSaved: Bool
     var messages: [ChatMessage]
     // GET /report for checked products; nil for demo threads and until it arrives.
@@ -53,20 +52,17 @@ final class ThreadStore {
         self.archive = archive
     }
 
-    var hearted: [ShoppingThread] { threads.filter(\.isHearted) }
     var saved: [ShoppingThread] { threads.filter(\.isSaved) }
 
     func thread(_ id: UUID) -> ShoppingThread? { threads.first { $0.id == id } }
 
     @discardableResult
     func startThread(for product: Product) -> UUID {
-        let thread = ShoppingThread(id: UUID(), product: product, startedAt: .now, isHearted: false, isSaved: false, messages: [])
+        let thread = ShoppingThread(id: UUID(), product: product, startedAt: .now, isSaved: false, messages: [])
         threads.insert(thread, at: 0)
         if product.check != nil { archive?.save(threads) }
         return thread.id
     }
-
-    func toggleHeart(_ id: UUID) { update(id) { $0.isHearted.toggle() } }
 
     // Save is the backend watchlist for checked products; it flips back if the backend refuses.
     func toggleSave(_ id: UUID) {
@@ -147,11 +143,12 @@ enum DemoThreads {
         let products = Demo.saved
         let now = Date.now
         return [
-            ShoppingThread(id: UUID(), product: Demo.headphones, startedAt: now.addingTimeInterval(-3_600), isHearted: true, isSaved: true,
+            ShoppingThread(id: UUID(), product: Demo.headphones, startedAt: now.addingTimeInterval(-3_600), isSaved: true,
                            messages: [ChatMessage(fromUser: true, text: "Is Cyber Monday really cheaper?", sentAt: now.addingTimeInterval(-3_500)),
                                       ChatMessage(fromUser: false, text: "It dropped about $40 during the last two November sales.", sentAt: now.addingTimeInterval(-3_480))]),
-            ShoppingThread(id: UUID(), product: products[0], startedAt: now.addingTimeInterval(-86_400 * 2), isHearted: false, isSaved: false, messages: []),
-            ShoppingThread(id: UUID(), product: products[1], startedAt: now.addingTimeInterval(-86_400 * 9), isHearted: false, isSaved: true, messages: []),
+            // Saved so Home's Watchlist has an item whose (sample) price dropped recently.
+            ShoppingThread(id: UUID(), product: products[0], startedAt: now.addingTimeInterval(-86_400 * 2), isSaved: true, messages: []),
+            ShoppingThread(id: UUID(), product: products[1], startedAt: now.addingTimeInterval(-86_400 * 9), isSaved: true, messages: []),
         ]
     }()
 

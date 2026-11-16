@@ -26,8 +26,9 @@ extension ThreadDetailFigures {
 
         let analysis = report.analysis(for: check)
         let range = Self.forecastRange(analysis)
-        let low = chart.lowest?.price ?? points.map(\.price).min() ?? current
-        let lowDate = chart.lowest.flatMap { ChartFormat.day($0.date) } ?? .now
+        let cheapest = points.min { $0.price < $1.price }
+        let low = chart.lowest?.price ?? cheapest?.price ?? current
+        let lowDate = ChartFormat.day(chart.lowest?.date ?? cheapest?.date) ?? .now
 
         self.init(
             current: current,
@@ -38,9 +39,17 @@ extension ThreadDetailFigures {
             lowDate: lowDate,
             history: points,
             sales: (chart.events ?? []).map { SaleWindow(name: $0.name, startsAt: $0.startsAt, endsAt: $0.endsAt) },
+            sources: Self.sources(chart),
             hasForecast: range != nil,
             isSampleData: chart.isSampleData
         )
+    }
+
+    // The report's price sources, most prices first ("serpapi", "12 prices").
+    static func sources(_ chart: ReportResponse.Chart) -> [ProductSource] {
+        (chart.sources ?? [:])
+            .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            .map { ProductSource(name: $0.key, detail: $0.value == 1 ? "1 price" : "\(Int($0.value)) prices") }
     }
 
     // The code-computed forecast first (deterministic), then the model's.
@@ -106,7 +115,7 @@ enum StoreName {
 extension Product {
     // The checked product with what its report adds. Always rebuilt from the check itself, so repeated or late
     // reports can't drift: a link gets today's price from its own store, and a matching analysis gives the
-    // forecast and, once the full analysis is in, the refined verdict and reason.
+    // forecast and, once the full analysis is in, the refined verdict, reason and longer reasoning.
     func updated(with report: ReportResponse) -> Product {
         guard let check, report.product.productId == productId else { return self }
         var product = self
@@ -116,6 +125,7 @@ extension Product {
         product.summary = check.reason
         product.isSampleData = check.isSampleData
         product.projectedLow = ""
+        product.reasoning = ""
         if check.price == nil, let offer = report.chart?.freshOffer(at: check.retailer) {
             product.price = Money.text(offer.price)
             if check.retailer.isEmpty { product.retailer = offer.retailer }
@@ -129,6 +139,7 @@ extension Product {
         if !report.pending {
             product.verdict = Verdict(analysis.verdict)
             product.summary = analysis.reason
+            product.reasoning = analysis.report?.recommendation?.reasoning ?? ""
             product.isSampleData = analysis.isSampleData
         }
         return product

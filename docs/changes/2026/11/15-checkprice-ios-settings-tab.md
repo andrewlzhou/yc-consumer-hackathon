@@ -1,0 +1,7 @@
+# 2026-11-15 Check Price iPhone: Account tab is Settings
+
+- Author: Claude (Opus agent), for Andrew.
+- Instructions: owner: "change the profile page to literally the settings page", with Grok's iOS Settings as the reference. Saved in `ios/AGENTS.md` (titled screens are now Library and Settings; Files, Account entry).
+- Changed: the Account tab now shows Settings directly. "Settings" small, bold and centred in the bar. A profile card (56pt initials avatar, name, @handle, chevron) opens Edit profile. "App" sits over one card of plain rows: Notifications, Shortcut, Back Tap, Version (value on the right), no chevrons since none opens anything yet. Cards are white 8% (a step above the bar fill, to read over the backdrop) with 24pt corners; rows 52pt. The Instagram-style profile (counts, Edit/Share keys, saved grid), the gear and the Settings sheet are gone, along with `ProfileGrid.swift` and `AccountSettingsView.swift`. The "Account" section with its Profile row is gone too; the profile card replaces it. `SavedByWaiting` stays in `AccountView.swift` because Home uses it. The screen paints no background, so ContentView's backdrop shows through.
+- Checks: `ios/scripts/typecheck.sh` passed (app and widget); `check_docs.py` passed. No full Xcode on this Mac, so no simulator build and no screenshots.
+- Next: view it on a simulator or device; tune the card fill against the final backdrop.

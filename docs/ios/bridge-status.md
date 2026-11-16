@@ -47,8 +47,8 @@
   backend doesn't know gives INDETERMINATE with no More Details: new products come only from links.
 - Demo threads still sit in Threads and Home next to real checks, unlabelled; chat replies are canned.
 - A finished report without a chart, or six failed fetches, leaves the thread with its verdict and no chart.
-- Saved and hearted state is not kept across restarts. Report freshness uses a fixed 7-day window.
-- The island's reason still trims hedge words (`PrimaryCheckArea.islandReason`); the popup no longer shows a reason.
+- Saved state is not kept across restarts. Report freshness uses a fixed 7-day window.
+- The popup shows no reason. The in-app check (and its island) was removed from Home (owner, 2026-11-15); the island now plays only from `-demoLiveActivity YES`.
 - Simulator runs can't prove Back Tap or where a real iPhone puts the screenshot file (there it is `other`, kept).
 
 ## Checks

@@ -1,12 +1,15 @@
-// Edit profile: name, handle and bio, kept on the device. Changes apply on Done; Cancel drops them.
+// Edit profile: name, handle, email and bio, kept on the device. Name and email start from the
+// dummy defaults in ProfileDefaults. Changes apply on Done; Cancel drops them.
 import SwiftUI
 
 struct EditProfileSheet: View {
-    @AppStorage(ProfileKeys.name) private var name = ""
+    @AppStorage(ProfileKeys.name) private var name = ProfileDefaults.name
     @AppStorage(ProfileKeys.handle) private var handle = ""
+    @AppStorage(ProfileKeys.email) private var email = ProfileDefaults.email
     @AppStorage(ProfileKeys.bio) private var bio = ""
     @State private var draftName = ""
     @State private var draftHandle = ""
+    @State private var draftEmail = ""
     @State private var draftBio = ""
     @Environment(\.dismiss) private var dismiss
 
@@ -14,7 +17,7 @@ struct EditProfileSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: Spacing.betweenFields) {
-                    ProfileAvatar(name: draftName, size: 72)
+                    ProfilePhoto(size: 72)
                         .frame(maxWidth: .infinity)
                         .padding(.bottom, 6)
                     OutlinedField("Name", prompt: "Your name", text: $draftName)
@@ -23,6 +26,11 @@ struct EditProfileSheet: View {
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .textContentType(.username)
+                    OutlinedField("Email", prompt: "you@example.com", text: $draftEmail)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .keyboardType(.emailAddress)
+                        .textContentType(.emailAddress)
                     OutlinedField("Bio", prompt: "A line about you", text: $draftBio)
                 }
                 .padding(.horizontal, Spacing.screenMargin)
@@ -30,7 +38,7 @@ struct EditProfileSheet: View {
                 .padding(.bottom, 24)
             }
             .scrollDismissesKeyboard(.interactively)
-            .background(Palette.canvas)
+            .background { AppBackdrop() }
             .navigationBarTitleDisplayMode(.inline)
             .toolbarColorScheme(.dark, for: .navigationBar)
             .toolbar {
@@ -47,6 +55,7 @@ struct EditProfileSheet: View {
         .onAppear {
             draftName = name
             draftHandle = handle
+            draftEmail = email
             draftBio = bio
         }
     }
@@ -54,6 +63,7 @@ struct EditProfileSheet: View {
     private func save() {
         name = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
         handle = Self.cleanHandle(draftHandle)
+        email = draftEmail.trimmingCharacters(in: .whitespacesAndNewlines)
         bio = draftBio.trimmingCharacters(in: .whitespacesAndNewlines)
         dismiss()
     }
