@@ -30,7 +30,8 @@
 - Verified (4cecf5f): no-write real demo leaves app rows unchanged; URL-only /analyze on Apple and Walmart links
   identifies from the slug in 0.17-0.33 s with no page fetch; resolver runs in the background.
 - Real demo with YCCO-8's store products (e732bda): 12/12 live, 10/10 full, all grounded.
-- Next: nothing owed; open limits are in agent-evals.md (forecast calibration, no streaming).
+- Phone fixes on `ruhaan_backend_phonefix` (PR to ruhaan_backend, not deployed): [scan safety](agent-scan-safety.md).
+- Next: after that merges, deploy from the clean tip and rerun the real eval and phone scans; open limits in agent-evals.md.
 - Gotchas: deploy only from a clean origin/ruhaan_backend tip. HTTP probes on the shared deployment record real scan
   rows; clean them up. Tests that hit /analyze need `rateLimiterTest.register(t)`.
 

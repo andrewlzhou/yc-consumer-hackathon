@@ -40,6 +40,7 @@ export default defineSchema({
   })
     .index("by_family", ["familyKey"])
     .index("by_category", ["category"])
+    .index("by_identifiers_asin", ["identifiers.asin"])
     .searchIndex("search_text", {
       searchField: "searchText",
       filterFields: ["category", "brand"],

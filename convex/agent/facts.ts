@@ -12,6 +12,14 @@ type Promo = {
 };
 type Competitor = { productId: string; title: string; brand: string; last90Days: { observationCount: number; latestPrice: number | null; latestRetailer: string | null } };
 
+// Today's price against the lowest recorded price, as a label the model can repeat instead of judging "within 3%"
+// itself (a scan at $179 against a $198 low is below it, not within 3% of it).
+export function lowestRelation(current: number, lowest: number) {
+  if (current < lowest - 0.005) return "below_lowest_recorded";
+  if (current <= lowest + 0.005) return "equals_lowest_recorded";
+  return current <= lowest * 1.03 ? "within_3_percent_above_lowest" : "more_than_3_percent_above_lowest";
+}
+
 // The comparisons a shopper cares about, computed exactly from the other evidence, so a small model can cite
 // savings and gaps instead of doing arithmetic.
 export function keyFacts(scanRetailer: string, stats: Evidence, recentStats: Evidence, promo: Evidence, competitors: Evidence) {
@@ -22,6 +30,7 @@ export function keyFacts(scanRetailer: string, stats: Evidence, recentStats: Evi
   const o = s.overall;
   if (!o.prices || !o.current) return { enoughHistory: false, observationCount: o.observationCount, isSampleData: s.isSampleData };
   const current = o.current.price;
+  const currentFromScan = typeof (stats.args as { currentPrice?: unknown } | null)?.currentPrice === "number";
   const saving = (price: number) => ({ savingsVsCurrent: round2(current - price), savingsPercent: pctOf(current - price, current) });
   const ongoing = p.claimedDiscounts.find((d) => d.ongoing && d.retailerSlug === scanRetailer);
   const cheapestNow = s.perRetailer.filter((r) => r.prices).sort((a, b) => a.prices!.latest.price - b.prices!.latest.price)[0];
@@ -39,7 +48,9 @@ export function keyFacts(scanRetailer: string, stats: Evidence, recentStats: Evi
     lowestPrice: o.prices.min,
     lowestPriceLastSeen: o.prices.minLastSeenAt,
     currentMinusLowest: round2(current - o.prices.min),
-    withinThreePercentOfLowest: current <= o.prices.min * 1.03,
+    currentPriceSource: currentFromScan ? "scan" : "stored",
+    currentVsLowestPercent: pctOf(current - o.prices.min, o.prices.min),
+    priceVsLowest: lowestRelation(current, o.prices.min),
     claimedWasPrice: s.wasPrice && {
       wasPrice: s.wasPrice.originalPrice,
       chargedAtOrAboveSharePercent: s.wasPrice.shareChargedAtOrAbovePercent,

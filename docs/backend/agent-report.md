@@ -24,6 +24,7 @@
 - Share menu and Safari send a link. `/analyze` accepts `url` with or without a title (http or https only).
 - `data/sources/stores/url:parseUrl` supplies a no-fetch retailer/title hint when the phone sends no extract.
 - A link resolved before (`resolvedUrls`, host/path plus variant query) identifies the product with one indexed read.
+- Amazon ASINs match exactly; a.co/amzn.to links and AE/Nike color codes follow [scan safety](agent-scan-safety.md).
 - A new link is resolved in the background by `agent/urls:resolveInBackground`: it calls the stores thread's
   `data/sources/stores/resolve:resolveUrl` (it may fetch the page), falls back to the extract's title, stores the
   mapping, and starts the full run when the scan had no match. Failed page fetches fall back to extracted fields.
