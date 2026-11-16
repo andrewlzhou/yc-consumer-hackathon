@@ -292,6 +292,7 @@ describe("screen text runs local matching only (CON-10)", () => {
   const notProducts: [string, Record<string, unknown>][] = [
     ["notification banner as OCR lines", { ocrLines: ["Messages now", "Mom: are you picking up Sam at 5 today", "$24.99"], currentPrice: 24.99, retailer: "Target" }],
     ["account header as OCR lines", { ocrLines: ["Hello, Ruhaan Singh", "1600 Amphitheatre Pkwy apt 4", "Deliver to Ruhaan - Anytown 00000"], currentPrice: 49.99 }],
+    ["re-review N1: partial names as OCR lines", { ocrLines: ["AirPods", "Pro 3", "$249.00"], currentPrice: 249, retailer: "Target" }],
     ["unknown product from OCR lines only", { ocrLines: ["Zorblax Hyperwidget 9000 Turbo", "$59.99"], currentPrice: 59.99, retailer: "Target" }],
     ["notification banner as the title", { title: "Messages now Mom: are you picking up Sam at 5 today", currentPrice: 24.99, retailer: "Target" }],
     ["account header as the title", { title: "Hello, Ruhaan Singh 1600 Amphitheatre Pkwy apt 4", currentPrice: 24.99 }],
@@ -303,7 +304,9 @@ describe("screen text runs local matching only (CON-10)", () => {
       "Your code is 482913", "Venmo: You paid Sam $25 for dinner 1114", "Chase: Card ending 4821 charged $54.20", "Gate B22 boarding at 7:45",
       "Flight UA1234 to SFO", "Dinner with Priya at 7pm", "Package arriving by 8pm", "Ruhaan 2026",
       // Real but unknown products and ambiguous titles also ask for a link instead of discovery from screen text (R3).
-      "Hello Kitty Plush Toy 12 inch", "Zorblax Hyperwidget ZX9000 Turbo", "Sony noise cancelling headphones"].map((title): [string, Record<string, unknown>] => [`review H2 title "${title}"`, { title, retailer: "Target", currentPrice: 24.99 }]),
+      "Hello Kitty Plush Toy 12 inch", "Zorblax Hyperwidget ZX9000 Turbo", "Sony noise cancelling headphones",
+      // Re-review N1: a partial name without the brand or model is not enough.
+      "AirPods", "Pro 3"].map((title): [string, Record<string, unknown>] => [`review H2 title "${title}"`, { title, retailer: "Target", currentPrice: 24.99 }]),
   ];
   for (const [name, extract] of notProducts)
     test(`${name}: INVESTIGATE asking for a link, no product, no stored text, no external call`, async () => {
@@ -334,5 +337,25 @@ describe("screen text runs local matching only (CON-10)", () => {
     expect(JSON.stringify(stored!.evidence)).not.toMatch(/Mom|Messages/);
     const rows = await t.run((ctx) => ctx.db.query("agentScans").collect());
     expect(rows[0].title).toBeUndefined();
+  });
+
+  test("re-review N1: OCR lines naming two catalog products ask for the link instead of picking the first", async () => {
+    const before = await productCount();
+    const card = await scan({ ocrLines: ["Sponsored", "Apple AirPods Pro 3", "Sony WH-1000XM5 Wireless Noise Canceling Headphones"], retailer: "Best Buy", currentPrice: 248 });
+    expect(card).toMatchObject({ verdict: "INVESTIGATE", reportStatus: "none" });
+    expect(card.reason).toMatch(/more than one product\. Share its product page link/);
+    expect(card.productId).toBeUndefined();
+    expect(await productCount()).toBe(before);
+  });
+
+  test("re-review N1: full titles and clean OCR lines still match", async () => {
+    expect((await scan({ title: "Apple AirPods Pro 3", retailer: "Target", currentPrice: 249 })).productId).toBe(ids["airpods-pro-3"]);
+    expect((await scan({ title: "sony wh1000xm5", retailer: "Best Buy", currentPrice: 248 })).productId).toBe(ids["sony-xm5"]);
+    expect((await scan({ ocrLines: ["Sponsored", "Apple AirPods Pro 3", "$249.00"], retailer: "Target", currentPrice: 249 })).productId).toBe(ids["airpods-pro-3"]);
+  });
+
+  test("re-review N1: the phone's title wins over other products in the OCR lines", async () => {
+    const card = await scan({ title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", ocrLines: ["Customers also bought", "Apple AirPods Pro 3"], retailer: "Best Buy", currentPrice: 248 });
+    expect(card.productId).toBe(ids["sony-xm5"]);
   });
 });

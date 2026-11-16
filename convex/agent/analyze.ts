@@ -9,7 +9,7 @@ import { rateLimiter } from "./limits";
 import { checkCard, checkGrounding, EvidenceLedger, relationIssues, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
 import { heuristicAnalysis, isThin, staleStoredPrice } from "./heuristic";
-import { decideMatch, otherVariant, type MatchCandidate } from "./identify";
+import { decideMatch, namesProduct, otherVariant, type MatchCandidate } from "./identify";
 import type { LlmProvider, Usage } from "./llm";
 import { reportSpec, runAgent, type OutputSpec } from "./loop";
 import { openAiProvider } from "./openai";
@@ -163,6 +163,7 @@ export const scanResultValidator = v.object({ response: analyzeResponseValidator
 export type ScanResult = { response: AnalyzeResponse; path: "cache" | "live" | "heuristic" | "unknown"; latencyMs: number; timings: Record<string, number>; analysisId?: Id<"analyses">; evaluation?: Evaluation };
 type Card = AnalyzeResponse & { path: ScanResult["path"]; analysisId?: Id<"analyses">; evaluation?: Evaluation };
 const UNKNOWN_FROM_SCREEN = "We don't recognize this product yet. Share its product page link and we'll look it up.";
+const MANY_ON_SCREEN = "This screen shows more than one product. Share its product page link and we'll look it up.";
 
 // The live path: identify, record the price, then return a fresh stored analysis or run one fast model pass.
 // The full report starts on first sight, in parallel with the card. now is overridable so tests and evals are
@@ -181,7 +182,17 @@ export const analyzeScan = internalAction({
     // Screen text (the phone's title and OCR lines) can be a notification, a one-time code or an address, so it only
     // runs local, deterministic catalog matching. It never creates a product, is never stored, and never reaches an
     // embedding, model or search call; the model sees the catalog title. New products come only from product links.
-    const screenTexts = [args.title, ...(args.ocrLines ?? []), args.ocrLines?.join(" "), parsedUrl?.titleHint].map((t) => t?.normalize("NFKC").trim()).filter((t): t is string => !!t);
+    // A match must name the product's brand or model. The phone's title names one product, so its clear match wins. OCR lines are the whole screen (ads, "customers also
+    // bought"), so their clear matches, with the joined lines and the URL slug, must all name the same product.
+    const clean = (t?: string | null) => t?.normalize("NFKC").trim() || null;
+    const screenTitle = clean(args.title);
+    const screenLines = [...(args.ocrLines ?? []), args.ocrLines?.join(" "), parsedUrl?.titleHint].map(clean).filter((t): t is string => !!t);
+    const clearMatch = async (text: string): Promise<MatchCandidate | null> => {
+      const decision = decideMatch(await data.matchProduct(text));
+      if (decision.kind !== "match") return null;
+      const { product } = decision.candidate;
+      return namesProduct(text, product) && !otherVariant(product, parsedUrl) ? decision.candidate : null;
+    };
     const remaining = () => LIVE_BUDGET_MS - (Date.now() - started);
     const scan: Scan = { title: null, retailer: normalizeRetailer(args.retailer) ?? parsedUrl?.retailer ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
     const ledger = new EvidenceLedger();
@@ -217,12 +228,12 @@ export const analyzeScan = internalAction({
       if (product) match = { product, score: 1, matchedTokens: [], sizeConflict: false } as MatchCandidate;
       byAsin = !!product;
     }
-    for (const text of match ? [] : screenTexts) {
-      const decision = decideMatch(await data.matchProduct(text));
-      if (decision.kind === "match" && !otherVariant(decision.candidate.product, parsedUrl)) {
-        match = decision.candidate;
-        break;
-      }
+    if (!match && screenTitle) match = await clearMatch(screenTitle);
+    let manyOnScreen = false;
+    if (!match && screenLines.length) {
+      const found = (await Promise.all(screenLines.map(clearMatch))).filter((c): c is MatchCandidate => !!c);
+      manyOnScreen = new Set(found.map((c) => c.product._id)).size > 1;
+      if (!manyOnScreen) match = found[0] ?? null;
     }
     if (args.url && !link && !byAsin && !evaluation)
       await ctx.scheduler.runAfter(0, internal.agent.urls.resolveInBackground, { url: args.url, retailer: args.retailer ?? parsedUrl?.retailer, deviceId: args.deviceId, currentPrice: args.currentPrice, originalPrice: args.originalPrice, now, startFullRun: !match });
@@ -233,7 +244,7 @@ export const analyzeScan = internalAction({
         return finish({ verdict: "INVESTIGATE", reason: "We're looking this product up from its link. Check again in a moment.", confidence: 0.1, isSampleData: false, reportStatus: "pending", path: "unknown" });
       if (args.url)
         return finish({ verdict: "INVESTIGATE", reason: "We couldn't identify this product from its link: the store page gave us no name or price we could verify.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
-      return finish({ verdict: "INVESTIGATE", reason: UNKNOWN_FROM_SCREEN, confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
+      return finish({ verdict: "INVESTIGATE", reason: manyOnScreen ? MANY_ON_SCREEN : UNKNOWN_FROM_SCREEN, confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
     }
 
     const productId = match.product._id;

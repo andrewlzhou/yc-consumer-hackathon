@@ -31,6 +31,15 @@ export function mentionsBrand(title: string, brand: string): boolean {
   return b.length > 0 && ocrLetters(title).replace(/i/g, "l").includes(b);
 }
 
+// Screen text must name the matched product's brand or full model, so a partial name ("AirPods", "Pro 3") is not enough.
+// A product created from a link whose page gave no brand keeps the clear-match bar alone.
+export function namesProduct(text: string, product: { brand: string; model?: string }): boolean {
+  if (product.brand === "unknown") return true;
+  const alnum = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const model = product.model ? alnum(product.model) : "";
+  return mentionsBrand(text, product.brand) || (model.length >= 4 && alnum(text).includes(model));
+}
+
 // After an unclear text match: hybrid candidates without a size conflict that either share enough tokens, or are
 // semantically close (OCR-mangled titles) and name the same brand, for the model to choose from.
 export function hybridViable(candidates: HybridCandidate[], title: string): HybridCandidate[] {

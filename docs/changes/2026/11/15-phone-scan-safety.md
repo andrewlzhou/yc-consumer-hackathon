@@ -11,8 +11,9 @@
 - Review (YCCO-14, CON-13): color guard also covers the resolver fallback and cached links (released and re-resolved);
   relation check fixed for subjects, negation and one-price phrasings; stale contradictory cache entries rerun.
   Captain decision after R1: no title heuristics; unknown screenshots ask for a link. OCR token readings score once.
+  Re-review N1 (Captain rule): a match must name brand or model; the title's match wins; OCR lines naming two products give INVESTIGATE.
 - Contract: no type change; `ocrLines` behavior is narrower (contract.md updated). New products index `by_identifiers_asin`.
-- Checks: `npm run typecheck`, `npx vitest run` (229: 227 passed, 2 live skipped), `python3 scripts/check_docs.py`,
+- Checks: `npm run typecheck`, `npx vitest run` (235: 233 passed, 2 live skipped), `python3 scripts/check_docs.py`,
   local anonymous `npx convex dev` push and HTTP probes (latencies in scan-safety doc). No shared deployment.
 - Next: deploy after review; verify on the shared deployment with the real model and the phone. A real a.co link and
   the XM4C (M4 2nd Gen) match are unverified. Phone side must still re-POST a pending link (M6).

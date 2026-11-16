@@ -6,8 +6,11 @@
 ## Screen text (Captain decision, 2026-11-15)
 
 - The phone's `title` and `ocrLines` can be a notification, a one-time code, a payment or an address, and no list of
-  patterns proves arbitrary text safe. So screen text runs local, deterministic catalog matching only: the title,
-  each OCR line, the joined lines, then the URL slug, each needing a clear `matchProduct` match.
+  patterns proves arbitrary text safe. So screen text runs local, deterministic catalog matching only, each piece
+  needing a clear `matchProduct` match that names the product's brand or full model ("AirPods" or "Pro 3" alone
+  is not enough; brandless link-created products keep the bar alone). The phone's title names one product, so its match wins. Otherwise each OCR
+  line, the joined lines and the URL slug must all match the same product; two different products (an ad, "customers
+  also bought") give INVESTIGATE "This screen shows more than one product. Share its product page link...".
 - It never creates a product, is never stored (`agentScans` keeps no title), and never reaches an embedding, model
   or SerpApi call. After a match the model sees the catalog title, never the screen text.
 - No clear match: INVESTIGATE "We don't recognize this product yet. Share its product page link and we'll look it up."

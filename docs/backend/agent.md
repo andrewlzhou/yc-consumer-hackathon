@@ -6,8 +6,8 @@
 ## How a scan flows
 
 - `POST /analyze` validates the extract by hand, then calls `agent/analyze:analyzeScan` (internal action).
-- Identify: links first (cached link, exact Amazon ASIN). Screen text (title, each OCR line, joined lines, URL slug)
-  only takes a clear local `matchProduct` match (score >= 0.75, 0.15 lead, no size conflict); it never reaches
+- Identify: links first (cached link, exact Amazon ASIN), then the title, then OCR lines and slug (must agree on one
+  product). Screen text needs a clear local match (score >= 0.75, 0.15 lead) naming brand or model; it never reaches
   embeddings, a model pick or SerpApi ([scan safety](agent-scan-safety.md)). OCR readings of one token count once.
 - Record: every priced scan goes through `data/prices:recordObservation` as `source: "scan"`.
 - No match: INVESTIGATE at once. Only a product link creates a provisional product (background resolver, full run queued).
