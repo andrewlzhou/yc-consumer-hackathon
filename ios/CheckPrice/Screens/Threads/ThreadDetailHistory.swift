@@ -1,6 +1,7 @@
 // The numbers behind a thread's report: today's price and the predicted low read from the demo
-// `Product` strings, plus a demo year of price history for the chart, built from the product's own
-// numbers and seeded by its name, so a thread shows the same chart every time it opens. Checked
+// `Product` strings, plus an invented year of price history for the chart (sample data), built from
+// the product's own numbers and seeded by its name, so a thread shows the same chart every time it
+// opens. The history drifts gently with a few sale dips rather than jumping week to week. Checked
 // products use the backend's history instead (Backend/ReportFigures.swift).
 import Foundation
 
@@ -17,12 +18,21 @@ struct ThreadDetailFigures {
     // Chart inputs.
     let history: [PricePoint]
     let sales: [SaleWindow]
+    // Where the numbers came from; empty hides the Sources section.
+    var sources: [ProductSource] = []
     // Real reports may have no forecast; then the report hides the Expected row and the projection.
     var hasForecast = true
     var isSampleData = false
 
     var predictedMid: Double { (predictedLow.lowerBound + predictedLow.upperBound) / 2 }
     var lowest: PriceLow { PriceLow(price: low, date: ThreadDetailDemoHistory.dayString(lowDate)) }
+
+    // "Nov 2025 – Nov 2026": the first history point to today.
+    var period: String? {
+        guard let first = history.compactMap({ ChartFormat.day($0.date) }).min() else { return nil }
+        let style = Date.FormatStyle.dateTime.month(.abbreviated).year()
+        return "\(first.formatted(style)) – \(Date.now.formatted(style))"
+    }
 }
 
 enum ThreadDetailDemoHistory {
@@ -60,23 +70,36 @@ enum ThreadDetailDemoHistory {
             windows.append((event.name, event.start, event.end, price))
         }
 
-        // Regular price: a step every two to four weeks, a few percent either side of usual, kept
-        // above the low and clear of the sale windows.
-        var steps: [(date: Date, price: Double)] = []
-        var day = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: calendar.date(byAdding: .day, value: -400, to: today) ?? today) ?? today
-        while day < today {
-            // The day after a sale is taken: the price returns to usual then.
-            let inSale = windows.contains { $0.start <= day && day.timeIntervalSince($0.end) <= 86_400 }
-            if !inSale {
-                let price = (typical * (1 + rng.next(in: -0.035...0.035))).rounded()
-                steps.append((day, max(price, low + 5)))
-            }
-            day = calendar.date(byAdding: .day, value: Int(rng.next(in: 14...28)), to: day) ?? today
+        // Regular price: one point a week on a slow wave a few percent either side of usual (seeded
+        // period and phase, a little noise), easing into today's price over the last month. Weeks
+        // near a sale are left out; the sale draws its own dip and recovery.
+        let first = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: calendar.date(byAdding: .day, value: -400, to: today) ?? today) ?? today
+        let period = rng.next(in: 120...220)
+        let phase = rng.next(in: 0...(2 * Double.pi))
+        func regular(_ day: Date) -> Double {
+            let t = day.timeIntervalSince(first) / 86_400
+            var price = typical * (1 + 0.025 * sin(2 * Double.pi * t / period + phase))
+            let daysLeft = today.timeIntervalSince(day) / 86_400
+            if daysLeft < 30 { price += (current - price) * (1 - daysLeft / 30) }
+            return max(price, low + 5)
         }
+        var steps: [(date: Date, price: Double)] = []
+        var day = first
+        while day < today {
+            let nearSale = windows.contains { day >= $0.start.addingTimeInterval(-4 * 86_400) && day <= $0.end.addingTimeInterval(5 * 86_400) }
+            if !nearSale {
+                steps.append((day, (regular(day) * (1 + rng.next(in: -0.004...0.004))).rounded()))
+            }
+            day = calendar.date(byAdding: .day, value: 7, to: day) ?? today
+        }
+        // Each sale: down over two days, flat through the window, back up over three.
         for window in windows {
+            let before = window.start.addingTimeInterval(-2 * 86_400)
+            let after = window.end.addingTimeInterval(3 * 86_400)
+            steps.append((before, regular(before).rounded()))
             steps.append((window.start, window.price))
-            let after = calendar.date(byAdding: .day, value: 1, to: window.end) ?? window.end
-            if after < today { steps.append((after, typical)) }
+            steps.append((window.end, window.price))
+            if after < today { steps.append((after, regular(after).rounded())) }
         }
         steps.sort { $0.date < $1.date }
 
@@ -91,7 +114,8 @@ enum ThreadDetailDemoHistory {
             low: low,
             lowDate: lowDate,
             history: steps.map { PricePoint(date: dayString($0.date), price: $0.price, retailer: product.retailer) },
-            sales: windows.map { SaleWindow(name: $0.name, startsAt: dayString($0.start), endsAt: dayString($0.end)) }
+            sales: windows.map { SaleWindow(name: $0.name, startsAt: dayString($0.start), endsAt: dayString($0.end)) },
+            sources: product.sources
         )
     }
 

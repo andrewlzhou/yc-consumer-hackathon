@@ -5,8 +5,8 @@
 // and the 12-month low, plus a dashed projection when there is one. Drag across the chart to read the
 // price on any day. Worldscape look: dark, white line, one accent colour, springy arrival.
 //
-// Data: a step series. A point is sent only when the price changed, so the line holds each price
-// until the next point. Typical price and the low are computed from `history` when not given.
+// Data: dated prices, drawn as a smooth line (monotone, so it never overshoots a real price) between
+// points. Typical price and the low are computed from `history` when not given.
 import SwiftUI
 import Charts
 
@@ -159,7 +159,7 @@ struct PriceChartView: View {
                     yStart: .value("Floor", plot.yDomain.lowerBound),
                     yEnd: .value("Price", arrived ? point.price : base)
                 )
-                .interpolationMethod(.stepEnd)
+                .interpolationMethod(.monotone)
                 .foregroundStyle(
                     LinearGradient(colors: [.white.opacity(0.10), .white.opacity(0)], startPoint: .top, endPoint: .bottom)
                 )
@@ -179,7 +179,7 @@ struct PriceChartView: View {
                     y: .value("Price", arrived ? point.price : base),
                     series: .value("Series", "History")
                 )
-                .interpolationMethod(.stepEnd)
+                .interpolationMethod(.monotone)
                 .foregroundStyle(Palette.textPrimary)
                 .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
             }

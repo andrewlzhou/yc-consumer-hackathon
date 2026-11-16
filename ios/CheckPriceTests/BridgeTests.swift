@@ -132,8 +132,9 @@ private enum Fixture {
         {"product": {"productId": "\(productId)", "title": "Bose QuietComfort Ultra"}, "pending": \(pending),
          "chart": {"series": [{"retailer": "\(retailer)", "points": [{"date": "2026-01-02", "price": 279, "source": "t"}, {"date": "\(seen)", "price": \(latest), "source": "t"}],
                                "lowest": 279, "latest": \(latest)}],
-                   "lowest": {"price": 279, "date": "2026-01-02", "retailer": "\(retailer)"}, "typicalPrice": 329, "isSampleData": false},
+                   "lowest": {"price": 279, "date": "2026-01-02", "retailer": "\(retailer)"}, "typicalPrice": 329, "sources": {"serpapi": 1, "keepa": 12}, "isSampleData": false},
          "analysis": {"tier": "full", "scanPrice": \(scanPrice.map { String($0) } ?? "null"), "verdict": "\(verdict)", "confidence": 0.7, "reason": "\(reason)", "isSampleData": false,
+                      "report": {"recommendation": {"reasoning": "Long: \(reason)"}},
                       "insights": {"forecast": {"outlook": "likely_lower", "low": 299, "high": 309, "byDate": "2026-11-27", "confidence": 0.6}}}}
         """
         return try JSONDecoder().decode(ReportResponse.self, from: Data(json.utf8))
@@ -182,6 +183,21 @@ final class RealCheckTests: XCTestCase {
         XCTAssertEqual(figures.history.map(\.price), [279, 179])
         // A link check (no price) is not refined by an analysis made for a priced scan either.
         XCTAssertEqual(try Fixture.check(price: nil).updated(with: report).verdict, .wait)
+    }
+
+    // The detail page's Why and Sources: the report's own words and sources, and only for this check's price.
+    func testWhyAndSourcesComeFromTheMatchingReportOrStayEmpty() throws {
+        let check = try Fixture.check()
+        XCTAssertTrue(check.reasoning.isEmpty && check.sources.isEmpty && check.image == nil)
+        let report = try Fixture.report()
+        let refined = check.updated(with: report)
+        XCTAssertEqual(refined.reasoning, "Long: Full: wait for Black Friday.")
+        let figures = try XCTUnwrap(ThreadDetailFigures.forThread(product: refined, report: report))
+        XCTAssertEqual(figures.sources, [ProductSource(name: "keepa", detail: "12 prices"), ProductSource(name: "serpapi", detail: "1 price")])
+
+        let other = try Fixture.report(latest: 179, scanPrice: 179, reason: "At $179 this is near the low.")
+        XCTAssertEqual(refined.updated(with: other).reasoning, "")
+        XCTAssertEqual(check.updated(with: try Fixture.report(pending: true)).reasoning, "")
     }
 
     func testALinkGetsTodaysPriceOnlyFromItsOwnStore() throws {

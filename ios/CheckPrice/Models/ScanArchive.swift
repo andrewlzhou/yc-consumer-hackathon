@@ -44,7 +44,7 @@ struct ScanArchive {
         guard let data = try? Data(contentsOf: file), let entries = try? JSONDecoder().decode([Entry].self, from: data) else { return [] }
         return entries.map {
             ShoppingThread(id: $0.id, product: Product(name: $0.name, productId: $0.productId, check: $0.check), startedAt: $0.startedAt,
-                           isHearted: false, isSaved: false, messages: [])
+                           isSaved: false, messages: [])
         }
     }
 

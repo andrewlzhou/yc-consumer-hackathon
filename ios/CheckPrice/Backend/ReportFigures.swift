@@ -9,8 +9,8 @@ import ShopperKit
 extension ThreadDetailFigures {
     // The numbers a thread's report draws. Demo products get demo history; a checked product only ever gets its
     // own report's numbers, and nothing until that report has a chart.
-    static func forThread(product: Product, report: ReportResponse?) -> ThreadDetailFigures? {
-        guard let check = product.check else { return ThreadDetailDemoHistory.figures(for: product) }
+    static func forThread(product: Product, report: ReportResponse?, today: Date = .now) -> ThreadDetailFigures? {
+        guard let check = product.check else { return ThreadDetailDemoHistory.figures(for: product, today: today) }
         guard let report, report.product.productId == product.productId else { return nil }
         return ThreadDetailFigures(report: report, product: product, check: check)
     }
@@ -26,8 +26,9 @@ extension ThreadDetailFigures {
 
         let analysis = report.analysis(for: check)
         let range = Self.forecastRange(analysis)
-        let low = chart.lowest?.price ?? points.map(\.price).min() ?? current
-        let lowDate = chart.lowest.flatMap { ChartFormat.day($0.date) } ?? .now
+        let cheapest = points.min { $0.price < $1.price }
+        let low = chart.lowest?.price ?? cheapest?.price ?? current
+        let lowDate = ChartFormat.day(chart.lowest?.date ?? cheapest?.date) ?? .now
 
         self.init(
             current: current,
@@ -38,9 +39,17 @@ extension ThreadDetailFigures {
             lowDate: lowDate,
             history: points,
             sales: (chart.events ?? []).map { SaleWindow(name: $0.name, startsAt: $0.startsAt, endsAt: $0.endsAt) },
+            sources: Self.sources(chart),
             hasForecast: range != nil,
             isSampleData: chart.isSampleData
         )
+    }
+
+    // The report's price sources, most prices first ("serpapi", "12 prices").
+    static func sources(_ chart: ReportResponse.Chart) -> [ProductSource] {
+        (chart.sources ?? [:])
+            .sorted { $0.value == $1.value ? $0.key < $1.key : $0.value > $1.value }
+            .map { ProductSource(name: $0.key, detail: $0.value == 1 ? "1 price" : "\(Int($0.value)) prices") }
     }
 
     // The code-computed forecast first (deterministic), then the model's.
@@ -116,6 +125,7 @@ extension Product {
         product.summary = check.reason
         product.isSampleData = check.isSampleData
         product.projectedLow = ""
+        product.reasoning = ""
         if check.price == nil, let offer = report.chart?.freshOffer(at: check.retailer) {
             product.price = Money.text(offer.price)
             if check.retailer.isEmpty { product.retailer = offer.retailer }
@@ -129,6 +139,7 @@ extension Product {
         if !report.pending {
             product.verdict = Verdict(analysis.verdict)
             product.summary = analysis.reason
+            product.reasoning = analysis.report?.recommendation?.reasoning ?? ""
             product.isSampleData = analysis.isSampleData
         }
         return product
