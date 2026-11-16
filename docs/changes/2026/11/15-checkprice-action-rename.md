@@ -11,4 +11,8 @@
   The tap opens the app and that check's own saved thread (by the check's id, not the product's). Debug builds note
   each tap that reaches the app under `checkprice.opens`. No layout, backend or contract change.
 - Checks: `python3 scripts/check_docs.py`; app tests and ShopperKit tests on a cloud runner with no key: see the PR.
-- Not verified: Back Tap and the tap on a real iPhone (YCCO-10).
+- Not verified: the tap on a real iPhone at this head. Screenshot cleanup on the phone is not verified either: two
+  real Back Taps on 671b059 classed the file `other`, so the app did not delete it. Next: read the file's folder on
+  the device privately and add that exact folder to the allowed roots; no substring matching. See the status doc.
+- Paused after this: Ruhaan is using a Shortcuts-only demo for now (a fixed banner, then Open App); no verdict is
+  hard-coded in the app or backend.

@@ -17,10 +17,12 @@
 
 ## Not proven yet
 
-- On a real iPhone (installed as `dev.ruhaan.checkprice`): Back Tap, the popup, More Details, file deletion, timing.
-- iOS adds its own Done button under a result popup. Apple documents no way to rename or remove it. A different
-  popup type (a confirmation, `requestConfirmation(actionName:snippetIntent:)`) lets the app name the system button;
-  it would change the flow (cancel instead of Done) and is untried.
+- On a real iPhone (installed as `dev.ruhaan.checkprice`): the popup and More Details as seen by a person.
+- Screenshot cleanup on the phone. Two real Back Taps (671b059) reached the backend in 0.9 s and 0.5 s, but the file
+  was classed `other`, so the app left it: not deleted by us, and whether iOS removes it is unknown. Next safe step:
+  YCCO-10 reads the file's folder on the device (kept private), then that exact folder joins the allowed roots with
+  a test. Never a substring match such as "/tmp/".
+- iOS adds its own Done under a result popup; it can't be renamed or removed. A confirmation popup could (untried).
 
 ## How a check and its report fit
 
@@ -47,14 +49,12 @@
 - Backend scan fixes are on `main` (a0146e1); YCCO-12 owns deploying them. With them, a screenshot of a product the
   backend doesn't know gives INDETERMINATE; More Details then opens a thread with the verdict and no chart.
 - Demo threads still sit in Threads and Home next to real checks, unlabelled; chat replies are canned.
-- A finished report without a chart, or six failed fetches, leaves the thread with its verdict and no chart.
-- Saved state is not kept across restarts. Report freshness uses a fixed 7-day window.
+- A report without a chart, or six failed fetches, leaves a thread with its verdict and no chart. Saved state is not
+  kept across restarts. Report freshness uses a fixed 7-day window.
 - The popup shows no reason. The in-app check (and its island) was removed from Home (owner, 2026-11-15); the island now plays only from `-demoLiveActivity YES`.
-- Simulator runs can't prove Back Tap or where a real iPhone puts the screenshot file (there it is `other`, kept).
 
 ## Checks
 
 - App tests: `xcodebuild test -project CheckPrice.xcodeproj -scheme CheckPrice -destination 'platform=iOS
   Simulator,name=iPhone 16,OS=26.5' CODE_SIGNING_ALLOWED=NO`. Package tests: `cd ios/ShopperKit && swift test`.
-- Cloud builds use no key, or a fake key with a mock backend passed as `CHECKPRICE_BACKEND_HOST` and
-  `CHECKPRICE_API_KEY` build settings. Never a real key.
+- Cloud builds: no key, or a fake key and mock host as `CHECKPRICE_BACKEND_HOST`/`CHECKPRICE_API_KEY`. Never a real key.
