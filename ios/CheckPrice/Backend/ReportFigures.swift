@@ -14,8 +14,9 @@ extension ThreadDetailFigures {
 
         let current = ThreadDetailDemoHistory.dollars(in: product.price).first ?? Self.latest(chart, retailer: product.retailer)
         let range = Self.forecastRange(report)
-        let low = chart.lowest?.price ?? points.map(\.price).min() ?? current
-        let lowDate = chart.lowest.flatMap { ChartFormat.day($0.date) } ?? .now
+        let cheapest = points.min { $0.price < $1.price }
+        let low = chart.lowest?.price ?? cheapest?.price ?? current
+        let lowDate = ChartFormat.day(chart.lowest?.date ?? cheapest?.date) ?? .now
 
         self.init(
             current: current,

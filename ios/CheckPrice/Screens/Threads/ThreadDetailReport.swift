@@ -1,7 +1,7 @@
 // A thread's report, top to bottom: the hero (the product's picture, its name large, and the
 // verdict word and symbol in the verdict colour), "Why" (a paragraph giving the reason, from
 // `Product.reasoning`, or the short summary when there is none), "Prediction" (today against the
-// expected price, then the last 12 months of prices with the projection: the backend's history for
+// expected price, then the price history with the projection: the backend's history for
 // checked products (Backend/ReportFigures.swift), demo history from ThreadDetailHistory.swift),
 // and "Sources" (where the numbers came from, and the period they cover).
 import SwiftUI
@@ -91,7 +91,7 @@ struct ThreadDetailReport: View {
         }
     }
 
-    // "Nov 30", when the summary names a time.
+    // "Nov 30", when the figures carry a date for the predicted low.
     private var expectedDate: String? {
         figures?.predictedDate?.formatted(.dateTime.month(.abbreviated).day())
     }

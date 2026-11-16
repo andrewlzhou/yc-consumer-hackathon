@@ -26,7 +26,7 @@ struct ShoppingEntryButton: View {
                         .font(.hiragino(.w6, size: 19, relativeTo: .headline))
                         .foregroundStyle(Palette.textPrimary)
                     if let top = stores.first {
-                        Text("Most checks at \(top.name) · \(Stats.checks) this year")
+                        Text("Most checks at \(top.name) · \(top.checks) this year")
                             .textStyle(.caption)
                             .foregroundStyle(Palette.textSecondary)
                     }

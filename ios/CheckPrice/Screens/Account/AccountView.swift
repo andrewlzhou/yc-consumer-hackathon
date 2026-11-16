@@ -253,39 +253,6 @@ enum ProfileDefaults {
     static let email = "alex.rivera@example.com"
 }
 
-// A round avatar: the name's initials, or a person symbol when there is no name, on a warm grey
-// pair with a white top sheen (worldscape F/People/PersonRow.swift).
-struct ProfileAvatar: View {
-    let name: String
-    var size: CGFloat = 84
-
-    private var initials: String {
-        name.split(separator: " ").prefix(2).compactMap(\.first).map(String.init).joined().uppercased()
-    }
-
-    var body: some View {
-        ZStack {
-            Circle().fill(
-                LinearGradient(colors: [Color(hex: 0x76746E), Palette.stone], startPoint: .topLeading, endPoint: .bottomTrailing)
-            )
-            Circle().fill(LinearGradient(colors: [.white.opacity(0.18), .clear], startPoint: .top, endPoint: .center))
-            if initials.isEmpty {
-                Image(systemName: "person.fill")
-                    .font(.system(size: size * 0.38, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.85))
-            } else {
-                Text(initials)
-                    .font(.hiragino(.w6, size: size * 0.34, relativeTo: .title))
-                    .foregroundStyle(.white)
-                    .dropShadow(Shadows.labelOnColor)
-            }
-        }
-        .frame(width: size, height: size)
-        .overlay { Circle().strokeBorder(.white.opacity(0.16), lineWidth: 1) }
-        .accessibilityHidden(true)
-    }
-}
-
 // The money a saved thread stands to save by waiting: its price minus the low end of its
 // projected low, never below zero. Prices are demo strings like "$349" and "$309–$319".
 enum SavedByWaiting {
