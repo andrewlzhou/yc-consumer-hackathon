@@ -30,7 +30,7 @@ public enum ShopperError: Error, Equatable, Sendable {
     public var message: String {
         switch self {
         case .noProduct: "No product found. Open a product page and try again."
-        case .unreadableImage: "Couldn't read the screenshot Shortcuts handed over. Check the shortcut passes Take Screenshot to Worth It."
+        case .unreadableImage: "Couldn't read the screenshot Shortcuts handed over. Check the shortcut passes Take Screenshot to the price check action."
         case .notConfigured: "This build has no backend key. Add it to ios/Config/Secrets.xcconfig and rebuild."
         case .unauthorized: "The price service refused this app's key (401)."
         case .rateLimited: "Too many checks right now (429). Try again in a minute."

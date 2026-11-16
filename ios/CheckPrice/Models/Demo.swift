@@ -8,7 +8,7 @@ enum Verdict: String { case buyNow = "BUY NOW", wait = "WAIT", alternative = "CO
 struct Product: Identifiable {
     let id = UUID()
     let name: String
-    let retailer: String
+    var retailer: String
     var price: String
     let icon: String
     var verdict: Verdict
@@ -16,6 +16,9 @@ struct Product: Identifiable {
     var projectedLow: String
     var productId: String? = nil
     var isSampleData = false
+    // What a real check saw and was told (Models/ScanArchive.swift); nil only for demo products, the only ones
+    // that get demo numbers.
+    var check: CheckSnapshot? = nil
 }
 
 enum Demo {

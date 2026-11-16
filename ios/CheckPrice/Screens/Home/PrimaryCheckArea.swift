@@ -1,6 +1,6 @@
 // Home's first screen: the app's main function, capture → analyzing → verdict reveal. Self-contained so the final animation (not decided yet) can replace it whole.
 // Check price sends a store link on the clipboard, or else a picked screenshot, to the backend
-// (Backend/Backend.swift). Builds without a backend key, and `-autoReveal YES`, run the demo on `Demo.headphones`.
+// (Backend/Backend.swift). `-autoReveal YES` runs the demo on `Demo.headphones`; a build without a backend key says so.
 import PhotosUI
 import ShopperKit
 import SwiftUI
@@ -136,7 +136,11 @@ struct PrimaryCheckArea: View {
     // A store link on the clipboard is checked right away; otherwise the user picks a screenshot.
     private func start() {
         failure = nil
-        guard !(Backend.config.apiKey ?? "").isEmpty else { return startDemo() }
+        // No key: say so. A made-up verdict would pass for a real check; the demo runs only from `-autoReveal YES`.
+        guard !(Backend.config.apiKey ?? "").isEmpty else {
+            failure = ShopperError.notConfigured.message
+            return
+        }
         if UIPasteboard.general.hasURLs, let url = UIPasteboard.general.url, url.scheme?.hasPrefix("http") == true {
             checkingLabel = url.host()?.replacingOccurrences(of: "www.", with: "")
             run { await CheckRunner.run(url: url) }

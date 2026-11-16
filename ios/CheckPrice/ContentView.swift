@@ -37,7 +37,7 @@ struct ContentView: View {
         // checkprice://product/<productId> (ProductLink) opens that product's thread.
         .onOpenURL { url in
             guard let productId = ProductLink.productId(from: url) else { return }
-            Task { await store.openProduct(productId) }
+            store.openProduct(productId)
         }
         .onAppear {
             guard !didHandleLaunch else { return }
