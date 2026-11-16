@@ -35,7 +35,9 @@ private struct VerdictStack: View {
             Text(state.word)
                 .font(IslandType.word(wordSize))
                 .foregroundStyle(Color.white.opacity(0.96))
-                .contentTransition(.opacity)
+                // Swap words outright: a crossfade over the update's ~1.5 s leaves two
+                // words on top of each other for most of the time.
+                .contentTransition(.identity)
             if let reason = state.shownReason {
                 Text(reason)
                     .font(IslandType.reason(reasonSize))
@@ -90,10 +92,10 @@ private enum Canvas {
 }
 
 private enum Compact {
-    static let width: CGFloat = 96
+    static let width: CGFloat = 88
     // Each compact slot fades into the black around the camera instead of ending in a hard edge.
     static func fade(toward edge: HorizontalEdge) -> LinearGradient {
-        let stops: [Gradient.Stop] = [.init(color: .black, location: 0), .init(color: .black, location: 0.8),
+        let stops: [Gradient.Stop] = [.init(color: .black, location: 0), .init(color: .black, location: 0.86),
                                       .init(color: .clear, location: 1)]
         return LinearGradient(stops: stops,
                               startPoint: edge == .trailing ? .leading : .trailing,
@@ -136,6 +138,7 @@ struct CheckLiveActivity: Widget {
                 // keeps the pill even on both sides of the camera.
                 Color.clear
                     .frame(width: Compact.width)
+                    .frame(maxHeight: .infinity)
                     .islandField(s, Canvas.compact)
                     .mask(Compact.fade(toward: .trailing))
             } compactTrailing: {
@@ -143,18 +146,20 @@ struct CheckLiveActivity: Widget {
                     .font(IslandType.word(13))
                     .foregroundStyle(Color.white.opacity(0.96))
                     .lineLimit(1)
-                    // The longest word ("Markdownmusing") is about 125 pt at 13 pt; it shrinks
+                    // The longest word ("Markdownmusing") is about 120 pt at 13 pt; it shrinks
                     // to fit rather than widen the island.
-                    .minimumScaleFactor(0.7)
-                    .padding(.horizontal, 6)
+                    .minimumScaleFactor(0.55)
+                    .contentTransition(.identity)
+                    .padding(.leading, 10)
+                    .padding(.trailing, 4)
                     .frame(width: Compact.width)
-                    .contentTransition(.opacity)
+                    .frame(maxHeight: .infinity)
                     .islandField(s, Canvas.compact)
                     .mask(Compact.fade(toward: .leading))
             } minimal: {
                 Color.clear.islandField(s, Canvas.compact)
             }
-            .contentMargins(.all, -12, for: .expanded)
+            .contentMargins(.all, 0, for: .expanded)
             .contentMargins(.all, 0, for: .compactLeading)
             .contentMargins(.all, 0, for: .compactTrailing)
             .contentMargins(.all, 0, for: .minimal)

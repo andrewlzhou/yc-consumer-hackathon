@@ -70,10 +70,10 @@ struct WispField: View {
     }
 
     private static let wisps: [Wisp] = [
-        Wisp(x: 0.22, y: 0.60, width: 0.55, height: 0.22, angle: -12, opacity: 0.30),
-        Wisp(x: 0.64, y: 0.36, width: 0.60, height: 0.18, angle: 8, opacity: 0.24),
-        Wisp(x: 0.86, y: 0.76, width: 0.50, height: 0.30, angle: -6, opacity: 0.32),
-        Wisp(x: 0.42, y: 0.88, width: 0.70, height: 0.26, angle: 4, opacity: 0.55, bright: true),
+        Wisp(x: 0.22, y: 0.55, width: 0.60, height: 0.14, angle: -14, opacity: 0.40),
+        Wisp(x: 0.62, y: 0.32, width: 0.70, height: 0.10, angle: 9, opacity: 0.30),
+        Wisp(x: 0.85, y: 0.72, width: 0.50, height: 0.16, angle: -8, opacity: 0.38),
+        Wisp(x: 0.40, y: 0.85, width: 0.70, height: 0.20, angle: 4, opacity: 0.55, bright: true),
     ]
 
     var body: some View {
@@ -123,7 +123,7 @@ struct WispField: View {
             .fill(w.bright ? palette.liftBright : palette.fog)
             .frame(width: size.width * w.width, height: size.height * w.height)
             .rotationEffect(.degrees(tilt))
-            .blur(radius: max(size.height * 0.12, 1.5))
+            .blur(radius: max(size.height * 0.07, 1.5))
             .opacity(w.opacity)
             .position(x: size.width * (w.x + dx), y: size.height * (w.y + dy))
     }
