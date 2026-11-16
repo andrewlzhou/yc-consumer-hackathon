@@ -13,6 +13,8 @@ struct CompactVerdictView: View {
     let failure: String?
     let isSampleData: Bool
     let checkId: String?
+    // The canned demo's own words; nil for every real verdict.
+    var demoLabel: String? = nil
 
     private let ink = Palette.canvas
     // Darker than system blue so its white label stays above 4.5:1 (Ruhaan asked for a blue way into the app).
@@ -37,7 +39,7 @@ struct CompactVerdictView: View {
     private func card(_ verdict: Verdict) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(alignment: .center, spacing: 8) {
-                Text(verdict.compactLabel)
+                Text(demoLabel ?? verdict.compactLabel)
                     .font(.hiragino(.w7, size: 24, relativeTo: .title2))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
@@ -61,7 +63,7 @@ struct CompactVerdictView: View {
     }
 
     private func spoken(_ verdict: Verdict) -> String {
-        verdict.compactSpokenLabel + (isSampleData ? ", sample data" : "")
+        (demoLabel ?? verdict.compactSpokenLabel) + (isSampleData ? ", sample data" : "")
     }
 }
 

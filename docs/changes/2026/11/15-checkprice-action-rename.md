@@ -8,7 +8,7 @@
   verdict and opens the app on that check's own saved thread. Debug builds note taps that reach the app
   (`checkprice.opens`).
 - Changed: an opt-in canned demo. A Debug build made with the compilation condition `CHECKPRICE_DEMO_BUY` (one line
-  in the git-ignored `Config/Secrets.xcconfig`) answers every scan with BUY and More Details: no text reading, no
+  in the git-ignored `Config/Secrets.xcconfig`) answers every scan with "BUY NOW" and More Details: no text reading, no
   backend call, no saved check. Off by default and impossible in Release; the live path is unchanged when it is off.
 - Checks: `python3 scripts/check_docs.py`. Before the demo flag: 20 app tests passed on a cloud runner with no key.
   The demo commit was pushed before its own cloud run; see the PR for that result.

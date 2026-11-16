@@ -79,18 +79,21 @@ struct VerdictSnippetIntent: SnippetIntent {
     @Parameter(title: "Sample data", default: false) var isSampleData: Bool
     // The saved check's own id (its thread), so More Details opens exactly this check.
     @Parameter(title: "Check") var checkId: String?
+    // Only the canned demo sets this ("BUY NOW"); a real verdict always shows its own word.
+    @Parameter(title: "Demo label") var demoLabel: String?
 
     init() {}
 
     func perform() async throws -> some IntentResult & ShowsSnippetView {
         .result(view: CompactVerdictView(verdict: verdict.flatMap(Verdict.init(rawValue:)), failure: failure,
-                                         isSampleData: isSampleData, checkId: checkId))
+                                         isSampleData: isSampleData, checkId: checkId, demoLabel: demoLabel))
     }
 
-    // The canned demo's popup (DemoVerdict): BUY on green with More Details, which opens the app. No thread.
+    // The canned demo's popup (DemoVerdict): "BUY NOW" on green with More Details, which opens the app. No thread.
     static func demo() -> VerdictSnippetIntent {
         var snippet = VerdictSnippetIntent()
         snippet.verdict = Verdict.buyNow.rawValue
+        snippet.demoLabel = "BUY NOW"
         return snippet
     }
 
