@@ -1,8 +1,7 @@
 // The Account tab, laid out the way Instagram's profile page is: handle and a gear (opens the
 // Settings sheet) in the top bar, avatar beside three counts, name and bio (each only when set),
-// Edit profile and Share profile keys, then a grid of the user's threads under two icon tabs
-// (Hearted, Saved). The counts are Check Price's own: checks,
-// saved threads, and the money saved by waiting on saved threads.
+// Edit profile and Share profile keys, then a grid of the user's saved threads. The counts are
+// Check Price's own: checks, saved threads, and the money saved by waiting on saved threads.
 import SwiftUI
 
 struct AccountView: View {
@@ -11,7 +10,6 @@ struct AccountView: View {
     @AppStorage(ProfileKeys.bio) private var bio = ""
     @State private var editing = false
     @State private var settingsOpen = false
-    @State private var shelf: ProfileShelf = .hearted
 
     @Environment(ThreadStore.self) private var store
 
@@ -21,9 +19,8 @@ struct AccountView: View {
                 VStack(alignment: .leading, spacing: 0) {
                     header
                     actions.padding(.top, 16)
-                    ProfileShelfPicker(selection: $shelf).padding(.top, 24)
-                    ProfileGrid(threads: shelf == .hearted ? store.hearted : store.saved, shelf: shelf)
-                        .padding(.top, 12)
+                    ProfileGrid(threads: store.saved)
+                        .padding(.top, 24)
                 }
                 .padding(.horizontal, Spacing.screenMargin)
                 .padding(.bottom, 32)
@@ -116,15 +113,6 @@ struct AccountView: View {
         let who = handle.isEmpty ? (name.isEmpty ? "I'm" : "\(name) is") : "@\(handle) is"
         return "\(who) checking prices with Check Price."
     }
-}
-
-// The two tabs under the profile, like Instagram's grid and tagged tabs.
-enum ProfileShelf: String, CaseIterable, Identifiable {
-    case hearted, saved
-
-    var id: Self { self }
-    var title: String { self == .hearted ? "Hearted" : "Saved" }
-    var symbol: String { self == .hearted ? "heart" : "bookmark" }
 }
 
 // Where the profile fields are kept on the device. Nothing is sent anywhere.

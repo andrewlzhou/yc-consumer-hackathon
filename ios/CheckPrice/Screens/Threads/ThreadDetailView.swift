@@ -1,6 +1,6 @@
-// One thread: the report about the purchase, a row with the check's time plus heart and save, then
-// the chat, with the input bar pinned to the bottom. Heart and save sit in the content (not the
-// navigation bar), so they show both when pushed from Threads and when Home presents it as a sheet.
+// One thread: the report about the purchase, a row with the check's time and save, then the chat,
+// with the input bar pinned to the bottom. Save sits in the content (not the navigation bar), so it
+// shows both when pushed from Threads and when Home presents it as a sheet.
 import SwiftUI
 
 struct ThreadDetailView: View {
@@ -33,7 +33,6 @@ struct ThreadDetailView: View {
                 VStack(alignment: .leading, spacing: 28) {
                     ThreadDetailReport(product: thread.product, report: thread.report, revealed: revealed)
                     ThreadDetailActions(thread: thread,
-                                        onHeart: { store.toggleHeart(thread.id) },
                                         onSave: { store.toggleSave(thread.id) })
                         .modifier(ThreadDetailArrive(index: 4, revealed: revealed, reduceMotion: reduceMotion))
                     ChatColumn(
@@ -87,10 +86,9 @@ struct ThreadDetailView: View {
     }
 }
 
-// When the check happened, then heart (a favourite) and save.
+// When the check happened, then save.
 private struct ThreadDetailActions: View {
     let thread: ShoppingThread
-    let onHeart: () -> Void
     let onSave: () -> Void
 
     var body: some View {
@@ -100,29 +98,8 @@ private struct ThreadDetailActions: View {
                 .monospacedDigit()
                 .foregroundStyle(Palette.textTertiary)
             Spacer(minLength: 8)
-            heartButton
             saveButton
         }
-    }
-
-    private var heartButton: some View {
-        Button(action: onHeart) {
-            Image(systemName: thread.isHearted ? "heart.fill" : "heart")
-                .font(.hiragino(.w6, size: 15))
-                .foregroundStyle(.white.opacity(thread.isHearted ? 0.94 : 0.6))
-                .contentTransition(.symbolEffect(.replace))
-                .symbolEffect(.bounce, value: thread.isHearted)
-                .frame(width: ControlHeight.smallKey, height: ControlHeight.smallKey)
-                .background { Circle().fill(.white.opacity(thread.isHearted ? 0.22 : 0.07)) }
-                .overlay { Circle().strokeBorder(.white.opacity(thread.isHearted ? 0.24 : 0.12), lineWidth: 1) }
-                .scaleEffect(thread.isHearted ? 1.08 : 1)
-                .frame(width: ControlHeight.minTouch, height: ControlHeight.minTouch)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(IconPressStyle())
-        .animation(Motion.appear, value: thread.isHearted)
-        .sensoryFeedback(.impact(weight: .light), trigger: thread.isHearted)
-        .accessibilityLabel(thread.isHearted ? "Remove heart" : "Heart")
     }
 
     private var saveButton: some View {

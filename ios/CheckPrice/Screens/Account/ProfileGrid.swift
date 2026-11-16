@@ -1,50 +1,10 @@
-// The lower half of Account: two tabs (Hearted, Saved) over a three-column grid of threads, the
-// way Instagram shows posts under a profile. Tapping a tile opens that thread.
+// The lower half of Account: the saved threads as a three-column grid, the way Instagram shows
+// posts under a profile. Tapping a tile opens that thread.
 import SwiftUI
 
-// Icon tabs with a sliding underline under the chosen one, on a full-width hairline. The word is
-// for VoiceOver only.
-struct ProfileShelfPicker: View {
-    @Binding var selection: ProfileShelf
-    @Namespace private var underline
-
-    var body: some View {
-        HStack(spacing: 0) {
-            ForEach(ProfileShelf.allCases) { shelf in
-                let chosen = shelf == selection
-                Button {
-                    withAnimation(Motion.layout) { selection = shelf }
-                } label: {
-                    VStack(spacing: 10) {
-                        Image(systemName: chosen ? "\(shelf.symbol).fill" : shelf.symbol)
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundStyle(chosen ? Palette.textPrimary : Palette.textTertiary)
-                        ZStack {
-                            if chosen {
-                                Capsule()
-                                    .fill(Palette.textPrimary)
-                                    .matchedGeometryEffect(id: "underline", in: underline)
-                            }
-                        }
-                        .frame(height: 1.5)
-                    }
-                    .frame(maxWidth: .infinity, minHeight: ControlHeight.minTouch, alignment: .bottom)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(shelf.title)
-                .accessibilityAddTraits(chosen ? .isSelected : [])
-            }
-        }
-        .overlay(alignment: .bottom) { Hairline() }
-        .sensoryFeedback(.selection, trigger: selection)
-    }
-}
-
-// Three square tiles per row; nothing when the shelf is empty.
+// Three square tiles per row; nothing when there are no saved threads.
 struct ProfileGrid: View {
     let threads: [ShoppingThread]
-    let shelf: ProfileShelf
     @Environment(ThreadStore.self) private var store
 
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 8), count: 3)
@@ -68,7 +28,6 @@ struct ProfileGrid: View {
         }
         .animation(Motion.emptyStateSwap, value: threads.isEmpty)
         .animation(Motion.rise, value: threads.map(\.id))
-        .id(shelf)
     }
 }
 
