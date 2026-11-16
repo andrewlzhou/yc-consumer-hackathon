@@ -70,10 +70,10 @@ struct WispField: View {
     }
 
     private static let wisps: [Wisp] = [
-        Wisp(x: 0.22, y: 0.60, width: 0.55, height: 0.22, angle: -12, opacity: 0.16),
-        Wisp(x: 0.64, y: 0.36, width: 0.60, height: 0.18, angle: 8, opacity: 0.12),
-        Wisp(x: 0.86, y: 0.76, width: 0.50, height: 0.30, angle: -6, opacity: 0.20),
-        Wisp(x: 0.42, y: 0.88, width: 0.70, height: 0.26, angle: 4, opacity: 0.38, bright: true),
+        Wisp(x: 0.22, y: 0.60, width: 0.55, height: 0.22, angle: -12, opacity: 0.30),
+        Wisp(x: 0.64, y: 0.36, width: 0.60, height: 0.18, angle: 8, opacity: 0.24),
+        Wisp(x: 0.86, y: 0.76, width: 0.50, height: 0.30, angle: -6, opacity: 0.32),
+        Wisp(x: 0.42, y: 0.88, width: 0.70, height: 0.26, angle: 4, opacity: 0.55, bright: true),
     ]
 
     var body: some View {

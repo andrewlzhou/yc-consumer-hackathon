@@ -91,6 +91,14 @@ private enum Canvas {
 
 private enum Compact {
     static let width: CGFloat = 96
+    // Each compact slot fades into the black around the camera instead of ending in a hard edge.
+    static func fade(toward edge: HorizontalEdge) -> LinearGradient {
+        let stops: [Gradient.Stop] = [.init(color: .black, location: 0), .init(color: .black, location: 0.8),
+                                      .init(color: .clear, location: 1)]
+        return LinearGradient(stops: stops,
+                              startPoint: edge == .trailing ? .leading : .trailing,
+                              endPoint: edge == .trailing ? .trailing : .leading)
+    }
 }
 
 private extension View {
@@ -116,8 +124,8 @@ struct CheckLiveActivity: Widget {
             return DynamicIsland {
                 // Leading and trailing carry only the field (the leading slot is kept for a
                 // future logo); the words sit centred in the bottom region.
-                DynamicIslandExpandedRegion(.leading) { Color.clear.islandField(s, big) }
-                DynamicIslandExpandedRegion(.trailing) { Color.clear.islandField(s, big) }
+                DynamicIslandExpandedRegion(.leading) { Color.clear.frame(height: 30).islandField(s, big) }
+                DynamicIslandExpandedRegion(.trailing) { Color.clear.frame(height: 30).islandField(s, big) }
                 DynamicIslandExpandedRegion(.bottom) {
                     VerdictStack(state: s)
                         .frame(height: s.isChecking ? 40 : 60)
@@ -129,6 +137,7 @@ struct CheckLiveActivity: Widget {
                 Color.clear
                     .frame(width: Compact.width)
                     .islandField(s, Canvas.compact)
+                    .mask(Compact.fade(toward: .trailing))
             } compactTrailing: {
                 Text(s.word)
                     .font(IslandType.word(13))
@@ -141,10 +150,11 @@ struct CheckLiveActivity: Widget {
                     .frame(width: Compact.width)
                     .contentTransition(.opacity)
                     .islandField(s, Canvas.compact)
+                    .mask(Compact.fade(toward: .leading))
             } minimal: {
                 Color.clear.islandField(s, Canvas.compact)
             }
-            .contentMargins(.all, 0, for: .expanded)
+            .contentMargins(.all, -12, for: .expanded)
             .contentMargins(.all, 0, for: .compactLeading)
             .contentMargins(.all, 0, for: .compactTrailing)
             .contentMargins(.all, 0, for: .minimal)
