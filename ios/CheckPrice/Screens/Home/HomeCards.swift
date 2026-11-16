@@ -203,7 +203,9 @@ private extension View {
 // A thread's recent prices for the sparkline: one point a day (the lowest, when several stores
 // report), the last 90 days and today, and whether the price dropped recently: today at least 5%
 // under the highest price of the past 30 days. Demo threads use their sample history; checked ones
-// the backend's, once the report is in.
+// the backend's, once the report is in. Prices inside a past sale window are left out: at 64 pt a
+// few-day sale is a vertical tick from top to bottom and back (every demo history has Labor Day's
+// near the 90-day edge), and the report's chart shows sales, shaded. Zero prices are left out too.
 struct HomeTrend {
     let points: [(day: Date, price: Double)]
     let dropped: Bool
@@ -215,9 +217,14 @@ struct HomeTrend {
             : thread.report.flatMap { ThreadDetailFigures(report: $0, product: product) }
         guard let figures, figures.current > 0 else { return nil }
 
+        let sales = figures.sales.compactMap { sale -> ClosedRange<Date>? in
+            guard let start = ChartFormat.day(sale.startsAt) else { return nil }
+            return start...max(start, ChartFormat.day(sale.endsAt) ?? start)
+        }
         var lowest: [Date: Double] = [:]
-        for point in figures.history {
-            guard let day = ChartFormat.day(point.date), day >= today.addingTimeInterval(-90 * 86_400) else { continue }
+        for point in figures.history where point.price > 0 {
+            guard let day = ChartFormat.day(point.date), day >= today.addingTimeInterval(-90 * 86_400),
+                  !sales.contains(where: { $0.contains(day) }) else { continue }
             lowest[day] = min(lowest[day] ?? point.price, point.price)
         }
         let recent = lowest.sorted { $0.key < $1.key }.map { (day: $0.key, price: $0.value) }
@@ -249,7 +256,16 @@ private struct HomeSparkline: View {
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)
         .chartLegend(.hidden)
-        .chartYScale(domain: .automatic(includesZero: false))
+        .chartYScale(domain: yDomain)
         .accessibilityHidden(true)
+    }
+
+    // The prices' min to max with 15% room either side, counting a flat line as a dollar tall.
+    private var yDomain: ClosedRange<Double> {
+        let prices = trend.points.map(\.price)
+        let lo = prices.min() ?? 0
+        let hi = prices.max() ?? 0
+        let pad = max(hi - lo, 1) * 0.15
+        return (lo - pad)...(hi + pad)
     }
 }
