@@ -1,4 +1,5 @@
-// Shortcut actions. Back Tap runs a shortcut: Take Screenshot, then "Check Price in Screenshot". The check runs in
+// Shortcut actions. Back Tap runs a shortcut: Take Screenshot, then "Scan Screen with Check Price" (named apart from the Worth It
+// test app's "Check Price in Screenshot", so the two can't be mixed up in Shortcuts). The check runs in
 // the background so the store app stays in front, and iOS shows the compact result (CompactVerdictView) as a
 // snippet. Tapping it (More Details) runs OpenProductIntent, which brings Check Price forward on that product's thread.
 // The system's own Done button and the platter around the snippet are drawn by iOS and can't be changed.
@@ -10,7 +11,7 @@ import ShopperKit
 
 @available(iOS 26.0, *)
 struct CheckScreenshotIntent: AppIntent {
-    static let title: LocalizedStringResource = "Check Price in Screenshot"
+    static let title: LocalizedStringResource = "Scan Screen with Check Price"
     static let description = IntentDescription("Reads the product on screen on this iPhone and says whether to buy it now. The screenshot never leaves the phone.")
     static let supportedModes: IntentModes = .background
 

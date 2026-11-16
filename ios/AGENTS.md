@@ -27,7 +27,7 @@
 
 ## Back Tap result (App Intents, iOS 26+)
 
-- Shortcut actions in `CheckPrice/Intents/`: Check Price in Screenshot (Back Tap: Take Screenshot, then this) and Check Price of Link. They run in the background and return a compact snippet (`CompactVerdictView`).
+- Shortcut actions in `CheckPrice/Intents/`: **Scan Screen with Check Price** (Back Tap: Take Screenshot, then this) and Check Price of Link. The screenshot action is titled exactly that (Ruhaan, 2026-11-15) so it can't be mistaken for the Worth It test app's "Check Price in Screenshot". They run in the background and return a compact snippet (`CompactVerdictView`).
 - The popup is decision only (Ruhaan, 2026-11-15): the verdict colour, one word, and a blue button titled exactly **More Details**. No reason, title, confidence or timings. "Sample data" shows only when the evidence is seeded. Words, one per backend verdict (`Verdict.compactLabel`): BUY, WAIT, LOOK ELSEWHERE, INDETERMINATE. The island keeps its own words.
 - A tap anywhere on the result runs `OpenProductIntent` (foreground): `ThreadStore.openProduct` opens the newest check of that `productId`. `checkprice://product/<productId>` does the same; links carry only the opaque id. A product never checked on this phone opens nothing.
 - iOS draws the platter and its Done button; an app can't rename, restyle or remove them.

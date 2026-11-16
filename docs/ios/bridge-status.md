@@ -2,12 +2,12 @@
 
 - Goal (CON-14): store screen -> Back Tap -> Shortcut -> on-device text reading -> live backend -> one-word verdict ->
   More Details -> that product's report in the Check Price app on `main`.
-- Branch `ruhaan_ios_bridge` (from `main`), draft PR #2. Source owner: YCCO-13. Device tests: YCCO-10 on Ruhaan's Mac and
-  iPhone. Review: YCCO-15. Nobody merges without Ruhaan. App rules: [ios/AGENTS.md](../../ios/AGENTS.md).
+- On `main` since PR #2, with the owner's redesigned screens since 90edc6c. Source owner: YCCO-13. Device tests: YCCO-10
+  on Ruhaan's Mac and iPhone. Nobody merges without Ruhaan. App rules: [ios/AGENTS.md](../../ios/AGENTS.md).
 
 ## Works (unit tests and a cloud simulator with a mock backend, fake key)
 
-- Shortcut actions "Check Price in Screenshot" and "Check Price of Link" (iOS 26+) return a decision-only popup:
+- Shortcut actions "Scan Screen with Check Price" and "Check Price of Link" (iOS 26+) return a decision-only popup:
   BUY, WAIT, LOOK ELSEWHERE or INDETERMINATE on the verdict colour, with a blue More Details button.
 - A tap on the popup opens Check Price on that check's thread; the popup stays on top until Done is tapped. Checks
   are saved on the phone, so this also works when iOS closed the app in between.
@@ -35,7 +35,8 @@
 
 1. Pull `ruhaan_ios_bridge`; keep the real key only in the git-ignored `ios/Config/Secrets.xcconfig` on the Mac.
 2. `cd ios && xcodegen generate`, then build and run a Debug build on the iPhone with local signing.
-3. Shortcuts: Take Screenshot, then Check Price in Screenshot (Check Price), with Show When Run on. Back Tap runs it.
+3. Shortcuts: Take Screenshot, then Scan Screen with Check Price, its Screenshot field set to the Screenshot variable (long-press
+   the field if it says Choose), Show When Run on. Back Tap runs it. Worth It's own action is a different one.
 4. On a store product page, double-tap the back. Expect a coloured one-word popup with More Details; tap it.
 5. Read the proof: `xcrun devicectl device copy from --domain-type appDataContainer --domain-identifier <bundle id>
    --source Library/Preferences/<bundle id>.plist`, key `checkprice.scans`. Each run has `fileKind` (expect
