@@ -6,18 +6,16 @@ import SwiftUI
 // `ThreadStore.openThreadID`; this view presents it and clears it on dismiss.
 //
 // Launch arguments for screenshots and cloud devices: `-startTab home|threads|account` opens on
-// that tab, `-autoReveal YES` runs Home's check demo (analyzing → reveal sheet) on launch, and
-// `-openThread YES` opens the newest thread's detail on launch.
+// that tab, and `-openThread YES` opens the newest thread's detail on launch.
 struct ContentView: View {
     @Environment(ThreadStore.self) private var store
     @State private var tab = AppTab(rawValue: UserDefaults.standard.string(forKey: "startTab") ?? "") ?? .home
-    @State private var autoReveal = UserDefaults.standard.bool(forKey: "autoReveal")
     @State private var didHandleLaunch = false
 
     var body: some View {
         TabView(selection: $tab) {
             Tab(value: AppTab.home) {
-                screen(HomeView(autoReveal: $autoReveal, showLibrary: { tab = .threads }))
+                screen(HomeView(showLibrary: { tab = .threads }))
             } label: { label(.home) }
             Tab(value: AppTab.threads) {
                 screen(ThreadsView())

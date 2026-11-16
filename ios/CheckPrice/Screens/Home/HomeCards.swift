@@ -1,63 +1,11 @@
 // Home's cards, after the cards on the Truck page of Apple's Food Truck sample (`TruckOrdersCard`,
 // `TruckWeatherCard`, `CardNavigationHeader`; MIT-style Apple sample licence): a header row over
-// the card's content, a `Grid` row of equal-height tiles fixed to their natural height, and Swift
-// Charts with the axes hidden for small trend lines. Ours are flat `FlatCard`s on the backdrop, in
-// Hiragino, with no icons in the headers.
+// the card's content, and Swift Charts with the axes hidden for small trend lines. Ours are flat
+// `FlatCard`s on the backdrop, in Hiragino, with no icons in the headers. The three counts are in
+// `StatStrip.swift`; `HomeCard` also frames the Shopping stats cards.
 import Charts
 import ShopperKit
 import SwiftUI
-
-// Three counts in equal tiles: money saved by waiting on saved threads (`SavedByWaiting`, kept in
-// Account/AccountView.swift), how many threads are saved, and how many checks were made this month.
-struct HomeSummaryRow: View {
-    let threads: [ShoppingThread]
-    let saved: [ShoppingThread]
-
-    var body: some View {
-        let waited = SavedByWaiting.total(saved)
-        let thisMonth = threads.filter { Calendar.current.isDate($0.startedAt, equalTo: .now, toGranularity: .month) }.count
-        Grid(horizontalSpacing: 12) {
-            GridRow {
-                HomeSummaryTile(value: SavedByWaiting.format(waited), number: Double(waited), label: "Saved by waiting")
-                HomeSummaryTile(value: "\(saved.count)", number: Double(saved.count), label: "Watching")
-                HomeSummaryTile(value: "\(thisMonth)", number: Double(thisMonth), label: "Checks")
-            }
-        }
-        // Food Truck's trick: the grid takes its natural height, so the tiles share the tallest one's.
-        .fixedSize(horizontal: false, vertical: true)
-    }
-}
-
-private struct HomeSummaryTile: View {
-    let value: String
-    let number: Double
-    let label: String
-
-    var body: some View {
-        FlatCard(cornerRadius: Radius.listCard) {
-            VStack(alignment: .leading, spacing: 6) {
-                Text(value)
-                    .font(.hiragino(.w6, size: 22, relativeTo: .title2))
-                    .monospacedDigit()
-                    .foregroundStyle(Palette.textPrimary)
-                    .contentTransition(.numericText(value: number))
-                    .animation(Motion.valueChange, value: number)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                Text(label)
-                    .textStyle(.caption)
-                    .foregroundStyle(Palette.textSecondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
 
 // Every saved thread: picture, name, today's price and the predicted low, and a small line of the
 // last three months' prices. An orange dot ends the line when the price dropped recently. Tapping a
@@ -153,7 +101,7 @@ struct HomeRecentChecksCard: View {
 
 // A card: its title (and "See all" when given) over rows. Rows reach to 6pt inside the card's
 // edge so their pressed fill has room; their own padding puts content on the header's margin.
-private struct HomeCard<Content: View>: View {
+struct HomeCard<Content: View>: View {
     let title: String
     var seeAll: (() -> Void)? = nil
     @ViewBuilder let content: Content

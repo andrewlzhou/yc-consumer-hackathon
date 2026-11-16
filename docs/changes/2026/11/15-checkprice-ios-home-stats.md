@@ -1,0 +1,10 @@
+# 2026-11-15 Check Price iPhone: Home stat strip, Back to Shopping, Shopping stats, no plus button
+
+- Author: Claude (Opus agent), for Andrew (via the coordinating session).
+- Instructions: owner: centre the three Home counts and connect them into one card; push Home's content down; add a "Back to Shopping" button that opens stats on where you shop (Amazon, Lewkin, etc.), "basically more stats"; then "get rid of that + button as well". Saved in `ios/AGENTS.md` (Backend, Files, launch arguments).
+- Changed: the three tiles became `Home/StatStrip` (one card, three equal centred segments, hairlines between; "Saved by waiting" shortened to "Saved"). Home's content starts about a third of the way down. "Back to Shopping" uses the orange `KeyButtonStyle` key, the one primary element on Home, and pushes `Home/ShoppingStatsView`: checks per store (bars, top store orange), a Saved this year / Checks / Bought strip, the verdict split (stacked bar in verdict colours; the legend uses `Verdict.word`, so "Buy" not "Buy now"), checks by month (smooth line), and categories.
+- Removed: Home's round "+" check button, the check sheet (`Home/CheckFlow.swift`: clipboard/screenshot start, analyzing, reveal) and the `-autoReveal YES` launch argument that ran it. The app no longer has an in-app way to start a check; checks are meant to come from the Shortcut / Back Tap, which are not built yet, so today nothing starts one. `CheckRunner` (Backend) and `CheckActivity` (pop-up) are kept for that path but have no in-app caller, apart from the `-demoLiveActivity` demo.
+- Sample data: every stats number is invented (`ShoppingStatsSample.isSampleData`). The parts agree: 38 checks across stores, verdicts, months and categories.
+- The stats cards have titles ("Where you shop", "Verdicts", ...) as the request listed them, though the design rules discourage labels that only name a section; the owner may want some removed.
+- Checks: `ios/scripts/typecheck.sh` passed (app and widget). `python3 scripts/check_docs.py` passed.
+- Next: not seen on a device or simulator: the top spacing, the strip's hairlines, the charts' fonts and layout.
