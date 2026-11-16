@@ -3,6 +3,7 @@ import { internal } from "../_generated/api";
 import type { Id } from "../_generated/dataModel";
 import { internalAction, internalMutation, internalQuery } from "../_generated/server";
 import { normalizeRetailer } from "../data/retailers";
+import { parseUrl } from "../data/sources/stores/url";
 import { decideMatch } from "./identify";
 import { rateLimiter } from "./limits";
 
@@ -25,6 +26,54 @@ export function normalizeUrl(raw: string): string | null {
   } catch {
     return null;
   }
+}
+
+// Amazon app shares are short links (a.co/d/..., amzn.to/...). Only these hosts are expanded, and only into Amazon.
+const SHORT_HOSTS = new Set(["a.co", "amzn.to", "amzn.com", "www.amzn.com"]);
+const AMAZON_HOSTS = new Set(["amazon.com", "www.amazon.com"]);
+const SHORT_LINK_HOPS = 3;
+const SHORT_LINK_TIMEOUT_MS = 5000;
+
+function safeUrl(raw: string, base?: string): URL | null {
+  try {
+    const u = new URL(raw, base);
+    return /^https?:$/.test(u.protocol) && !u.username && !u.password && !u.port ? u : null;
+  } catch {
+    return null;
+  }
+}
+
+export function isAmazonShortLink(raw: string): boolean {
+  const u = safeUrl(raw);
+  return !!u && SHORT_HOSTS.has(u.hostname.toLowerCase()) && /^\/(?:d\/)?[A-Za-z0-9]{4,20}\/?$/.test(u.pathname);
+}
+
+// Follows at most three redirects without reading any page, each to an Amazon short-link or amazon.com host over
+// https, and returns the canonical amazon.com/dp/ASIN link it lands on. Any other host, status, or path gives null,
+// so a short link can never point this server at an arbitrary site.
+export async function expandShortLink(raw: string, fetchFn: typeof fetch = fetch): Promise<string | null> {
+  let url = safeUrl(raw);
+  for (let hop = 0; url && hop <= SHORT_LINK_HOPS; hop++) {
+    const host = url.hostname.toLowerCase();
+    if (AMAZON_HOSTS.has(host)) {
+      const parsed = parseUrl(url.toString());
+      return parsed?.retailer === "amazon" && parsed.productCode ? parsed.url : null;
+    }
+    if (!SHORT_HOSTS.has(host) || hop === SHORT_LINK_HOPS) return null;
+    url.protocol = "https:";
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), SHORT_LINK_TIMEOUT_MS);
+    try {
+      const res = await fetchFn(url.toString(), { redirect: "manual", signal: ctl.signal });
+      const location = res.status >= 300 && res.status < 400 ? res.headers.get("location") : null;
+      url = location ? safeUrl(location, url.toString()) : null;
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return null;
 }
 
 export const lookup = internalQuery({
@@ -79,13 +128,19 @@ export const resolveInBackground = internalAction({
     if (!key || !(await ctx.runMutation(internal.agent.urls.claim, { url: key, now: Date.now() }))) return null;
     let resolved: Resolved = null;
     let error: string | undefined;
-    try {
-      resolved = await ctx.runAction(internal.data.sources.stores.resolve.resolveUrl, { url: args.url, title: args.title, retailer: args.retailer });
-    } catch (e) {
-      error = `resolver: ${String(e).slice(0, 200)}`;
-    }
+    const url = isAmazonShortLink(args.url) ? await expandShortLink(args.url) : args.url;
+    const parsed = url ? parseUrl(url) : null;
+    const asin = parsed?.retailer === "amazon" ? parsed.productCode : undefined;
+    const byAsin = asin ? await ctx.runQuery(internal.data.catalog.productByAsin, { asin: asin.toUpperCase() }) : null;
+    if (!url) error = "short link did not lead to an Amazon product";
+    else if (!byAsin)
+      try {
+        resolved = await ctx.runAction(internal.data.sources.stores.resolve.resolveUrl, { url, title: args.title, retailer: args.retailer });
+      } catch (e) {
+        error = `resolver: ${String(e).slice(0, 200)}`;
+      }
     const title = resolved?.title ?? args.title;
-    let productId = resolved?.productId;
+    let productId = byAsin?._id ?? resolved?.productId;
     if (!productId && title) {
       const decision = decideMatch(await ctx.runQuery(internal.data.catalog.matchProduct, { title, limit: 6 }));
       if (decision.kind === "match") productId = decision.candidate.product._id;
@@ -96,7 +151,7 @@ export const resolveInBackground = internalAction({
     if (!productId || !args.startFullRun) return productId ?? null;
     const scan = {
       title: title ?? null,
-      retailer: normalizeRetailer(resolved?.retailer ?? args.retailer) ?? "unknown",
+      retailer: normalizeRetailer(resolved?.retailer ?? args.retailer ?? parsed?.retailer) ?? "unknown",
       currentPrice: resolved?.currentPrice ?? args.currentPrice ?? null,
       originalPrice: resolved?.originalPrice ?? args.originalPrice ?? null,
     };

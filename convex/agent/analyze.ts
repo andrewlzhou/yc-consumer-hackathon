@@ -4,7 +4,7 @@ import { internalAction, type ActionCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
 import { analyzeResponseValidator, productExtractValidator, type AnalyzeResponse, type Verdict } from "../lib/contract";
 import { KNOWN_RETAILERS, normalizeRetailer } from "../data/retailers";
-import { parseUrl } from "../data/sources/stores/url";
+import { parseUrl, type ParsedUrl } from "../data/sources/stores/url";
 import { rateLimiter } from "./limits";
 import { checkCard, checkGrounding, EvidenceLedger, type Evidence } from "./evidence";
 import { fakeProvider } from "./fake";
@@ -18,13 +18,17 @@ import { dataPort, type DataPort } from "./port";
 import { keyFacts } from "./facts";
 import { buildInsights } from "./insights";
 import { systemPrompt } from "./prompt";
+import { looksPersonal, usableTitle } from "./screenText";
 import { COMPETITOR_TOOLS } from "./tools";
 
 const HOUR = 3_600_000;
 const FULL_CACHE_MS = 12 * HOUR;
 const LIVE_CACHE_MS = HOUR / 2;
 const PRICE_TOLERANCE = 0.02;
-const LIVE_DEADLINE_MS = 4000;
+// The phone waits 5 s; the whole live path (identify, evidence, model) fits in 4 s, and a model call that would
+// start with less than MIN_MODEL_MS left is skipped for the deterministic analyst.
+const LIVE_BUDGET_MS = 4000;
+const MIN_MODEL_MS = 800;
 export const SAMPLE_NOTE = " (sample data)";
 
 const reasoningValidator = v.union(v.literal("none"), v.literal("minimal"), v.literal("low"), v.literal("medium"), v.literal("high"));
@@ -47,7 +51,7 @@ const positive = (n: number | undefined) => (typeof n === "number" && Number.isF
 const orUndefined = <T>(x: T | null) => x ?? undefined;
 
 // Picks among close catalog candidates, or none. The fake (and any model failure) takes the top candidate.
-async function pickCandidate(provider: LlmProvider, model: string, title: string, candidates: MatchCandidate[]): Promise<MatchCandidate | null> {
+async function pickCandidate(provider: LlmProvider, model: string, title: string, candidates: MatchCandidate[], timeoutMs: number): Promise<MatchCandidate | null> {
   if (provider.name === "fake") return candidates[0] ?? null;
   try {
     const result = await provider.turn({
@@ -58,7 +62,7 @@ async function pickCandidate(provider: LlmProvider, model: string, title: string
       tools: [],
       output: { name: "match", schema: { type: "object", properties: { productId: { type: ["string", "null"] } }, required: ["productId"], additionalProperties: false } },
       maxOutputTokens: 60,
-      timeoutMs: 2500,
+      timeoutMs: Math.min(2500, timeoutMs),
     });
     if (result.kind !== "final") return null;
     const id = (JSON.parse(result.text) as { productId: string | null }).productId;
@@ -172,13 +176,22 @@ async function queueFullRun(ctx: ActionCtx, productId: Id<"products">, scan: Sca
   return true;
 }
 
-// A clear catalog match by title, or the fast model's pick among close full-text or hybrid candidates.
-async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, title: string): Promise<MatchCandidate | null> {
+// A clear catalog match by title, or the fast model's pick among close full-text or hybrid candidates. Text that is
+// only OCR lines or a URL slug gets the clear match alone: no embedding or model call sees it, and it stays fast.
+async function identify(data: DataPort, config: ReturnType<typeof agentConfig>, title: string, trusted: boolean, timeoutMs: number): Promise<MatchCandidate | null> {
   const decision = decideMatch(await data.matchProduct(title));
   if (decision.kind === "match") return decision.candidate;
+  if (!trusted || timeoutMs < MIN_MODEL_MS) return null;
   const hybrid = await data.hybridMatch(title);
   const viable = hybrid.mode === "hybrid" ? hybridViable(hybrid.candidates, title) : decision.kind === "ambiguous" ? decision.candidates : [];
-  return viable.length ? pickCandidate(config.provider, config.fast.model, title, viable) : null;
+  return viable.length ? pickCandidate(config.provider, config.fast.model, title, viable, timeoutMs) : null;
+}
+
+// Store codes that name one color (AE 1114_7364_914, Nike FD2722-001): a product matched by title or slug is that
+// variant only when its model is the same code, so another color's history is never shown for this link.
+const COLOR_CODED_STORES = new Set(["ae", "nike"]);
+function otherVariant(product: MatchCandidate["product"], parsed: ParsedUrl | null): boolean {
+  return !!parsed?.productCode && COLOR_CODED_STORES.has(parsed.retailer) && product.model !== parsed.productCode;
 }
 
 const pathValidator = v.union(v.literal("cache"), v.literal("live"), v.literal("heuristic"), v.literal("unknown"));
@@ -203,9 +216,13 @@ export const analyzeScan = internalAction({
     const config = agentConfig();
     const data = dataPort(ctx, now);
     const parsedUrl = args.url ? parseUrl(args.url) : null;
-    const extractedTitle = args.title?.trim() || args.ocrLines?.join(" ").trim() || null;
-    const title = extractedTitle ?? parsedUrl?.titleHint ?? null;
-    const scan: Scan = { title, retailer: normalizeRetailer(args.retailer) ?? parsedUrl?.retailer ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
+    // Only a usable phone title is trusted text. OCR lines (minus personal-looking lines) and URL slugs may find a
+    // clear catalog match, but never create a product, reach a model, or get stored with the scan.
+    const extractedTitle = usableTitle(args.title);
+    const ocrText = extractedTitle ? null : usableTitle((args.ocrLines ?? []).filter((l) => !looksPersonal(l)).join(" "));
+    const title = extractedTitle ?? ocrText ?? parsedUrl?.titleHint ?? null;
+    const remaining = () => LIVE_BUDGET_MS - (Date.now() - started);
+    const scan: Scan = { title: extractedTitle ?? (ocrText ? null : title), retailer: normalizeRetailer(args.retailer) ?? parsedUrl?.retailer ?? "unknown", currentPrice: positive(args.currentPrice), originalPrice: positive(args.originalPrice) };
     const ledger = new EvidenceLedger();
     const timings: Record<string, number> = {};
     let mark = started;
@@ -216,7 +233,7 @@ export const analyzeScan = internalAction({
     };
     const finish = async ({ path, analysisId, evaluation: diagnostics, ...response }: Card): Promise<ScanResult> => {
       const latencyMs = Date.now() - started;
-      if (!evaluation) await ctx.runMutation(internal.agent.store.logScan, { productId: response.productId as Id<"products"> | undefined, title: orUndefined(title), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: response.verdict, path, latencyMs, at: started });
+      if (!evaluation) await ctx.runMutation(internal.agent.store.logScan, { productId: response.productId as Id<"products"> | undefined, title: orUndefined(extractedTitle ?? parsedUrl?.titleHint ?? null), retailerSlug: scan.retailer, price: orUndefined(scan.currentPrice), verdict: response.verdict, path, latencyMs, at: started });
       return { response, path, latencyMs, timings, analysisId, evaluation: diagnostics };
     };
 
@@ -228,19 +245,30 @@ export const analyzeScan = internalAction({
       const product = await data.product(link.productId);
       if (product) match = { product, score: 1, matchedTokens: [], sizeConflict: false } as MatchCandidate;
     }
-    if (!match && title) match = await identify(data, config, title);
-    if (args.url && !link && !evaluation)
+    let byAsin = false;
+    if (!match && parsedUrl?.retailer === "amazon" && parsedUrl.productCode) {
+      const product = await ctx.runQuery(internal.data.catalog.productByAsin, { asin: parsedUrl.productCode.toUpperCase() });
+      if (product) match = { product, score: 1, matchedTokens: [], sizeConflict: false } as MatchCandidate;
+      byAsin = !!product;
+    }
+    if (!match && title) {
+      match = await identify(data, config, title, title === extractedTitle, remaining());
+      if (match && otherVariant(match.product, parsedUrl)) match = null;
+    }
+    if (args.url && !link && !byAsin && !evaluation)
       await ctx.scheduler.runAfter(0, internal.agent.urls.resolveInBackground, { url: args.url, title: orUndefined(extractedTitle), retailer: args.retailer ?? parsedUrl?.retailer, deviceId: args.deviceId, currentPrice: args.currentPrice, originalPrice: args.originalPrice, now, startFullRun: !match });
     lap("identify");
 
     if (!match) {
       if (args.url && !evaluation && (!link || link.status === "pending"))
         return finish({ verdict: "INVESTIGATE", reason: "We're looking this product up from its link. Check again in a moment.", confidence: 0.1, isSampleData: false, reportStatus: "pending", path: "unknown" });
-      if (!title) return finish({ verdict: "INVESTIGATE", reason: "We couldn't read a product name from the screen.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
+      if (args.url && !extractedTitle)
+        return finish({ verdict: "INVESTIGATE", reason: "We couldn't identify this product from its link: the store page gave us no name or price we could verify.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
+      if (!extractedTitle) return finish({ verdict: "INVESTIGATE", reason: "We couldn't find a product name on the screen. Open the product page and try again.", confidence: 0.1, isSampleData: false, reportStatus: "none", path: "unknown" });
       if (evaluation) return finish({ verdict: "INVESTIGATE", reason: NO_HISTORY, confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
       const allowed = !args.deviceId || (await rateLimiter.limit(ctx, "provisionalPerDevice", { key: args.deviceId })).ok;
       if (!allowed) return finish({ verdict: "INVESTIGATE", reason: NO_HISTORY, confidence: 0.2, isSampleData: false, reportStatus: "none", path: "unknown" });
-      const productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title });
+      const productId = await ctx.runMutation(internal.data.catalog.createProvisionalProduct, { title: extractedTitle });
       await recordPrice(ctx, productId, scan, args.url, now, args.capturedAt);
       const queued = await queueFullRun(ctx, productId, scan, now);
       return finish({ productId, verdict: "INVESTIGATE", reason: `${NO_HISTORY} We've started looking it up.`, confidence: 0.2, isSampleData: false, reportStatus: queued ? "pending" : "none", path: "unknown" });
@@ -262,7 +290,10 @@ export const analyzeScan = internalAction({
     const [ev, pending] = await Promise.all([standardEvidence(data, ledger, productId, scan), !evaluation && !fullFresh && queueFullRun(ctx, productId, scan, now)]);
     lap("evidence");
     const prompt = [scanPrompt(scan, productId, match.product.title, now), "This is the fast pass for the phone card: all evidence is below and there are no tools. Answer with verdict, confidence, reason and the evidence ids behind the reason.", ...ledger.items.map(evidenceBlock)].join("\n");
-    const run = await runAgent({ provider: config.provider, model: config.fast.model, reasoning: config.fast.reasoning, system: systemPrompt(), prompt, tools: [], output: cardSpec, ledger, maxRepairs: 1, maxOutputTokens: 300, deadlineMs: LIVE_DEADLINE_MS });
+    const budget = remaining();
+    const run = budget >= MIN_MODEL_MS
+      ? await runAgent({ provider: config.provider, model: config.fast.model, reasoning: config.fast.reasoning, system: systemPrompt(), prompt, tools: [], output: cardSpec, ledger, maxRepairs: 1, maxOutputTokens: 300, deadlineMs: budget })
+      : ({ ok: false, error: `live budget spent (${budget} ms left)`, usage: { inputTokens: 0, outputTokens: 0 } } as const);
     lap("model");
     addInsights(ledger, ev, productId, match.product.specs, now);
     const final = finalize(productId, scan, ledger, run.ok ? { output: withReport(run.output, productId, scan, ev, now), issues: run.groundingIssues } : { output: null, issues: [`model failed: ${run.error}`] }, ev, now);

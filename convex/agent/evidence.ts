@@ -45,6 +45,44 @@ export function textIsGrounded(text: string, sources: Evidence[]): number[] {
   return numbersInText(text).filter((n) => !known.some((k) => numberMatches(n, k)));
 }
 
+// Clauses split at sentence ends and contrast words, never at the decimal point of a price.
+const CLAUSE_BREAK = /[;!?]|\.(?=\s|$)|(?<!\d)\.(?!\d)|\b(?:but|while|whereas|although)\b/i;
+const PRICE = /\$\s?(\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?)/g;
+const RELATION = /\bwithin\s+(?:about\s+)?(\d+(?:\.\d+)?)\s?%\s+of\b|(\d+(?:\.\d+)?)\s?%\s+(below|under|less than|cheaper than|lower than|above|over|more than|higher than)\b|\b(matches|ties|equals|same as)\b/gi;
+const NEW_LOW = /\b(?:new|record|all-time)\s+low\b|\bbelow\s+(?:the\s+|our\s+|its\s+)?(?:lowest|previous low|prior low)\b/i;
+const pctDiff = (a: number, b: number) => (Math.abs(a - b) / b) * 100;
+
+// Relationships between two prices stated in text must hold: "$A is within N% of $B", "$A is N% below/above $B",
+// "$A matches $B", and "new low" against key_facts. Grounding alone passes "$179 is within 3% of $198" because
+// both numbers exist in evidence; this check catches the false relation itself.
+export function relationIssues(text: string, ledger?: EvidenceLedger): string[] {
+  const issues: string[] = [];
+  const facts = ledger?.items.filter((e) => e.tool === "key_facts").at(-1)?.result as { priceVsLowest?: string } | undefined;
+  for (const clause of text.split(CLAUSE_BREAK)) {
+    if (!clause) continue;
+    const prices = [...clause.matchAll(PRICE)].map((m) => ({ at: m.index!, end: m.index! + m[0].length, value: Number(m[1].replace(/,/g, "")) }));
+    if (facts?.priceVsLowest && facts.priceVsLowest !== "below_lowest_recorded" && NEW_LOW.test(clause))
+      issues.push(`says "${clause.trim()}" but today's price is not below the lowest recorded price (${facts.priceVsLowest})`);
+    for (const m of clause.matchAll(RELATION)) {
+      const a = prices.filter((p) => p.end <= m.index!).at(-1)?.value;
+      const b = prices.find((p) => p.at >= m.index! + m[0].length)?.value;
+      if (a === undefined || b === undefined || b <= 0) continue;
+      const diff = pctDiff(a, b);
+      const said = `"${m[0].trim()}" between $${a} and $${b}`;
+      if (m[1] !== undefined && diff > Number(m[1]) + 0.5) issues.push(`says ${said}, but they differ by ${Math.round(diff * 10) / 10}%`);
+      if (m[2] !== undefined) {
+        const below = /below|under|less|cheaper|lower/i.test(m[3]);
+        const n = Number(m[2]);
+        const fits = (x: number) => Math.abs(x - n) <= 0.6 || Math.round(x) === n;
+        if (below ? a >= b : a <= b) issues.push(`says ${said}, but the direction is wrong`);
+        else if (!fits(diff) && !fits(pctDiff(a, b) * (b / a))) issues.push(`says ${said}, but the gap is ${Math.round(diff * 10) / 10}%`);
+      }
+      if (m[4] !== undefined && diff > 1) issues.push(`says ${said}, but they differ by ${Math.round(diff * 10) / 10}%`);
+    }
+  }
+  return issues;
+}
+
 type Claim = { field: string; text: string; evidenceIds: string[] };
 
 function claimsOf(output: AgentOutput): Claim[] {
@@ -96,6 +134,7 @@ export function checkCard<T extends { reason: string; reasonEvidenceIds: string[
   const issues = [
     ...(unknown.length ? [`reason: cites unknown evidence ${unknown.join(", ")}`] : []),
     ...(ungrounded.length ? [`reason: numbers ${ungrounded.join(", ")} not found in any evidence`] : []),
+    ...relationIssues(card.reason, ledger).map((i) => `reason: ${i}`),
   ];
   return { value: { ...card, reasonEvidenceIds: ids.filter((id) => ledger.get(id)) }, issues };
 }
@@ -114,6 +153,7 @@ export function checkGrounding(output: AgentOutput, ledger: EvidenceLedger, comp
       const ungrounded = textIsGrounded(claim.text, sources);
       if (ungrounded.length) issues.push(`${claim.field}: numbers ${ungrounded.join(", ")} not found in cited evidence`);
     }
+    issues.push(...relationIssues(claim.text, ledger).map((i) => `${claim.field}: ${i}`));
   }
   const competitorSources = ledger.items.filter((e) => competitorTools.includes(e.tool));
   for (const c of output.competitors) {

@@ -18,7 +18,8 @@ function evidenceByTool(items: ConversationItem[]): Map<string, Evidence> {
   for (const item of items) {
     if (item.kind === "user")
       for (const m of item.text.matchAll(/<evidence id="(E\d+)" tool="([a-z_]+)">([\s\S]*?)<\/evidence>/g))
-        found.set(m[2], { id: m[1], tool: m[2], args: {}, result: JSON.parse(m[3]) });
+        // The first price stats in a prompt are the 365-day ones; the later 90-day stats only feed key_facts.
+        if (!(m[2] === "get_price_stats" && found.has(m[2]))) found.set(m[2], { id: m[1], tool: m[2], args: {}, result: JSON.parse(m[3]) });
     if (item.kind === "toolCalls") for (const c of item.calls) names.set(c.id, c.name);
     if (item.kind === "toolResult") {
       const parsed = JSON.parse(item.output) as { evidenceId?: string; result?: unknown };

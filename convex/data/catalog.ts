@@ -93,6 +93,18 @@ export const getProduct = internalQuery({
   },
 });
 
+// An Amazon link's ASIN names one exact catalog product (one color, one size), so it needs no title match.
+export const productByAsin = internalQuery({
+  args: { asin: v.string() },
+  handler: async (ctx, args) => {
+    const p = await ctx.db
+      .query("products")
+      .withIndex("by_identifiers_asin", (q) => q.eq("identifiers.asin", args.asin))
+      .first();
+    return p ? productView(p) : null;
+  },
+});
+
 // Variants of one model (e.g. 128GB and 256GB), which must not be confused with each other.
 export const listFamily = internalQuery({
   args: { familyKey: v.string() },
