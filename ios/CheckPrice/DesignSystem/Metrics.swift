@@ -59,9 +59,9 @@ struct ShadowToken {
 
 enum Shadows {
     static let listCard = ShadowToken(color: .black.opacity(0.5), radius: 12, y: 6)
-    static let heroPanel = ShadowToken(color: Color(hex: 0x050B5E).opacity(0.35), radius: 28, y: 10)
-    static let labelOnBlue = ShadowToken(color: .black.opacity(0.22), radius: 1, y: 1)
-    static let sendArrow = ShadowToken(color: Color(hex: 0x0A1466).opacity(0.3), radius: 4, y: 1)
+    static let heroPanel = ShadowToken(color: .black.opacity(0.35), radius: 28, y: 10)
+    static let labelOnColor = ShadowToken(color: .black.opacity(0.22), radius: 1, y: 1)
+    static let sendArrow = ShadowToken(color: .black.opacity(0.3), radius: 4, y: 1)
 }
 
 extension View {

@@ -1,8 +1,8 @@
 import SwiftUI
 
 // The root: three tabs (Home, Threads, Account), icons only, and the thread detail sheet. The bar's
-// look lives in `Components/TabBar.swift`. Each tab sits on `ScreenBackdrop`, so screens draw no backdrop
-// of their own. Any screen opens a thread by setting `ThreadStore.openThreadID`; this view
+// look lives in `Components/TabBar.swift`. Each tab sits on the flat canvas colour, so screens draw no
+// background of their own. Any screen opens a thread by setting `ThreadStore.openThreadID`; this view
 // presents it and clears it on dismiss.
 //
 // Launch arguments for screenshots and cloud devices: `-startTab home|threads|account` opens on
@@ -26,8 +26,9 @@ struct ContentView: View {
                 screen(AccountView())
             } label: { label(.account) }
         }
-        // Tint still reaches the screens (toolbar buttons, links); the bar's own colours are in TabBarStyle.
-        .tint(Palette.glow)
+        // Tint reaches the screens (toolbar buttons, links). Neutral, so the orange accent stays rare;
+        // the bar's own colours are in TabBarStyle.
+        .tint(Palette.textPrimary)
         .sheet(item: openThread) { thread in
             ThreadDetailView(threadID: thread.id)
                 .presentationDragIndicator(.visible)
@@ -41,10 +42,10 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
     }
 
-    // Every tab sits on the backdrop and carries the hook that centres the bar's icons.
+    // Every tab sits on the canvas and carries the hook that centres the bar's icons.
     private func screen(_ content: some View) -> some View {
         content
-            .background { ScreenBackdrop() }
+            .background { Palette.canvas.ignoresSafeArea() }
             .background { TabBarIconInsets(selection: tab).frame(width: 0, height: 0) }
     }
 

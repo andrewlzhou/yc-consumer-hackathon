@@ -4,8 +4,8 @@
 // dropped, a light haptic marks the press, and every key keeps a 44pt hit area.
 import SwiftUI
 
-// The pressable key. `.primary` is the one blue action on a screen; `.secondary` is a small dark
-// key for actions inside lists, quiet beside the blue one.
+// The pressable key. `.primary` is the one orange action on a screen; `.secondary` is a small dark
+// key for actions inside lists, quiet beside the orange one.
 struct KeyButtonStyle: ButtonStyle {
     enum Tone { case primary, secondary }
 
@@ -26,7 +26,7 @@ struct KeyButtonStyle: ButtonStyle {
 }
 
 // A full-width outlined key for another way to do the same thing. Flat and outlined like a field,
-// so the blue key stays the one to press.
+// so the orange key stays the one to press.
 struct QuietButtonStyle: ButtonStyle {
     var height: CGFloat = ControlHeight.quietKey
     var isWorking = false
@@ -78,7 +78,7 @@ private struct KeyButton: View {
                     configuration.label
                         .textStyle(.button)
                         .foregroundStyle(.white)
-                        .dropShadow(Shadows.labelOnBlue)
+                        .dropShadow(Shadows.labelOnColor)
                 } else {
                     configuration.label
                         .textStyle(.smallButton)
@@ -107,23 +107,23 @@ private struct KeyFace: View {
             ZStack {
                 shape.fill(
                     LinearGradient(
-                        colors: [Color(hex: 0x2A78FF), Palette.electric, Color(hex: 0x0052E3)],
+                        colors: [Color(hex: 0xE38A6C), Palette.accent, Color(hex: 0xC9664A)],
                         startPoint: .top,
                         endPoint: .bottom
                     )
-                    .shadow(.inner(color: Color(hex: 0x1B6FFF), radius: 2.7, x: 1, y: 5))
+                    .shadow(.inner(color: Color(hex: 0xE5846A), radius: 2.7, x: 1, y: 5))
                 )
                 // A soft sheen across the upper half shows the face is gently domed.
                 shape.fill(
                     LinearGradient(colors: [.white.opacity(0.1), .white.opacity(0)], startPoint: .top, endPoint: .center)
                 )
-                InsetShadow(shape: shape, color: Color(hex: 0x001A6B, opacity: 0.32), radius: 2.5, y: -1.5)
+                InsetShadow(shape: shape, color: Color(hex: 0x6B2A16, opacity: 0.32), radius: 2.5, y: -1.5)
                 InsetShadow(shape: shape, color: .black.opacity(0.36), radius: 3, y: 2)
                     .opacity(isPressed ? 1 : 0)
             }
         case .secondary:
             ZStack {
-                shape.fill(LinearGradient(colors: [Color(hex: 0x34343A), Color(hex: 0x24242A)], startPoint: .top, endPoint: .bottom))
+                shape.fill(LinearGradient(colors: [Color(hex: 0x363532), Color(hex: 0x262523)], startPoint: .top, endPoint: .bottom))
                 InsetShadow(shape: shape, color: .white.opacity(0.14), radius: 0.6, y: 1)
                 InsetShadow(shape: shape, color: .black.opacity(0.4), radius: 2, y: 1.5)
                     .opacity(isPressed ? 1 : 0)
@@ -144,13 +144,13 @@ private struct KeyBase: View {
         switch tone {
         case .primary:
             shape
-                .fill(LinearGradient(colors: [Color(hex: 0x0048CC), Color(hex: 0x00309A)], startPoint: .top, endPoint: .bottom))
+                .fill(LinearGradient(colors: [Color(hex: 0xB0583C), Color(hex: 0x8C432C)], startPoint: .top, endPoint: .bottom))
                 .shadow(color: .black.opacity(0.45), radius: isPressed ? 0.5 : 1, y: isPressed ? 0.5 : 1)
                 .shadow(color: .black.opacity(isPressed ? 0.18 : 0.3), radius: isPressed ? 1.5 : 6, y: isPressed ? 0.5 : 4)
-                .shadow(color: Palette.electric.opacity(isPressed ? 0.1 : 0.2), radius: isPressed ? 4 : 12, y: isPressed ? 1 : 6)
+                .shadow(color: Palette.accent.opacity(isPressed ? 0.1 : 0.2), radius: isPressed ? 4 : 12, y: isPressed ? 1 : 6)
         case .secondary:
             shape
-                .fill(Color(hex: 0x111114))
+                .fill(Color(hex: 0x121211))
                 .shadow(color: .black.opacity(isPressed ? 0.3 : 0.55), radius: isPressed ? 1 : 3, y: isPressed ? 0.5 : 2)
         }
     }

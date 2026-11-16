@@ -1,20 +1,20 @@
 // Copied from notyet/ios/Views/DesignSystem/AskParts.swift (Not Yet).
 // The pieces the ways into a check share (worldscape F/CommandBar/BarSurface.swift,
-// CommandBarParts.swift, F/Chat/MessageColumn.swift): the blue input bar's surface, the
+// CommandBarParts.swift, F/Chat/MessageColumn.swift): the input bar's surface, the
 // "dots + current step" line while an answer is on its way, the failure line with the one thing
 // that fixes it, and round icon presses. List rows use `ListRowButtonStyle` and `RoundIcon`
 // (ListScreens.swift).
 import SwiftUI
 
-// The blue input bar's surface: deep brand blue over frosted glass, darkest at the top, easing into
-// a faint fog along the bottom, under a hairline rim (accent blue on top, steel along the bottom),
+// The input bar's surface: warm dark grey over frosted glass, darkest at the top, easing into
+// a faint fog along the bottom, under a hairline rim (light grey on top, darker along the bottom),
 // over a blurred shadow. The fog keeps a fixed height as the bar grows. iOS: the Mac's behind-window
 // blur is `.ultraThinMaterial`, which only blurs the app's own content; the colours carry the look.
 struct InputBarSurface: View {
     var cornerRadius: CGFloat = ControlHeight.inputBar / 2
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
-    private static let fog = Color(hex: 0xDDE6FF)
+    private static let fog = Color(hex: 0xFAF9F5)
     private static let fogHeight: CGFloat = 30
     // Banks of fog along the bottom edge, a little thicker toward the right: x, width (fractions
     // of the bar), height, opacity.
@@ -25,9 +25,9 @@ struct InputBarSurface: View {
     ]
     private static let rim = LinearGradient(
         stops: [
-            .init(color: Color(hex: 0x6B88FF).opacity(0.9), location: 0),
-            .init(color: Color(hex: 0x93A5E8).opacity(0.55), location: 0.5),
-            .init(color: Color(hex: 0x5F6C90).opacity(0.8), location: 1),
+            .init(color: Color(hex: 0xB0AEA5).opacity(0.6), location: 0),
+            .init(color: Color(hex: 0x8A8880).opacity(0.4), location: 0.5),
+            .init(color: Color(hex: 0x5E5D58).opacity(0.8), location: 1),
         ],
         startPoint: .top,
         endPoint: .bottom
@@ -37,7 +37,7 @@ struct InputBarSurface: View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
             shape
-                .fill(Color(hex: 0x01061F).opacity(0.4))
+                .fill(Color.black.opacity(0.4))
                 .blur(radius: 14)
                 .offset(y: 8)
             fill.clipShape(shape)
@@ -50,22 +50,22 @@ struct InputBarSurface: View {
             let size = proxy.size
             ZStack {
                 if reduceTransparency {
-                    Color(hex: 0x0B0C12)
+                    Color(hex: 0x1A1917)
                 } else {
                     Rectangle().fill(.ultraThinMaterial).environment(\.colorScheme, .dark)
                 }
                 LinearGradient(
-                    colors: [Color(hex: 0x0E0FA2), Color(hex: 0x1121BE), Color(hex: 0x0833C4)],
+                    colors: [Color(hex: 0x262523), Color(hex: 0x2D2C29), Color(hex: 0x262523)],
                     startPoint: .leading,
                     endPoint: .trailing
                 )
                 .opacity(0.76)
                 LinearGradient(
                     stops: [
-                        .init(color: Color(hex: 0x010428).opacity(0.5), location: 0),
+                        .init(color: Color(hex: 0x0A0A09).opacity(0.5), location: 0),
                         .init(color: .clear, location: 0.45),
-                        .init(color: Color(hex: 0x2A4FE6).opacity(0.26), location: 0.82),
-                        .init(color: Color(hex: 0x3F64F2).opacity(0.3), location: 1),
+                        .init(color: Color(hex: 0x5E5D58).opacity(0.26), location: 0.82),
+                        .init(color: Color(hex: 0x6E6C66).opacity(0.3), location: 1),
                     ],
                     startPoint: .top,
                     endPoint: .bottom

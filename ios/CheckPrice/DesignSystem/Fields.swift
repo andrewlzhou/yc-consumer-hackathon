@@ -41,7 +41,7 @@ struct OutlinedField: View {
                     .textFieldStyle(.plain)
                     .textStyle(.body)
                     .foregroundStyle(Palette.textPrimary)
-                    .tint(Palette.glow)
+                    .tint(Palette.accent)
                     .focused($isFocused)
             }
             .padding(.horizontal, Spacing.fieldHorizontal)
@@ -62,7 +62,7 @@ struct OutlinedField: View {
 }
 
 // The outline every field and field-like control draws: 1pt white 16%, brighter while pressed,
-// or glow blue while highlighted (for example a search match).
+// or the accent while highlighted (for example a search match).
 struct FieldBorder: View {
     var isPressed = false
     var isHighlighted = false
@@ -74,7 +74,7 @@ struct FieldBorder: View {
     }
 
     private var color: Color {
-        if isHighlighted { return Palette.glow }
+        if isHighlighted { return Palette.accent }
         return isPressed ? Palette.strokeHover : Palette.stroke
     }
 }

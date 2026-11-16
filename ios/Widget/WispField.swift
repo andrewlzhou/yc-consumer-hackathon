@@ -1,10 +1,9 @@
 // Target membership: widget extension only.
-// The pop-up's art: a still version of Worldscape's blue. Two sources:
-// - the login intro's "wisps of swirling light" (worldscape apps/macos/.../Login/LoginIntro.swift
-//   and GrainGradient/GrainGradientShader.swift: glow #436FFF → iris #4A56FF → ultramarine #1500FF),
-// - the input bar the owner pointed at (BarSurface.swift, copied in CheckPrice/DesignSystem/
-//   AskParts.swift as `InputBarSurface`): navy-to-royal body, dark top, light rising from the
-//   bottom edge, fog along the bottom.
+// The pop-up's art: wisps of swirling light, shaped after Worldscape's login intro (worldscape
+// apps/macos/.../Login/LoginIntro.swift) and the input bar (CheckPrice/DesignSystem/AskParts.swift
+// `InputBarSurface`): body, dark top, light rising from the bottom edge, fog along the bottom.
+// While checking it uses the app's warm greys with an orange edge (Anthropic colours, owner
+// 2026-11-15).
 // Live Activities can't run Metal, TimelineView or looping animations, so the wisps are blurred
 // ellipses whose pose comes from `phase`. Each update moves them and iOS animates the change.
 // A decided verdict keeps the same art in its own hue (yellow for Buy Later).
@@ -21,10 +20,11 @@ struct WispPalette: Equatable {
     var rim: Color         // Dynamic Island keyline
     var ink: Color         // the word on the black pill (compact view)
 
-    // Worldscape's input bar, exactly (AskParts.swift `InputBarSurface`).
+    // The input bar's warm greys (AskParts.swift `InputBarSurface`), with the accent orange as the
+    // brightest light along the bottom edge.
     static let checking = WispPalette(
-        deep: rgb(0x0E0FA2), mid: rgb(0x1121BE), far: rgb(0x0833C4), shade: rgb(0x010428),
-        lift: rgb(0x2A4FE6), liftBright: rgb(0x3F64F2), fog: rgb(0xDDE6FF), rim: rgb(0x6B88FF),
+        deep: rgb(0x2A2926), mid: rgb(0x34332F), far: rgb(0x2E2D2A), shade: rgb(0x0F0F0E),
+        lift: rgb(0x6E6C66), liftBright: rgb(0xD97757), fog: rgb(0xFAF9F5), rim: rgb(0xB0AEA5),
         ink: Color.white.opacity(0.94))
 
     // The same structure re-hued per verdict. Hand-picked, dark enough under white text; the

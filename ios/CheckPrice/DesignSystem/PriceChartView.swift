@@ -22,7 +22,7 @@ struct PriceChartView: View {
     let isSampleData: Bool
 
     init(history: [PricePoint], current: Double, projected: Double?, projectedDate: Date?,
-         accent: Color = Palette.glow, typicalPrice: Double? = nil, lowest: PriceLow? = nil,
+         accent: Color = Palette.accent, typicalPrice: Double? = nil, lowest: PriceLow? = nil,
          saleEvents: [SaleWindow]? = nil, isSampleData: Bool = false) {
         self.history = history
         self.current = current
@@ -39,8 +39,8 @@ struct PriceChartView: View {
     @State private var arrived = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // The 12-month low's marker. Accent (the verdict colour) is today; the low is the light blue.
-    private let lowColor = Palette.glow
+    // The 12-month low's marker. Accent (the verdict colour) is today; the low is neutral grey.
+    private let lowColor = Palette.muted
 
     var body: some View {
         let plot = Plot.make(history: history, current: current, projected: projected,

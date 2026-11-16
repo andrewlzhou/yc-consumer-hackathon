@@ -40,7 +40,7 @@ struct EditProfileSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button { save() } label: { Text("Done").textStyle(.button) }
-                        .tint(Palette.glow)
+                        .tint(Palette.accent)
                 }
             }
         }

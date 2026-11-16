@@ -4,7 +4,7 @@
 import SwiftUI
 
 // "Sample data" capsule. Shown whenever a verdict, chart or analysis is built from sample data, as
-// the backend contract requires. Smoky glass look, never blue, so it reads on the hero light.
+// the backend contract requires. Smoky glass look, so it reads on the hero light.
 struct SampleDataTag: View {
     var body: some View {
         HStack(spacing: 5) {

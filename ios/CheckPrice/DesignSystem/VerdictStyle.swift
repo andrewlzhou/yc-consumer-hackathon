@@ -1,7 +1,7 @@
 // Adapted from notyet/ios/Views/DesignSystem/VerdictColors.swift and the word/symbol table on
 // Not Yet's `Verdict` (notyet/ios/App/Models.swift), mapped onto Check Price's four verdicts.
 // Worldscape has no verdict colours: green and amber come from Not Yet's original design, and the
-// two newer verdicts use lavender and coral so neither is mistaken for the blue accent.
+// two newer verdicts use lavender and coral so neither is mistaken for the other two.
 import SwiftUI
 
 extension Verdict {

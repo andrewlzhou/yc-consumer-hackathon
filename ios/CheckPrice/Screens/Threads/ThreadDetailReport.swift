@@ -1,5 +1,5 @@
 // A thread's report in Not Yet's report style (notyet/ios/Views/ProductReportView.swift). Top to
-// bottom: the verdict and its reason on glass over blue light, today's price against the expected
+// bottom: the verdict and its reason on glass over warm grey light, today's price against the expected
 // price, and the last 12 months of prices (demo history from ThreadDetailHistory.swift).
 import SwiftUI
 
@@ -88,7 +88,7 @@ struct ThreadDetailReport: View {
 
 // MARK: - Verdict hero
 
-// The verdict on glass over the blue light: the product, the verdict word and symbol in the verdict
+// The verdict on glass over the hero's grey light: the product, the verdict word and symbol in the verdict
 // colour, and the product summary as the reason. Adapted from Not Yet's `VerdictHero`.
 private struct ThreadDetailHero: View {
     let product: Product
@@ -118,7 +118,7 @@ private struct ThreadDetailHero: View {
                         .foregroundStyle(product.verdict.color)
                         .lineLimit(1)
                         .minimumScaleFactor(0.6)
-                        .dropShadow(Shadows.labelOnBlue)
+                        .dropShadow(Shadows.labelOnColor)
                     Spacer(minLength: 0)
                 }
                 .accessibilityElement(children: .combine)
@@ -142,7 +142,7 @@ private struct ThreadDetailHero: View {
         .overlay {
             RoundedRectangle(cornerRadius: Radius.heroPanel, style: .continuous)
                 .strokeBorder(
-                    LinearGradient(colors: [Color(hex: 0x6B88FF, opacity: 0.6), Color.white.opacity(0.06)],
+                    LinearGradient(colors: [Color(hex: 0xB0AEA5, opacity: 0.5), Color.white.opacity(0.06)],
                                    startPoint: .top, endPoint: .bottom),
                     lineWidth: 0.75
                 )
@@ -152,7 +152,7 @@ private struct ThreadDetailHero: View {
     }
 }
 
-// The hero's blue light: dark navy at the top pooling into the blue family below, kept inside the panel.
+// The hero's light: warm near-black at the top pooling into lighter warm greys below, kept inside the panel.
 private struct HeroLight: View {
     var body: some View {
         MeshGradient(
@@ -164,9 +164,9 @@ private struct HeroLight: View {
                 [0, 1], [0.5, 1], [1, 1],
             ],
             colors: [
-                Color(hex: 0x060A2A), Color(hex: 0x080D36), Color(hex: 0x05082A),
-                Color(hex: 0x10149E), Palette.ultramarine, Color(hex: 0x0A1BA8),
-                Palette.electric, Palette.glow, Palette.iris,
+                Color(hex: 0x1A1917), Color(hex: 0x1C1B19), Color(hex: 0x191816),
+                Color(hex: 0x2A2926), Color(hex: 0x34332F), Color(hex: 0x2C2B28),
+                Color(hex: 0x45433E), Color(hex: 0x5A5852), Color(hex: 0x3E3D39),
             ]
         )
     }

@@ -132,8 +132,7 @@ enum ProfileKeys {
     static let bio = "profileBio"
 }
 
-// A round avatar: the name's initials, or a person symbol when there is no name, on a blue pair
-// at 78% with a white top sheen (worldscape F/People/PersonRow.swift).
+// A round avatar: the name's initials, or a person symbol when there is no name, on a warm grey pair with a white top sheen (worldscape F/People/PersonRow.swift).
 struct ProfileAvatar: View {
     let name: String
     var size: CGFloat = 84
@@ -145,8 +144,7 @@ struct ProfileAvatar: View {
     var body: some View {
         ZStack {
             Circle().fill(
-                LinearGradient(colors: [Palette.iris, Palette.ultramarine], startPoint: .topLeading, endPoint: .bottomTrailing)
-                    .opacity(0.78)
+                LinearGradient(colors: [Color(hex: 0x76746E), Palette.stone], startPoint: .topLeading, endPoint: .bottomTrailing)
             )
             Circle().fill(LinearGradient(colors: [.white.opacity(0.18), .clear], startPoint: .top, endPoint: .center))
             if initials.isEmpty {
@@ -157,7 +155,7 @@ struct ProfileAvatar: View {
                 Text(initials)
                     .font(.hiragino(.w6, size: size * 0.34, relativeTo: .title))
                     .foregroundStyle(.white)
-                    .dropShadow(Shadows.labelOnBlue)
+                    .dropShadow(Shadows.labelOnColor)
             }
         }
         .frame(width: size, height: size)

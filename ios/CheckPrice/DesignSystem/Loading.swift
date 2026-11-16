@@ -92,7 +92,7 @@ struct StreamingText: View {
     }
 }
 
-// A slim 2pt bar of glow with its own gap before it, drawn as an image so it sits inline in text
+// A slim 2pt bar of the accent with its own gap before it, drawn as an image so it sits inline in text
 // without making its line taller.
 @MainActor
 enum StreamingCaret {
@@ -100,7 +100,7 @@ enum StreamingCaret {
         let size = CGSize(width: 5, height: 13)
         let renderer = UIGraphicsImageRenderer(size: size)
         let uiImage = renderer.image { _ in
-            UIColor(red: 0x43 / 255, green: 0x6F / 255, blue: 0xFF / 255, alpha: 1).setFill()
+            UIColor(Palette.accent).setFill()
             UIBezierPath(roundedRect: CGRect(x: 3, y: 0, width: 2, height: size.height), cornerRadius: 1).fill()
         }
         return Image(uiImage: uiImage)

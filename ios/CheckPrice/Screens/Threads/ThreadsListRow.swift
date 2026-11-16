@@ -23,11 +23,11 @@ struct ThreadsListRow: View {
         .threadsPlainRow()
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             Button(action: toggleHeart) { heartLabel }
-                .tint(Palette.iris)
+                .tint(Palette.stone)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button(action: toggleSave) { saveLabel }
-                .tint(Palette.electric)
+                .tint(Palette.accent)
         }
         .contextMenu {
             Button(action: open) { Label("Open", systemImage: "arrow.up.right") }

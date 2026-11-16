@@ -1,5 +1,5 @@
 // The thread's input bar, as Search's ask bar draws it (worldscape F/CommandBar/ChatBar.swift): a
-// blue capsule, 56pt for one line and growing to four, 17pt text, and a white arrow that is dim
+// warm grey capsule, 56pt for one line and growing to four, 17pt text, and a white arrow that is dim
 // until there is something to send. While a reply is on its way the arrow stays dim.
 import SwiftUI
 

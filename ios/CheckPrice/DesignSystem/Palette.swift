@@ -1,10 +1,11 @@
 // Copied from notyet/ios/Views/DesignSystem/Palette.swift (Not Yet).
-// Worldscape palette (worldscape DS/Palette.swift): one near-black canvas, a family of blues, and
-// white at fixed opacities for text, fills and strokes. Dark only.
+// Warm neutrals in the Anthropic style (owner, 2026-11-15): a warm near-black canvas, warm off-white
+// text at fixed opacities, white at fixed opacities for fills and strokes, and one orange accent used
+// sparingly. Dark only. The structure follows Worldscape's palette (worldscape DS/Palette.swift).
 import SwiftUI
 
 extension Color {
-    // `Color(hex: 0x005EFF)` or `Color(hex: 0x005EFF, opacity: 0.5)`, in sRGB.
+    // `Color(hex: 0xD97757)` or `Color(hex: 0xD97757, opacity: 0.5)`, in sRGB.
     init(hex: UInt32, opacity: Double = 1) {
         self.init(
             .sRGB,
@@ -17,21 +18,19 @@ extension Color {
 }
 
 enum Palette {
-    // Canvas and the blue family.
-    static let canvas = Color(hex: 0x010101)
-    // Primary: actions and focus.
-    static let electric = Color(hex: 0x005EFF)
-    // Secondary blue.
-    static let iris = Color(hex: 0x4A56FF)
-    // Tertiary blue, the gradient's depth.
-    static let ultramarine = Color(hex: 0x1500FF)
-    // Lightest blue: highlights, search match, streaming caret, tints that must show on black.
-    static let glow = Color(hex: 0x436FFF)
+    static let canvas = Color(hex: 0x141413)
+    // The one accent: the primary action, focus (carets) and selected states only.
+    static let accent = Color(hex: 0xD97757)
+    // Neutral grey for quiet marks that must show on the canvas (the chart's 12-month low).
+    static let muted = Color(hex: 0xB0AEA5)
+    // A solid mid grey for fills that carry white text (avatar, swipe action).
+    static let stone = Color(hex: 0x5E5D58)
 
-    // Text.
-    static let textPrimary = Color.white.opacity(0.94)
-    static let textSecondary = Color.white.opacity(0.62)
-    static let textTertiary = Color.white.opacity(0.36)
+    // Text: warm off-white.
+    private static let ivory = Color(hex: 0xFAF9F5)
+    static let textPrimary = ivory.opacity(0.94)
+    static let textSecondary = ivory.opacity(0.62)
+    static let textTertiary = ivory.opacity(0.36)
 
     // Strokes. On iOS `strokeHover` is the pressed outline.
     static let stroke = Color.white.opacity(0.16)
@@ -46,11 +45,6 @@ enum Palette {
     static let fillChipPressed = Color.white.opacity(0.16)
     static let fillBubbleOwn = Color.white.opacity(0.10)
     static let fillBubbleReply = Color.black.opacity(0.16)
-
-    // Links on dark glass, and the quiet blue label ("2 replies").
-    static let link = Color(hex: 0x8CA8FF)
-    static let linkPressed = Color(hex: 0xADC1FF)
-    static let quietBlue = Color(hex: 0x6C8CFF).opacity(0.78)
 
     // Errors only.
     static let danger = Color(hex: 0xFF5C7A)

@@ -1,8 +1,8 @@
 // Copied from notyet/ios/Views/DesignSystem/Glass.swift (Not Yet).
-// Glass and the blue light it sits on (worldscape F/World/WorldCard.swift `CardGlass`,
-// design-system.md). Glass is always layered, never a bare material: a blurred shadow shape, a
-// frost, a top sheen, and a hairline brightest on top. iOS materials only blur the app's own
-// content, so glass over the plain canvas reads as flat grey: put it over `BackdropGradient`.
+// Glass (worldscape F/World/WorldCard.swift `CardGlass`, design-system.md). Glass is always
+// layered, never a bare material: a blurred shadow shape, a frost, a top sheen, and a hairline
+// brightest on top. iOS materials only blur the app's own content, so over the flat canvas it reads
+// as a soft grey panel, which suits the warm-neutral palette.
 import SwiftUI
 
 struct GlassSurface: View {
@@ -14,15 +14,15 @@ struct GlassSurface: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         ZStack {
-            // A soft deep-blue shadow, drawn as a blurred shape rather than `.shadow`.
+            // A soft dark shadow, drawn as a blurred shape rather than `.shadow`.
             shape
-                .fill(Color(hex: 0x030836).opacity(isLit ? 0.42 : 0.3))
+                .fill(Color.black.opacity(isLit ? 0.42 : 0.3))
                 .blur(radius: isLit ? 20 : 15)
                 .offset(y: isLit ? 14 : 9)
             // Frosts the light behind it, as glass would.
             if reduceTransparency {
                 shape.fill(
-                    LinearGradient(colors: [Color(hex: 0x12173A), Color(hex: 0x0B0C12)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                    LinearGradient(colors: [Color(hex: 0x2A2926), Color(hex: 0x1A1917)], startPoint: .topLeading, endPoint: .bottomTrailing)
                 )
             } else {
                 shape
@@ -69,53 +69,5 @@ struct GlassCardButtonStyle: ButtonStyle {
             .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             .scaleEffect(configuration.isPressed ? 0.975 : 1)
             .animation(Motion.cardPress, value: configuration.isPressed)
-    }
-}
-
-// The blue light behind glass. Worldscape draws it with a Metal shader with grain; this is a
-// still approximation (glow → iris → ultramarine meeting the dark), with no grain or drift.
-// Judge it by eye. It fills its space and ignores safe areas.
-struct BackdropGradient: View {
-    enum Style {
-        // iOS 18 mesh: light pooling in the lower half, dark at the top.
-        case mesh
-        // A plain top-to-bottom gradient, cheapest to draw.
-        case linear
-    }
-
-    var style: Style = .mesh
-
-    var body: some View {
-        Group {
-            switch style {
-            case .mesh:
-                MeshGradient(
-                    width: 3,
-                    height: 3,
-                    points: [
-                        [0, 0], [0.5, 0], [1, 0],
-                        [0, 0.55], [0.6, 0.5], [1, 0.6],
-                        [0, 1], [0.5, 1], [1, 1],
-                    ],
-                    colors: [
-                        Palette.canvas, Palette.canvas, Palette.canvas,
-                        Palette.ultramarine, Palette.iris, Color(hex: 0x0A1BA8),
-                        Palette.electric, Palette.glow, Palette.iris,
-                    ]
-                )
-            case .linear:
-                LinearGradient(
-                    stops: [
-                        .init(color: Palette.canvas, location: 0),
-                        .init(color: Palette.ultramarine, location: 0.5),
-                        .init(color: Palette.iris, location: 0.8),
-                        .init(color: Palette.glow, location: 1),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            }
-        }
-        .ignoresSafeArea()
     }
 }
